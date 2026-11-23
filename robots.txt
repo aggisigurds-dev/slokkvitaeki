@@ -1,0 +1,3 @@
+# Innra verkfæri Slökkvitækja ehf. Ekki leitarvélar.
+User-agent: *
+Disallow: /

@@ -114,6 +114,7 @@
       V + '.hu2-plata{display:flex;flex-direction:column;gap:12px;padding:14px;border-radius:14px;border:1px solid rgba(0,0,0,.55);background-color:#e2e6ec;background-image:' + STAL + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 18px 40px -18px rgba(0,0,0,.6)}',
       V + '.hu2-kpi{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}',
       V + '.hu2-k' + K + '{all:unset;box-sizing:border-box;cursor:pointer;display:flex!important;flex-direction:column;gap:6px;min-width:0;padding:12px 14px 11px!important;border-radius:10px!important;background:#fff!important;box-shadow:' + REIT + '!important;text-align:left;font:inherit!important;color:inherit!important;height:auto!important;width:100%!important;border:0!important}',
+      V + '.hu2-k .hu2-merki{white-space:normal;flex-wrap:wrap;overflow-wrap:anywhere}',
       V + '.hu2-k:hover' + K + '{box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 0 0 1px rgba(20,24,34,.3),0 3px 8px rgba(10,14,22,.18)!important}',
       V + '.hu2-k.is-on' + K + '{box-shadow:inset 0 0 0 2px #11141c,0 3px 8px rgba(10,14,22,.2)!important}',
       '.hu2-merki{display:flex;align-items:center;gap:7px;font:700 10.5px/1.2 ' + MONO + ';letter-spacing:.14em;text-transform:uppercase;color:#3a4250;white-space:nowrap}',

@@ -22,7 +22,7 @@ function svar(o, status) {
 }
 
 export default async (req) => {
-  if (req.method === 'OPTIONS') return new Response('', { status: 204, headers: cors() });
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors() });
   if (req.method !== 'GET') return svar({ error: 'GET only — forskoðun, sendir ekkert' }, 405);
   const KEY = (process.env.EDGE_SHARED_KEY || '').trim();
   if (KEY && String(req.headers.get('x-eldklar-key') || '').trim() !== KEY) return svar({ error: 'unauthorized' }, 401);

@@ -15,7 +15,8 @@
   var d=document.documentElement; d.classList.add('hub-gate-pending');
   var done=false, open=function(){ if(done)return; done=true; d.classList.remove('hub-gate-pending'); };
   var t=setTimeout(open,3500);
-  fetch('/api/hub-adgangar',{credentials:'same-origin',cache:'no-store'}).then(function(r){return r.json();}).then(function(s){
+  var p=window.__hubNotandiP=fetch('/api/hub-adgangar',{credentials:'same-origin',cache:'no-store'}).then(function(r){return r.json();});
+  p.then(function(s){
     clearTimeout(t);
     if(s && s.gate && !s.authed){ location.replace('/innskraning.html?next='+encodeURIComponent(location.pathname+location.search+location.hash)); }
     else open();
@@ -64,6 +65,8 @@
      ekki body #ffffff. Patch 318 paints native widgets with theme tokens. -->
 <meta name="color-scheme" content="light"/>
 <title>Slökkvitæki ehf — Brunakerfi</title>
+<meta name="description" content="Innra verkfæri Slökkvitækja ehf. fyrir sölu, afgreiðslu, verkstæði og þjónustu.">
+<meta name="robots" content="noindex, nofollow">
 <link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32.png?v=flame1"/>
 <link rel="icon" type="image/png" sizes="192x192" href="/img/icon-192.png?v=flame1"/>
 <link rel="icon" type="image/png" sizes="512x512" href="/img/icon-512.png?v=flame1"/>
@@ -184,6 +187,7 @@ html[data-bh="1"],html[data-bh="1"] body{overflow-x:hidden}
 </style>
 </head>
 <body>
+<h1 id="hub-h1" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0">Slökkvitæki ehf — Brunakerfi</h1>
 <!-- Ræsi-hula (2026-07-17, ósk Agnars — startið „svo chaotic"): mælt boot sýndi
      ~3,5 sek þar sem stakir fljótandi takkar poppa inn á tómum grunni áður en
      fyrsta síðan birtist. Hulan liggur yfir öllu frá fyrsta ramma og lyftist
@@ -525,7 +529,7 @@ html[data-bh="1"],html[data-bh="1"] body{overflow-x:hidden}
 <!-- Supabase SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/js/config.js"></script>
-<script src="/js/patches/514-bh-bru.js?v=20261117c"></script><!-- lota 13: tóki á köll til Brunahólfs (fyrir aðra plástra) -->
+<script src="/js/patches/514-bh-bru.js?v=20261123a"></script><!-- lota 13: tóki á köll til Brunahólfs (fyrir aðra plástra) -->
 <!-- 451: sýndarvörður — stöðvar hvert skrif á sýndarfyrirtækið (Greining fasteignar) ÁÐUR en supabase-js grípur fetch -->
 <script src="/js/sydarvordur.js?v=20261009a"></script>
 <script src="/js/rest-samnyting.js?v=20261014mjor"></script>
@@ -585,7 +589,7 @@ html[data-bh="1"],html[data-bh="1"] body{overflow-x:hidden}
 <script defer src="/js/patches/26-credit-invoice.js?v=20261008sv"></script>
 <script defer src="/js/patches/27-tilbod-quote.js?v=20260921b"></script>
 <!-- hibernated 2026-06-21 (unused, hidden in sidebar): 28-calendar.js -->
-<script defer src="/js/patches/29-email-invoice.js?v=20261119snz"></script>
+<script defer src="/js/patches/29-email-invoice.js?v=20261123a"></script>
 <script defer src="/js/patches/30-recurring-service.js?v=20261119snz"></script>
 <!-- hibernated 2026-06-21 (unused, hidden in sidebar): 31-route-optimizer.js -->
 <!-- hibernated 2026-06-21 (sign-in unused + the "Skrá inn" chip was in the way on mobile; dependents 10/182/67 all guard window.UserAuth): 32-user-auth.js -->
@@ -646,8 +650,8 @@ html[data-bh="1"],html[data-bh="1"] body{overflow-x:hidden}
 <script defer src="/js/patches/472-vidmot.js?v=20261015a"></script>
 <script defer src="/js/patches/86-settings-ui.js?v=20261105a"></script>
 <script defer src="/js/patches/87-sala-from-settings.js?v=20261105a"></script>
-<script defer src="/js/patches/88-apply-utlit-almennt.js?v=20260817retired"></script>
-<script defer src="/js/patches/89-monthly-inspection-strip.js?v=20261119snz"></script>
+<script defer src="/js/patches/88-apply-utlit-almennt.js?v=20261123a"></script>
+<script defer src="/js/patches/89-monthly-inspection-strip.js?v=20261123a"></script>
 <script defer src="/js/patches/90-unit-row-actions.js?v=20260510f"></script>
 <script defer src="/js/patches/91-important-companies.js?v=20261012stod"></script>
 <script defer src="/js/patches/92-credit-by-num.js?v=20260914pg2"></script>
@@ -1195,7 +1199,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/165-visit-workflow.js?v=20261119und"></script>
 <script defer src="/js/patches/372-payday-spegill.js?v=20260911a"></script>
 <script defer src="/js/patches/373-leidsogn-uttektarplan.js?v=20260925afk"></script>
-<script defer src="/js/patches/166-krofu-yfirlit.js?v=20261117rk"></script>
+<script defer src="/js/patches/166-krofu-yfirlit.js?v=20261123a"></script>
 <script defer src="/js/patches/167-hreyfingarlisti.js?v=20261119snz"></script>
 <script defer src="/js/patches/168-company-inspection-report.js?v=20261122skm"></script>
 <script defer src="/js/patches/176-company-report-email.js?v=20261120a"></script>
@@ -1233,7 +1237,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/215-address-backfill.js?v=20260720pg"></script>
 <script defer src="/js/patches/216-theme-sidebar-dashboard.js?v=20261119snz"></script>
 <script defer src="/js/patches/217-theme-arsskodun-tidy.js?v=20260817off"></script>
-<script defer src="/js/patches/218-url-routing.js?v=20261029a"></script>
+<script defer src="/js/patches/218-url-routing.js?v=20261123a"></script>
 <script defer src="/js/patches/219-bilstjori.js?v=20261117utlit"></script>
 <script defer src="/js/patches/220-theme-system.js?v=20261119snz"></script>
 <script defer src="/js/patches/221-kerfi-registry.js?v=20261119snz"></script>
@@ -1268,7 +1272,7 @@ var Lanstaeki = {
 <!-- hibernated 2026-07-09 (rangur dökkur titil-bar úr #260, ekki í comps): 260-global-titlebar.js -->
 <script defer src="/js/patches/261-app-profiles.js?v=20261117rola"></script>
 <script defer src="/js/patches/262-sidebar-polish.js?v=20260705c"></script>
-<script defer src="/js/patches/262-page-editor.js?v=20261119snz"></script>
+<script defer src="/js/patches/262-page-editor.js?v=20261123a"></script>
 <script defer src="/js/patches/319-column-drag.js?v=20261119snz"></script>
 <script defer src="/js/patches/320-device-frame.js?v=20261119snz"></script>
 <script defer src="/js/patches/321-toflunet.js?v=20261119snz"></script>
@@ -1403,7 +1407,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/507-bord-thema-bh2.js?v=20261121haed"></script>
 <!-- 523 á undan 368: borðið les css() randarinnar einu sinni þegar skugga-rótin verður til -->
 <script defer src="/js/patches/523-yfirsyn-rond.js?v=20261122samtals2"></script>
-<script defer src="/js/patches/368-thjonustubord5.js?v=20261121yfirsyn2"></script>
+<script defer src="/js/patches/368-thjonustubord5.js?v=20261123a"></script>
 <script defer src="/js/patches/370-hreyfingaryfirlit-takki.js?v=20261012stod"></script>
 <script defer src="/js/patches/464-brunaaaetlun-takki.js?v=20261014r"></script>
 <script defer src="/js/patches/467-hledsluspa-spjald.js?v=20261020lokad"></script>
@@ -1438,7 +1442,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/389-tilbuin-midar.js?v=20260922b"></script>
 <script defer src="/js/patches/390-verkstaedi-midar.js?v=20261004breidd"></script>
 <script defer src="/js/patches/391-hlidarstika-midar.js?v=20261103vasi"></script>
-<script defer src="/js/patches/475-notandi-innskraning.js?v=20261103a"></script>
+<script defer src="/js/patches/475-notandi-innskraning.js?v=20261123a"></script>
 <script defer src="/js/patches/392-skodun-midar.js?v=20261119snz"></script>
 <script defer src="/js/patches/393-ars-midar.js?v=20261119snz"></script>
 <script defer src="/js/patches/401-fljotandi-rod.js?v=20261119snz"></script>
@@ -1463,7 +1467,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/397-bilstjori-ferdanota.js?v=20261014c"></script>
 <script defer src="/js/patches/444-bilstjori-taekjahopar.js?v=20261007e"></script>
 <script defer src="/js/patches/446-samthykkja-simi.js?v=20261119snz"></script>
-<script defer src="/js/patches/448-tolvupostar.js?v=20261118c"></script>
+<script defer src="/js/patches/448-tolvupostar.js?v=20261123a"></script>
 <script defer src="/js/patches/449-tolvupostar-simi.js?v=20261119snz"></script>
 <script defer src="/js/patches/449c-erindi-simi.js?v=20261118d"></script>
 <script defer src="/js/patches/491-vasinn.js?v=20261103c"></script>
@@ -1503,7 +1507,7 @@ var Lanstaeki = {
 <!-- 26.10.2026: Fyrirtækjasíða — „Þjónustugátt ↗“ í nafnaröð borðans: opin gátt félagsins (eða höfuðfélags rekstrarfélagsins) beint á þessa eign -->
 <script defer src="/js/patches/486-gatt-hlekkur.js?v=20261026a"></script>
 <!-- 26.10.2026: Hunter — sölulistar (#hunter): aðilar sem við viljum í viðskipti úr eldklar@-póstum (hunter_adilar, sql/hunter.sql), spjald með gátlista, fasteignum og svari í þræði -->
-<script defer src="/js/patches/487-hunter.js?v=20261120a"></script>
+<script defer src="/js/patches/487-hunter.js?v=20261123a"></script>
 <script defer src="/js/patches/488-vidbotar-uttekt.js?v=20261117eh"></script>
 <!-- 29.10.2026: Vinnusamantekt — ein samantekt með ljósum eftir alvarleika efst á Þjónustuborði (aðeins hjá Agnari), allt linkast á staðinn þar sem það er unnið; Fela/Skýring úr 368 -->
 <script defer src="/js/patches/489-vinnusamantekt.js?v=20261119snz"></script>
@@ -1574,7 +1578,7 @@ var Lanstaeki = {
 <script src="/js/kennitalafield.js?v=20260602e"></script>
 <script src="/js/editjobbutton.js?v=20261119snz"></script>
 <script src="/js/qrbulkprint.js?v=20261023b"></script>
-<script src="/js/vidskiptavinir.js?v=20261119snz"></script>
+<script src="/js/vidskiptavinir.js?v=20261123a"></script>
 <script src="/js/settigeymslu.js?v=20261119snz"></script>
 <script src="/js/mobilenav.js?v=20261117utlit"></script>
 <script src="/js/printphonefix.js?v=20261119snz"></script>
@@ -1600,5 +1604,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/369-krofu-vinnugluggi.js?v=20261011a"></script>
 <!-- 13.10.2026: djúpdvali — svæfð borð (kommentuð merki hér að ofan) opnast ekki sem autt svæði; sjá docs/DJUPDVALI.md -->
 <script defer src="/js/patches/465-djupdvali.js?v=20261119snz"></script>
+<script defer src="/js/patches/524-simi-adgerdir.js?v=20261123a"></script>
+<script defer src="/js/patches/525-field-takmark.js?v=20261123a"></script>
 </body>
 </html>

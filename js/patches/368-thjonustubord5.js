@@ -562,7 +562,12 @@
         // hamur spyr um það, eða meðan stillingarnar eru ekki komnar svo fyrsta teikning sé rétt. Bregðist sóknin
         // stendur síðasta svar og reglan fellur á merki, kúnna og titil.
         (!stillingarTilbunar() || serHamir().some(h => h.regla && h.regla.felag))
-          ? c.from('v_thjb_felag').select('id,felag').limit(2000) : Promise.resolve({ data: null, error: null })
+          ? (window.DB && DB.fetchAll
+              ? DB.fetchAll(function (from, to) {
+                  return c.from('v_thjb_felag').select('id,felag').order('id').range(from, to);
+                }).then(function (data) { return { data: data }; }).catch(function (error) { return { data: null, error: error }; })
+              : c.from('v_thjb_felag').select('id,felag').order('id').limit(1000))
+          : Promise.resolve({ data: null, error: null })
       ]);
       if (urelt()) return;
       if (r.error) throw r.error;

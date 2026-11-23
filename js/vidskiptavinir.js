@@ -1,6 +1,6 @@
 /* Viðskiptavinir tab — individuals (kennitala-based) with service history */
 (function(){'use strict';
-var _state={search:'',sortBy:'name',sortDir:'asc'};
+var _state={search:'',sortBy:'name',sortDir:'asc',limit:80};
 var _injected=false;
 
 function isIndividualKt(kt){
@@ -145,9 +145,9 @@ async function renderView(){
     '<div id="_vk_results"></div>'+
   '</div>';
   var inp=document.getElementById('_vk_search');
-  if(inp){inp.addEventListener('input',function(e){_state.search=e.target.value;paintResults();});}
+  if(inp){inp.addEventListener('input',function(e){_state.search=e.target.value;_state.limit=80;paintResults();});}
   var clr=document.getElementById('_vk_clear');
-  if(clr){clr.onclick=function(){_state.search='';var s=document.getElementById('_vk_search');if(s)s.value='';paintResults();};}
+  if(clr){clr.onclick=function(){_state.search='';_state.limit=80;var s=document.getElementById('_vk_search');if(s)s.value='';paintResults();};}
   paintResults();
 }
 
@@ -156,7 +156,7 @@ function paintResults(){
   var people=_people||[];
   var visible=applySort(applySearch(people.slice()));
   var cnt=document.getElementById('_vk_count');
-  if(cnt)cnt.textContent=visible.length+' / '+people.length+' viðskiptavinir';
+  if(cnt)cnt.textContent=Math.min(visible.length,_state.limit||80)+' sýnd af '+visible.length+' / '+people.length+' viðskiptavinir';
   var box=document.getElementById('_vk_results');
   if(!box)return;
   if(visible.length===0){
@@ -165,8 +165,9 @@ function paintResults(){
   }
   var thStyle='cursor:pointer;text-align:center;padding:12px 10px;font-size:11px;color:#6b7280;text-transform:uppercase;font-weight:700;user-select:none';
   var thLeft='cursor:pointer;text-align:left;padding:12px 14px;font-size:11px;color:#6b7280;text-transform:uppercase;font-weight:700;user-select:none';
+  var page=visible.slice(0,_state.limit||80);
   var html='<table style="width:100%;border-collapse:collapse;font-size:13px;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)"><thead><tr style="background:#f9fafb;border-bottom:2px solid #e5e7eb"><th data-sort="name" style="'+thLeft+'">Nafn</th><th data-sort="kt" style="'+thLeft+'">Kennitala</th><th style="'+thLeft+'">Sími</th><th data-sort="jobs" style="'+thStyle+'">Verk</th><th data-sort="last" style="'+thLeft+'">Síðasta heimsókn</th><th style="text-align:right;padding:12px 14px"></th></tr></thead><tbody>';
-  visible.forEach(function(r){
+  page.forEach(function(r){
     html+='<tr data-kt="'+r.kennitala+'" style="border-bottom:1px solid #f3f4f6;cursor:pointer" onmouseover="this.style.background=\'#f9fafb\'" onmouseout="this.style.background=\'\'">';
     html+='<td style="padding:12px 14px;font-weight:600;color:#111">'+escHtml(r.name)+'</td>';
     html+='<td style="padding:12px 14px;font-family:monospace;color:#374151">'+fmtKt(r.kennitala)+'</td>';
@@ -177,7 +178,14 @@ function paintResults(){
     html+='</tr>';
   });
   html+='</tbody></table>';
+  if(page.length<visible.length){
+    html+='<button type="button" id="_vk_more" style="display:block;width:100%;margin-top:10px;padding:12px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;font:inherit;font-weight:700;cursor:pointer">Sýna fleiri ('+(visible.length-page.length)+' eftir)</button>';
+  }
+  var aftur=(window.Stodugt&&Stodugt.vernda)?Stodugt.vernda(box):null;
   box.innerHTML=html;
+  if(aftur)aftur();
+  var more=document.getElementById('_vk_more');
+  if(more)more.onclick=function(){_state.limit=(_state.limit||80)+80;paintResults();};
   box.querySelectorAll('th[data-sort]').forEach(function(th){th.onclick=function(){var k=th.dataset.sort;if(_state.sortBy===k){_state.sortDir=_state.sortDir==='asc'?'desc':'asc';}else{_state.sortBy=k;_state.sortDir=k==='name'?'asc':'desc';}paintResults();};});
   box.querySelectorAll('tr[data-kt]').forEach(function(tr){tr.onclick=function(){var kt=tr.dataset.kt;var p=(_people||[]).find(function(x){return x.kennitala===kt;});if(p)showHistory(p);};});
 }

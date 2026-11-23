@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="is">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Uppsetning á gagnagrunnstengingu Slökkvitækja-appsins. Engir lyklar birtast hér.">
+<title>Uppsetning — Slökkvitæki ehf</title>
+<style>
+  body{margin:0;font:16px/1.5 system-ui,sans-serif;background:#0b0c0e;color:#e8eaed}
+  main{max-width:640px;margin:0 auto;padding:32px 20px 64px}
+  a{color:#8ab4f8}
+  code{background:#1a1c20;padding:1px 6px;border-radius:4px}
+  ol{padding-left:1.2em}
+</style>
+</head>
+<body>
+<main>
+  <p><a href="/">← Til baka í appið</a></p>
+  <h1>Stilla gagnagrunn</h1>
+  <p>Borðinn „Stilla gagnagrunn“ birtist aðeins þegar <code>js/config.js</code> er enn með sýnishornið. Á lifandi vef er tengingin þegar sett og borðinn er falinn.</p>
+  <ol>
+    <li>Opnaðu <code>js/config.js</code> í verkefninu.</li>
+    <li>Farðu á supabase.com → verkefnið → Settings → API.</li>
+    <li>Límdu Project URL í <code>SUPABASE_URL</code> og publishable/anon-lykilinn í <code>SUPABASE_KEY</code>.</li>
+    <li>Vistaðu skrána. Ekki setja lykla í þessa síðu, í commit eða í spjall.</li>
+  </ol>
+  <p>Töflurnar eru þegar til á verkefninu. Ekki keyra gamla <code>setup.sql</code> ofan á lifandi grunn.</p>
+</main>
+</body>
+</html>

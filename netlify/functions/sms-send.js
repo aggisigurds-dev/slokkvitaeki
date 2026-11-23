@@ -89,7 +89,7 @@ async function utanThaks() {
 }
 
 export default async (req) => {
-  if (req.method === 'OPTIONS') return new Response('', { status: 204, headers: cors() });
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors() });
 
   const KEY = (process.env.EDGE_SHARED_KEY || '').trim();
   if (KEY) {

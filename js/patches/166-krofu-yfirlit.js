@@ -998,6 +998,11 @@
   let _autoSyncing = false;
   async function maybeAutoSync() {
     if (_autoSyncing) return;
+    // Óinnskráður vafrar fékk 401 á báðum POST-unum við opnun. Skrifað er ekkert
+    // fyrr en notandi er skráður inn; handvirki 🔄-takkinn er óbreyttur.
+    var inn = null;
+    try { inn = window.__hubNotandiP ? await window.__hubNotandiP : null; } catch (_) { inn = null; }
+    if (!inn || !inn.authed) return;
     let last = 0; try { last = +localStorage.getItem('_ky_paysync_at') || 0; } catch (_) {}
     if (Date.now() - last < 30 * 60 * 1000) return;   // throttle: 30 mín
     _autoSyncing = true;
