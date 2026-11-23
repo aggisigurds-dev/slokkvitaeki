@@ -717,6 +717,20 @@
     }
     nidurstada(adr + ' · ' + hnitTexti(hnit.lat, hnit.lon));
   }
+  // 23.11.2026 (Agnar: „tengja nýja geopunktinn, uppfæra, svo teikningar geta opnað þetta og hægt að gera búnaðardreifingu“): SAMA aðgerð og „Uppfæra eftir
+  // heimilisfangi“ en án viðmóts. Viðvörun 527 kallar á hana þegar heimilisfang er VISTAÐ á spjaldinu — notandinn bað sjálfur um breytinguna, svo þetta er
+  // skýr aðgerð en ekki bakgrunnssókn (medBeinu leyfir nákvæmlega eina umferð á hús og kort, aðeins fyrir þetta fyrirtæki).
+  async function uppfaeraHeimilisfang(id) {
+    const row = await lesaRod(id);
+    const adr = String(row.heimilisfang || '').trim();
+    if (!adr) throw new Error('Ekkert heimilisfang á röðinni.');
+    samraema(row);
+    const hus = await saekjaHus(id, adr);
+    const hnit = await faeraPin(row, adr);
+    const svar = hus && hus.svar;
+    return { adr: adr, lat: hnit.lat, lon: hnit.lon, hus: !(hus && hus.villa), husVilla: (hus && hus.villa) || null,
+      landnr: (svar && svar.eign && svar.eign.landnr) || null, teikningar: (svar && svar.teikningar && +svar.teikningar.fjoldi) || 0 };
+  }
   async function faeraGeopunkt(id) {
     const row = await lesaRod(id);
     const adr = String(row.heimilisfang || '').trim();
@@ -1137,6 +1151,7 @@
     skipFullUnits: skipFullUnits,
     mode: modeOf,
     open: show,
+    uppfaeraHeimilisfang: uppfaeraHeimilisfang,
     stada: function (id) { return meta(id, rod(id), felagRod()); }
   };
   console.log('[431] uppfærsluborð');

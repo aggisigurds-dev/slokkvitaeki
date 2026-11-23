@@ -610,7 +610,15 @@
         const rg = await c.from('geocode_cache').select('query,lat,lng').in('query', lyklar);
         if (!rg.error) { const rad = (q) => (rg.data || []).find(z => z.query === q) || null; x.geo = { co: rad('__co__:' + fid), adr: x.stadur.heimilisfang ? rad(x.stadur.heimilisfang) : null }; }
       }
+      // Teikningar: aðeins það sem Uppfærsluborð (431 „Uppfæra eftir heimilisfangi“) hefur þegar sótt á þessari tölvu (sessionStorage bupp_skrar_v1_<id>) — engin sókn héðan.
       x.teikningar = undefined;
+      if (nyKt && x.stadur && x.stadur.heimilisfang) {
+        try {
+          const j = JSON.parse(sessionStorage.getItem('bupp_skrar_v1_' + fid) || 'null');
+          const sv = j && j.svar;
+          if (sv && sv.eign && sv.eign.landnr && String(j.heimilisfang || '').trim() === String(x.stadur.heimilisfang).trim()) x.teikningar = { landnr: sv.eign.landnr, fjoldi: +((sv.teikningar || {}).fjoldi) || 0 };
+        } catch (_) { /* óvíst */ }
+      }
       x.vantar = [rp, rb, rf, ru, rt, rmb, rmf, rny, rsyn, rkr, rnk, rsk].filter(r => r && r.error).map(r => r.error.message);
       // Gögn sem vantar mega aldrei líta út eins og „í lagi": ✓ verður „… óvíst".
       if (rt.error) x.tvifari = undefined;
@@ -619,28 +627,12 @@
       if (rnk.error) x.nySalaKt = undefined;
       if (rsk.error) x.nySkyrsla = undefined;
       gl.x = x;
-      if (nyKt && x.stadur && x.stadur.heimilisfang) saekjaTeikningar(gl, x, x.stadur.heimilisfang);   // óblokkandi: þrepið fyllist þegar svarið kemur
     } catch (e) {
       gl.villa = (e && e.message) || String(e);
       skraVillu('krofumal_gluggi', m.lykill + ': ' + gl.villa);
     }
     gl.bid = false;
     if (S.gl === gl) teiknaGlugga();
-  }
-  // ny_kt: opnast teikningar á heimilisfanginu? Staðfangaskrá → lóð (landnr) → teikningar (sama fall og bannerinn og Teikningar nota). Aldrei villa, ekkert skrifað.
-  async function saekjaTeikningar(gl, x, heimilisfang) {
-    let nidurstada = null;
-    try {
-      const ctl = typeof AbortController === 'function' ? new AbortController() : null;
-      const tmr = ctl ? setTimeout(() => ctl.abort(), 14000) : null;
-      try {
-        const r = await fetch('/.netlify/functions/hus-upplysingar?heimilisfang=' + encodeURIComponent(heimilisfang), ctl ? { signal: ctl.signal } : undefined);
-        const d = r && r.ok ? await r.json() : null;
-        if (d && d.eign && d.eign.landnr && !d.error) nidurstada = { landnr: d.eign.landnr, fjoldi: +((d.teikningar || {}).fjoldi) || 0 };
-      } finally { if (tmr) clearTimeout(tmr); }
-    } catch (_) { nidurstada = null; }
-    x.teikningar = nidurstada;                       // null = óvíst (bilun/tímamörk), hlutur = svar
-    if (S.gl === gl && gl.x === x) teiknaGlugga();
   }
   async function finnaSolu() {
     const gl = S.gl;
@@ -803,7 +795,7 @@
         vinnsla('geopunktur', '6) Geopunktur uppfærður á heimilisfang félagsins (kort, Leiðsögn, Bílstjóri)',
           'Sjálfvirkt þegar heimilisfang er vistað á spjaldinu (527); annars „Laga staðsetningu“ á Leiðsögn. Lesið: __co__:<id> og heimilisfangslykillinn í geocode_cache eru sama hnit.', geoAth);
         vinnsla('teikningar', '7) Teikningar opnast á heimilisfanginu og búnaður er tilbúinn til dreifingar',
-          'Lesið: Staðfangaskrá finnur lóðina (landnr) og teikningar eru til. „Teikningar“ og „Búnaðargreining“ á spjaldinu opna þær; tækin raðast á teikningu þar.', x.teikningar ? x.teikningar.fjoldi > 0 : null);
+          'Sjálfvirkt við vistun heimilisfangs (527 → Uppfærsluborð „Uppfæra eftir heimilisfangi“: lóð/landnr + teikningar). Lesið aðeins það sem þegar var sótt á þessari tölvu — annars opnarðu „Teikningar“ á spjaldinu og „Búnaðargreining“ og staðfestir að tækin sjáist til dreifingar.', x.teikningar ? x.teikningar.fjoldi > 0 : null);
         kerfi('i_thjonustu', 'Félagið er enn í þjónustu og skráð á nýju kt', !x.stadur ? null : (ktFaerd ? !!x.stadur.er_i_thjonustu : null),
           x.stadur ? x.stadur.nafn + ' · kt. ' + ktBirt(x.stadur.kennitala || '') : '');
         // Áfanginn „ósend“ er liðinn bæði þegar salan bíður og þegar Agnar hefur þegar sent hana (sama regla og í faera_kt) — annars sýndi sent mál „Ekki enn“.

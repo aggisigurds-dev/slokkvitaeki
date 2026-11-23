@@ -145,35 +145,20 @@
     } catch (_) { /* aldrei stöðva eyðublaðið */ }
   }
 
-  // 3) GEOPUNKTUR (Agnar 23.11.2026: „tengja nýja geopunktinn, uppfæra, svo teikningar geta opnað þetta líka og hægt að gera búnaðardreifingu“).
-  // Nýtt heimilisfang → hnit úr Staðfangaskrá HMS gegnum /api/geocode („6-12“ → fyrsta húsnúmer, sama regla og hus-upplysingar) →
-  //   • __co__:<id> (réttur pinni FÉLAGSINS — lifir heimilisfangsbreytingar og vinnur yfir öðrum lyklum),
-  //   • heimilisfangslykillinn í sameiginlegu geocode_cache (ManualGeocode.vista → hinar vélarnar sjá hann),
-  //   • AppSettings.geocode_cache (fastir punktar, 156/173).
-  // Kort, Leiðsögn, Bílstjóri og Teikningar (landnr úr sama heimilisfangi → búnaðardreifing) lesa þetta. Bilun → {ok:false}, aldrei villa.
-  const innanIslands = (lat, lng) => Number.isFinite(lat) && Number.isFinite(lng) && lat > 62.5 && lat < 67.5 && lng > -25.5 && lng < -12.5;
+  // 3) GEOPUNKTUR OG HÚS (Agnar 23.11.2026: „tengja nýja geopunktinn, uppfæra, svo teikningar geta opnað þetta líka og hægt að gera búnaðardreifingu“).
+  // Nýtt heimilisfang → Uppfærsluborð (431) „Uppfæra eftir heimilisfangi“: hnit úr Staðfangaskrá → __co__:<id> + heimilisfangslykill + nafn í sameiginlegu
+  // geocode_cache (kort, Leiðsögn, Bílstjóri) og hús (landnr, teikningar → bannerinn og Teikningar). Þetta er SKÝR aðgerð notandans (hann vistaði heimilisfangið),
+  // ekki bakgrunnssókn — 431 leyfir nákvæmlega eina umferð á hús og kort fyrir þetta fyrirtæki. Við sækjum því ekkert sjálf: bilun/vantar → {ok:false}, aldrei villa.
   async function geopunktur(co) {
     try {
-      const hf = trim(co && co.heimilisfang);
-      if (!co || co.id == null || !hf || typeof fetch !== 'function') return { ok: false, ast: 'ekkert heimilisfang' };
-      const ctl = typeof AbortController === 'function' ? new AbortController() : null;
-      const tmr = ctl ? setTimeout(() => ctl.abort(), 12000) : null;
-      let d = null;
-      try {
-        const r = await fetch('/api/geocode?q=' + encodeURIComponent(hf), ctl ? { signal: ctl.signal } : undefined);
-        if (r && r.ok) d = await r.json();
-      } finally { if (tmr) clearTimeout(tmr); }
-      const lat = d ? +d.lat : NaN, lng = d ? +(d.lon != null ? d.lon : d.lng) : NaN;
-      if (!innanIslands(lat, lng)) return { ok: false, ast: 'hnit fundust ekki' };
-      const val = { lat, lng };
-      let vistad = false;
-      if (window.ManualGeocode && typeof window.ManualGeocode.vista === 'function') {
-        await window.ManualGeocode.vista({ id: co.id, heimilisfang: hf, nafn: co.nafn }, val, d.display_name || null);
-        vistad = true;
-      }
-      try { if (window.AppSettings && typeof window.AppSettings.save === 'function') await window.AppSettings.save({ geocode_cache: { ['__co__:' + co.id]: val, [hf]: val } }); } catch (_) {}
-      return { ok: vistad, lat, lng, heimild: d.source || null };
-    } catch (_) { return { ok: false, ast: 'villa' }; }
+      const U = window.Uppfaerslubord;
+      if (!co || co.id == null) return { ok: false, ast: 'ekkert fyrirtæki' };
+      if (!U || typeof U.uppfaeraHeimilisfang !== 'function') return { ok: false, ast: 'Uppfærsluborð vantar' };
+      const r = await U.uppfaeraHeimilisfang(co.id);
+      const lat = r ? +r.lat : NaN, lng = r ? +(r.lon != null ? r.lon : r.lng) : NaN;
+      if (!(Number.isFinite(lat) && Number.isFinite(lng) && lat > 62.5 && lat < 67.5 && lng > -25.5 && lng < -12.5)) return { ok: false, ast: 'hnit fundust ekki' };
+      return { ok: true, lat, lng, hus: !!r.hus, husVilla: r.husVilla || null, landnr: r.landnr || null, teikningar: +r.teikningar || 0 };
+    } catch (e) { return { ok: false, ast: String((e && e.message) || 'villa').slice(0, 90) }; }
   }
 
   // 2) Eftir vistun: kassi neðst á skjánum (hverfur aðeins með „Skilið“ þegar eitthvað þarf mannshönd). Heimilisfang breytt → geopunktur uppfærður í leiðinni.
@@ -187,8 +172,9 @@
       ]);
       const res = { tharf: r0 ? r0.tharf.slice() : [], sjalfkrafa: r0 ? r0.sjalfkrafa.slice() : [] };
       if (geo) {
-        if (geo.ok) res.sjalfkrafa.push('Geopunktur uppfærður (' + geo.lat.toFixed(5) + ', ' + geo.lng.toFixed(5) + ') — kort, Leiðsögn, Bílstjóri og Teikningar nota hann.');
-        else res.tharf.push('Geopunktur uppfærðist ekki (' + geo.ast + ') — notaðu „Laga staðsetningu“ á Leiðsögn svo Teikningar og búnaðardreifing finni staðinn.');
+        if (geo.ok) res.sjalfkrafa.push('Geopunktur uppfærður (' + geo.lat.toFixed(5) + ', ' + geo.lng.toFixed(5) + ') — kort, Leiðsögn og Bílstjóri nota hann.' +
+          (geo.hus && geo.landnr ? ' Teikningar: lóð ' + geo.landnr + ', ' + geo.teikningar + ' teikningar — búnaðargreining og dreifing opnast á nýja heimilisfanginu.' : (geo.husVilla ? ' Húsupplýsingar vantar (' + geo.husVilla + ') — „Uppfæra eftir heimilisfangi“ í Uppfærsluborði.' : '')));
+        else res.tharf.push('Geopunktur uppfærðist ekki (' + geo.ast + ') — keyrðu „Uppfæra eftir heimilisfangi“ í Uppfærsluborði (eða „Laga staðsetningu“ á Leiðsögn) svo Teikningar og búnaðardreifing finni staðinn.');
       }
       if (!res.tharf.length && !res.sjalfkrafa.length) return null;
       const gamall = document.getElementById('audkenni-vidvorun');

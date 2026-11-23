@@ -196,13 +196,16 @@ test('teikningar: búið þegar Staðfangaskrá finnur lóð og teikningar eru t
   assert.equal(stada(L, 'teikningar'), null);
 });
 
-test('hleðsla: geocode_cache lesið eftir að staðurinn er þekktur; teikningaathugun óblokkandi og skrifar ekkert', () => {
+test('hleðsla: geocode_cache lesið eftir að staðurinn er þekktur; teikningar aðeins úr staðbundinni húsgeymslu — engin sókn úr borðinu', () => {
   assert.match(SRC, /const lyklar = \['__co__:' \+ fid\]\.concat\(x\.stadur\.heimilisfang \? \[x\.stadur\.heimilisfang\] : \[\]\);/);
   assert.match(SRC, /c\.from\('geocode_cache'\)\.select\('query,lat,lng'\)\.in\('query', lyklar\)/);
-  assert.match(SRC, /if \(nyKt && x\.stadur && x\.stadur\.heimilisfang\) saekjaTeikningar\(gl, x, x\.stadur\.heimilisfang\);/);
-  assert.equal(/await saekjaTeikningar/.test(SRC), false, 'glugginn bíður ekki eftir teikningaathuguninni');
-  const f = /async function saekjaTeikningar\([\s\S]*?\n  \}\n/.exec(SRC);
-  assert.ok(f, 'saekjaTeikningar fannst ekki');
-  assert.equal(/\.(insert|update|upsert|delete)\(|method:\s*'(POST|PUT|PATCH|DELETE)'/.test(f[0]), false, 'aðeins lestur');
-  assert.match(f[0], /hus-upplysingar\?heimilisfang=/);
+  assert.match(SRC, /sessionStorage\.getItem\('bupp_skrar_v1_' \+ fid\)/);
+  assert.equal(/hus-upplysingar|saekjaTeikningar/.test(SRC), false, '369 sækir ekki hús sjálft — Uppfærsluborð (431) ræður sóknum');
+  assert.equal(/api\/geocode/.test(SRC), false);
+});
+
+test('geopunktur og teikningar eru ný þrep í ny_kt en snerta ekki gömlu faera_kt', () => {
+  const m = /case 'faera_kt': \{[\s\S]*?\n      \}\n/.exec(SRC);
+  assert.ok(m);
+  assert.equal(/geopunktur|teikningar/.test(m[0]), false);
 });
