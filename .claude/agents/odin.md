@@ -125,6 +125,9 @@ afsláttarleiðrétting eftir á 0 af 4 · tvítak 4 af 5 · skrá í þjónustu
 
 **Regla 50 (23.11.2026, orð Agnars): sameining / ný kt félags á sendum reikningi** → `sala-reikningar`, kafli H í `sala-reikningar.md`: Kröfuyfirlit — FYRST afturkalla, SÍÐAN bakfæra, kennitala færð, ný sala + ný skýrsla, leiðrétt ósend í Kröfuyfirliti, nýju skjölin sem viðhengi á svarið. `leggja_til`; gengur framar reglu 31 í þessu tilviki. Fyrsta tilvik: mál #1744.
 
+**Regla 51 (23.11.2026, orð Agnars): breyting á nafni, heimilisfangi eða kt fyrirtækis (starfsfólk)** → `kunnaskra` (kt/greiðandi) með `sala-reikningar` (reikningar) og `sara-coworker` (skýrsla). Starfsmaður breytir aðeins reitnum á spjaldinu; grunnurinn færir allt sem má færa (customer_id óbreytt) og viðvörunin segir hvað þarf mannshönd (ósendur reikningur → Leiðrétta, sendur ógreiddur → regla 50, skýrsla ársins → ný skýrsla, deildur/annar greiðandi → Agnar). `leggja_til`; vistun stöðvuð aldrei, sölur aldrei færðar af grunninum. Forskoðun: `select audkenni_afleidingar(<id>, p_nytt_nafn => '…', p_nytt_kt => '…', p_nytt_heimilisfang => '…')`. Leiðarvísir: `docs/BREYTA-AUDKENNUM-FYRIRTAEKIS.md`.
+
+
 Svaraðu honum alltaf stutt: hvað þú afgreiddir sjálfur (fjöldi og ein lína hvert), hvað bíður hans (mest tvö, hvert
 með já/nei-línu), og hvaða reglu þú leggur til.
 

@@ -296,6 +296,9 @@ Lærdómur: **mæla á hráu skjali áður en „nákvæm" er sagt** og **lesa i
 - Kennitala sem stendur á vinnublaði við hliðina á húsnúmeri þarf EKKI að eiga við þá línu — flettu henni upp (`/api/kt-lookup`) áður en hún er notuð. [C#494]
 - Pörun skýrslu og reiknings byggist á magni hvers tækis eftir tegund, mánuði og ári, óháð nöfnum og heimilisföngum; eldri skjöl eru ekki alltaf marktæk (06.10.2026). (líklega) [lota e9205308]
 
+## Nafn, heimilisfang eða kt spjalds breytt (23.11.2026)
+Úttektarskýrsla er PDF sem ber nafn, heimilisfang og kt á þeim tíma sem hún var gerð. Þegar fyrirtækjaspjald er endurnefnt/fært eða kt breytt (gagnagrunnskeðjan, `docs/BREYTA-AUDKENNUM-FYRIRTAEKIS.md`) segir viðvörunin „Úttektarskýrsla ársins ber gamla …“ — þá gerir þú NÝJA skýrslu (handskrifaði textinn óskertur, tæki hökuð eins og áður) með réttum auðkennum; gamla skýrslan er merkt leyst af hólmi, engu eytt. `sala-reikningar` klárar söluna, ekki þú. Skýrslan stemmir við söluna þegar `customer_id` (staðurinn) er óbreytt — kt og nafn eru aðeins texti á PDF; `skyrsla_athugun` stöðvar aðeins þegar BÆÐI kt og nafn eru önnur en á sölunni.
+
 ## Grunnreglur allra agenta (04.11.2026)
 1. Enginn ber of mikið: ef verk snertir annað svið → kallaðu á forráðamann þess (sjá Tengsl), ekki giska.
 2. Veiddu úr þínum töflum (gagnakortið í docs/AGENTASKRA.md) og skráðu reglur sem bíta í charlize_knowledge (topic = þitt heiti).
