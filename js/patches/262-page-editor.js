@@ -1389,6 +1389,440 @@
       }
     ]
   }, BRUNASTAL_PREMIUM];
+  // Additional variants derived from the supplied design-system token files.
+  const MORE_DESIGN_STYLES = [
+    {
+      "backgrounds": [
+        [
+          "Ljós yfirborð",
+          "#ffffff"
+        ],
+        [
+          "Mjúkur grár",
+          "#f3f6fb"
+        ],
+        [
+          "Dökkblár halli",
+          "linear-gradient(135deg,#02193c,#0b2d5f)"
+        ]
+      ],
+      "parts": [
+        {
+          "label": "Rammi · Hvítur með skugga",
+          "style": {
+            "background": "#ffffff",
+            "color": "#101e43",
+            "border": "1px solid #e7ecf3",
+            "border-radius": "14px",
+            "box-shadow": "0 1px 2px rgba(2,25,60,0.06), 0 8px 24px rgba(2,25,60,0.08)"
+          }
+        },
+        {
+          "label": "Rammi · Appelsínugul áhersla",
+          "style": {
+            "background": "#ffffff",
+            "color": "#101e43",
+            "border": "1px solid #f8b98c",
+            "border-radius": "14px",
+            "box-shadow": "inset 0 0 0 2px #ff6702"
+          }
+        },
+        {
+          "label": "Borði · Dökkblár",
+          "style": {
+            "background": "#02193c",
+            "color": "#ffffff",
+            "border": "1px solid #0b2d5f",
+            "border-radius": "14px",
+            "box-shadow": "none"
+          }
+        },
+        {
+          "label": "Borði · Appelsínugul tilkynning",
+          "style": {
+            "background": "#ffeee0",
+            "color": "#c2410c",
+            "border": "1px solid #f8b98c",
+            "border-radius": "14px",
+            "box-shadow": "none"
+          }
+        },
+        {
+          "label": "Takki · Hvítur aukatakkinn",
+          "style": {
+            "background": "#ffffff",
+            "color": "#101e43",
+            "border": "1px solid #d8dee9",
+            "border-radius": "10px",
+            "box-shadow": "none"
+          }
+        },
+        {
+          "label": "Takki · Dökkblár",
+          "style": {
+            "background": "#011f40",
+            "color": "#ffffff",
+            "border": "1px solid #0b2d5f",
+            "border-radius": "10px",
+            "box-shadow": "none"
+          }
+        },
+        {
+          "label": "Flipi · Virkur · appelsínugulur",
+          "style": {
+            "background": "#ff6702",
+            "color": "#02193c",
+            "border": "1px solid #f8b98c",
+            "border-radius": "10px",
+            "box-shadow": "none"
+          }
+        },
+        {
+          "label": "Staða · Lokið",
+          "style": {
+            "background": "#ddfada",
+            "color": "#166534",
+            "border": "1px solid #ddfada",
+            "border-radius": "999px",
+            "box-shadow": "none"
+          }
+        },
+        {
+          "label": "Staða · Þarfnast athugunar",
+          "style": {
+            "background": "#feecd2",
+            "color": "#9a3412",
+            "border": "1px solid #feecd2",
+            "border-radius": "999px",
+            "box-shadow": "none"
+          }
+        },
+        {
+          "label": "Staða · Á eftir",
+          "style": {
+            "background": "#fee2de",
+            "color": "#b91c1c",
+            "border": "1px solid #fee2de",
+            "border-radius": "999px",
+            "box-shadow": "none"
+          }
+        },
+        {
+          "label": "Staða · Upplýsingar",
+          "style": {
+            "background": "#ebf0fe",
+            "color": "#1e3a8a",
+            "border": "1px solid #ebf0fe",
+            "border-radius": "999px",
+            "box-shadow": "none"
+          }
+        },
+        {
+          "label": "Staða · Á dagskrá",
+          "style": {
+            "background": "#fde5a4",
+            "color": "#7a4b00",
+            "border": "1px solid #fde5a4",
+            "border-radius": "999px",
+            "box-shadow": "none"
+          }
+        }
+      ]
+    },
+    {
+      "backgrounds": [
+        [
+          "Svartur málmur",
+          "linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%)"
+        ],
+        [
+          "Silfur",
+          "linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%)"
+        ],
+        [
+          "Ljós plata",
+          "linear-gradient(180deg,rgba(255,255,255,.9),rgba(20,30,60,.05)),repeating-linear-gradient(108deg,rgba(255,255,255,.5) 0 1px,transparent 1px 4px)"
+        ]
+      ],
+      "parts": [
+        {
+          "label": "Borði · Málmhaus",
+          "style": {
+            "background": "linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%)",
+            "color": "#fff",
+            "border": "1px solid #606774",
+            "border-radius": "8px",
+            "box-shadow": "none"
+          }
+        },
+        {
+          "label": "Borði · Töfluhaus",
+          "style": {
+            "background": "linear-gradient(180deg,#2b2f37,#15171c)",
+            "color": "#fff",
+            "border": "1px solid #606774",
+            "border-radius": "8px",
+            "box-shadow": "none"
+          }
+        },
+        {
+          "label": "Takki · Silfur · Prenta",
+          "style": {
+            "background": "linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%)",
+            "color": "#11141c",
+            "border": "1px solid #b8bec8",
+            "border-radius": "8px",
+            "box-shadow": "inset 0 1px 0 rgba(255,255,255,.14), 0 2px 6px rgba(0,0,0,.45)"
+          }
+        },
+        {
+          "label": "Rammi · Ljós miðaplata",
+          "style": {
+            "background": "linear-gradient(180deg,rgba(255,255,255,.9),rgba(20,30,60,.05)),repeating-linear-gradient(108deg,rgba(255,255,255,.5) 0 1px,transparent 1px 4px)",
+            "color": "#11141c",
+            "border": "1px solid #b8bec8",
+            "border-radius": "10px",
+            "box-shadow": "inset 0 1px 0 rgba(255,255,255,.14)"
+          }
+        },
+        {
+          "label": "Flipi · Valinn · dökkt stál",
+          "style": {
+            "background": "linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%)",
+            "color": "#fff",
+            "border": "1px solid #606774",
+            "border-radius": "8px",
+            "box-shadow": "none"
+          }
+        },
+        {
+          "label": "Flipi · Biðtími · í dag",
+          "style": {
+            "background": "linear-gradient(180deg,#7fe0a8 0%,#23a35a 40%,#0b5a2e 60%,#137a41 100%)",
+            "color": "#fff",
+            "border": "1px solid #606774",
+            "border-radius": "8px",
+            "box-shadow": "none"
+          }
+        },
+        {
+          "label": "Merki · Biðtími · vika",
+          "style": {
+            "background": "linear-gradient(180deg,#e2e6ec 0%,#8f98a8 40%,#555d6b 60%,#737c8b 100%)",
+            "color": "#fff",
+            "border": "1px solid #606774",
+            "border-radius": "8px",
+            "box-shadow": "none"
+          }
+        },
+        {
+          "label": "Merki · Biðtími · tvær vikur",
+          "style": {
+            "background": "linear-gradient(180deg,#ffe0a0 0%,#e0a93e 40%,#935f0d 60%,#b27b1c 100%)",
+            "color": "#16120b",
+            "border": "1px solid #606774",
+            "border-radius": "8px",
+            "box-shadow": "none"
+          }
+        },
+        {
+          "label": "Merki · Biðtími · lengi",
+          "style": {
+            "background": "linear-gradient(180deg,#ff9d95 0%,#e25555 40%,#971515 60%,#b52020 100%)",
+            "color": "#fff",
+            "border": "1px solid #606774",
+            "border-radius": "8px",
+            "box-shadow": "none"
+          }
+        }
+      ]
+    },
+    {
+      "backgrounds": [
+        [
+          "Miðnæturstál",
+          "#080D13"
+        ],
+        [
+          "Hækkaður stálflötur",
+          "#19232E"
+        ],
+        [
+          "Koparglóð",
+          "linear-gradient(145deg,color-mix(in srgb,#FFAD31 22%,#19232E),#080D13)"
+        ],
+        [
+          "Blá glóð",
+          "linear-gradient(145deg,color-mix(in srgb,#00B9FF 22%,#19232E),#080D13)"
+        ]
+      ],
+      "parts": [
+        {
+          "label": "Rammi · Kopar",
+          "style": {
+            "background": "linear-gradient(145deg,color-mix(in srgb,#FFAD31 22%,#19232E),#080D13)",
+            "color": "#F5F8FC",
+            "border": "1px solid #FFAD31",
+            "border-radius": "18px",
+            "box-shadow": "0 0 22px rgba(255,173,49,.20)"
+          }
+        },
+        {
+          "label": "Rammi · Blár",
+          "style": {
+            "background": "linear-gradient(145deg,color-mix(in srgb,#00B9FF 22%,#19232E),#080D13)",
+            "color": "#F5F8FC",
+            "border": "1px solid #00B9FF",
+            "border-radius": "18px",
+            "box-shadow": "0 0 22px rgba(0,185,255,.16)"
+          }
+        },
+        {
+          "label": "Rammi · Grænn",
+          "style": {
+            "background": "linear-gradient(145deg,color-mix(in srgb,#00E37C 22%,#19232E),#080D13)",
+            "color": "#F5F8FC",
+            "border": "1px solid #00E37C",
+            "border-radius": "18px",
+            "box-shadow": "0 0 22px rgba(0,227,124,.17)"
+          }
+        },
+        {
+          "label": "Rammi · Rauður",
+          "style": {
+            "background": "linear-gradient(145deg,color-mix(in srgb,#FF4054 22%,#19232E),#080D13)",
+            "color": "#F5F8FC",
+            "border": "1px solid #FF4054",
+            "border-radius": "18px",
+            "box-shadow": "0 0 22px rgba(255,64,84,.16)"
+          }
+        },
+        {
+          "label": "Takki · Kopar",
+          "style": {
+            "background": "#FFAD31",
+            "color": "#080D13",
+            "border": "1px solid #FFAD31",
+            "border-radius": "9px",
+            "box-shadow": "none"
+          }
+        },
+        {
+          "label": "Takki · Blár",
+          "style": {
+            "background": "#00B9FF",
+            "color": "#080D13",
+            "border": "1px solid #00B9FF",
+            "border-radius": "9px",
+            "box-shadow": "none"
+          }
+        },
+        {
+          "label": "Takki · Grænn",
+          "style": {
+            "background": "#00E37C",
+            "color": "#080D13",
+            "border": "1px solid #00E37C",
+            "border-radius": "9px",
+            "box-shadow": "none"
+          }
+        },
+        {
+          "label": "Takki · Rauður",
+          "style": {
+            "background": "#FF4054",
+            "color": "#080D13",
+            "border": "1px solid #FF4054",
+            "border-radius": "9px",
+            "box-shadow": "none"
+          }
+        },
+        {
+          "label": "Borði · Koparglóð",
+          "style": {
+            "background": "linear-gradient(145deg,color-mix(in srgb,#FFAD31 22%,#19232E),#080D13)",
+            "color": "#F5F8FC",
+            "border": "1px solid #FFAD31",
+            "border-radius": "18px",
+            "box-shadow": "0 0 22px rgba(255,173,49,.20)"
+          }
+        },
+        {
+          "label": "Borði · Blátt stál",
+          "style": {
+            "background": "linear-gradient(145deg,color-mix(in srgb,#00B9FF 22%,#19232E),#080D13)",
+            "color": "#F5F8FC",
+            "border": "1px solid #00B9FF",
+            "border-radius": "18px",
+            "box-shadow": "0 0 22px rgba(0,185,255,.16)"
+          }
+        },
+        {
+          "label": "Flipi · Virkur · gull",
+          "style": {
+            "background": "#FFE29A",
+            "color": "#080D13",
+            "border": "1px solid #FFE29A",
+            "border-radius": "9px",
+            "box-shadow": "none"
+          }
+        },
+        {
+          "label": "Staða · Lokið",
+          "style": {
+            "background": "linear-gradient(145deg,color-mix(in srgb,#00E37C 22%,#19232E),#080D13)",
+            "color": "#F5F8FC",
+            "border": "1px solid #00E37C",
+            "border-radius": "999px",
+            "box-shadow": "none"
+          }
+        },
+        {
+          "label": "Staða · Í dagskrá",
+          "style": {
+            "background": "linear-gradient(145deg,color-mix(in srgb,#00B9FF 22%,#19232E),#080D13)",
+            "color": "#F5F8FC",
+            "border": "1px solid #00B9FF",
+            "border-radius": "999px",
+            "box-shadow": "none"
+          }
+        },
+        {
+          "label": "Staða · Á eftir",
+          "style": {
+            "background": "linear-gradient(145deg,color-mix(in srgb,#FF4054 22%,#19232E),#080D13)",
+            "color": "#F5F8FC",
+            "border": "1px solid #FF4054",
+            "border-radius": "999px",
+            "box-shadow": "none"
+          }
+        },
+        {
+          "label": "Staða · Í bið",
+          "style": {
+            "background": "linear-gradient(145deg,color-mix(in srgb,#FFAD31 22%,#19232E),#080D13)",
+            "color": "#F5F8FC",
+            "border": "1px solid #FFAD31",
+            "border-radius": "999px",
+            "box-shadow": "none"
+          }
+        }
+      ]
+    }
+  ];
+  for (const [index, extra] of MORE_DESIGN_STYLES.entries()) {
+    DESIGN_SYSTEMS[index].backgrounds.push(...extra.backgrounds.map(([label, value]) => ({label, value})));
+    DESIGN_SYSTEMS[index].parts.push(...extra.parts);
+  }
+  const KIT_CATEGORIES = [
+    ['all', 'Allt'], ['bg', 'Bakgrunnar'], ['Rammi', 'Kassar og rammar'], ['Borði', 'Borðar'],
+    ['Takki', 'Takkar'], ['Flipi', 'Flipar'], ['Staða', 'Stöður og merki']
+  ];
+  const kitCategories = ['all', 'all', 'all'];
+  const kitCategoryFor = item => {
+    const prefix = item.label.split(' · ')[0];
+    return ({Rammar:'Rammi', Aðgerð:'Takki', Takkar:'Takki', Flipar:'Flipi', Merki:'Staða'})[prefix] || prefix;
+  };
   let designSystemIndex = 2;
 
   function kitStylePreview(style) {
@@ -1636,6 +2070,10 @@
       '<option value="' + i + '"' + (i === designSystemIndex ? ' selected' : '') + '>' + esc(system.name) + '</option>'
     ).join('');
     const picker = '<label class="pe-kit-select">Hönnunarkerfi <select id="pe-design-system">' + options + '</select></label>';
+    const category = kitCategories[designSystemIndex];
+    const filters = '<nav class="pe-kit-switch" aria-label="Flokkar stíla">' + KIT_CATEGORIES.map(([id,label]) =>
+      '<button type="button" class="pe-btn" data-kit-category="' + id + '" aria-pressed="' + (category === id) + '">' + label + '</button>'
+    ).join('') + '</nav>';
     const backgrounds = kit.backgrounds.map((item, i) =>
       '<button type="button" class="pe-btn pe-kit-item" data-pe-kit-bg="' + i + '">' +
         (item.asset ? '<img src="' + item.asset + '" alt="" loading="lazy">' :
@@ -1643,7 +2081,7 @@
         '<span>' + esc(item.label) + '</span></button>'
     ).join('');
     const parts = kit.parts.map((item, i) =>
-      '<button type="button" class="pe-btn pe-kit-item" data-pe-kit-part="' + i + '">' +
+      category !== 'all' && kitCategoryFor(item) !== category ? '' : '<button type="button" class="pe-btn pe-kit-item" data-pe-kit-part="' + i + '">' +
         (item.asset ? '<img src="' + item.asset + '" alt="" loading="lazy">' :
           '<span class="pe-kit-tab" aria-hidden="true" style="' + kitStylePreview(item.style) + '">' + esc(item.label.split(' · ').pop()) + '</span>') +
         '<span>' + esc(item.label) + '</span></button>'
@@ -1654,10 +2092,9 @@
         (kit.banner ? '<img src="' + kit.banner + '" alt="Dökkur Brunastálsborði með blárri lýsingu" loading="lazy">' : '') +
       '</div>' +
       (designSystemIndex === 1 ? fullTicketSection() + (fullTicketLibrary ? '' : ticketKitPreview(kit)) : '') +
-      '<h5>Bakgrunnar</h5><div class="pe-kit-grid">' + backgrounds + '</div>' +
-      '<h5>Rammar, takkar, flipar og stöður</h5>' +
-      '<p class="pe-sub">Veldu stíl og smelltu á hlut á síðunni. Vistaðu síðan útlitið sem þemapakka.</p>' +
-      '<div class="pe-kit-grid">' + parts + '</div>' +
+      '<h5>Veldu stíl</h5>' + filters +
+      (category === 'all' || category === 'bg' ? '<h5>Bakgrunnar</h5><div class="pe-kit-grid">' + backgrounds + '</div>' : '') +
+      (category !== 'bg' ? '<p class="pe-sub">Veldu stíl og smelltu á hlut á síðunni.</p><div class="pe-kit-grid">' + parts + '</div>' : '') +
     '</section>';
   }
 
@@ -2737,6 +3174,11 @@
       q('#pe-page-area-caption').textContent = selectedPageArea
         ? 'Svæði ' + selectedPageArea + ' · ' + PAGE_AREAS[selectedPageArea - 1]
         : 'Veldu númer til að auðkenna sama svæði í báðum útlitum.';
+    });
+    qa('[data-kit-category]').forEach(button => button.onclick = () => {
+      kitCategories[designSystemIndex] = button.dataset.kitCategory;
+      renderPanel();
+      q('[data-kit-category="' + button.dataset.kitCategory + '"]')?.focus();
     });
     const libraryInput = q('#pe-ticket-zip');
     if (libraryInput && !libraryRestoreChecked) {
