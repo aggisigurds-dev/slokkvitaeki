@@ -2749,6 +2749,8 @@ console.log('[patch-master] loaded with all fixes');
         if(!Object.keys(update).length){ m.remove(); return; }
         window.DB.sb.from('fyrirtaeki').update(update).eq('id',companyId).then(function(res){
           if(res.error){alert('Villa: '+res.error.message);return;}
+          // 527: viðvörun um það sem þarf mannshönd eftir nafn-/heimilisfangs-/kt-breytingu — stöðvar aldrei vistun
+          try{ if(window.AudkenniVidvorun) window.AudkenniVidvorun.eftirVistun(window.DB.sb, companyId, c, Object.assign({}, c, update)); }catch(_){}
           // 2026-07-30 — nafnbreyting VERÐUR að fylgja tækjunum. `uttaeki` á engan
           // staðar-lykil; tækjalisti fyrirtækisins er fundinn með nákvæmum
           // strengjasamanburði (`features.js:104` u.client === c.nafn). Án þessa

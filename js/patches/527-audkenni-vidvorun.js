@@ -65,11 +65,44 @@
   }
 
   // 1) Forskoðun undir eyðublaðinu.
+  // EITT samhengi fyrir ALLAR opnanir: glugginn og nf-reitirnir eru sameiginlegir öllum fyrirtækjum og „Nýtt fyrirtæki“. Hlustarar eru settir einu sinni
+  // og lesa samhengið ÞEGAR ÞEIR KEYRA — annars bæru þeir viðmiðið úr fyrstu opnun og annað fyrirtækið yrði borið saman við það fyrsta.
+  let samhengi = null;                                  // { sb, id, snap, lesa, rod }
+  const snap = (co) => ({ nafn: (co || {}).nafn, kennitala: (co || {}).kennitala, heimilisfang: (co || {}).heimilisfang, customer_base_id: (co || {}).customer_base_id });
+  const erBreytaGluggi = () => {
+    const m = document.getElementById('modal-nyfyrirtaeki');
+    const h = m && m.querySelector && m.querySelector('h2');
+    return !!h && trim(h.textContent) === 'Breyta fyrirtæki';
+  };
+  function fela() {
+    const hint = document.getElementById('audkenni-forskodun');
+    if (hint) { hint.style.display = 'none'; hint.textContent = ''; }
+  }
+  function haetta() { samhengi = null; fela(); }          // gluggi lokaður / nýtt fyrirtæki: ekkert gamalt samhengi lifir
+
+  async function keyra() {
+    const sh = samhengi;
+    if (!sh) { fela(); return; }
+    if (!erBreytaGluggi()) { haetta(); return; }         // glugginn er í „Nýtt fyrirtæki“-ham — engin forskoðun
+    const mynd = ++sh.rod;
+    const nytt = sh.lesa();
+    if (!eitthvad(munur(sh.snap, nytt))) { fela(); return; }
+    const res = await athuga(sh.sb, sh.id, sh.snap, nytt, false);
+    if (samhengi !== sh || mynd !== sh.rod) return;       // annað fyrirtæki eða nýrra kall komið
+    const hint = document.getElementById('audkenni-forskodun');
+    if (!hint) return;
+    hint.textContent = '';
+    if (!res || (!res.tharf.length && !res.sjalfkrafa.length)) { hint.style.display = 'none'; return; }
+    hint.appendChild(el('div', 'font-weight:700;margin-bottom:2px;color:#78350f', 'Áður en þú vistar — hvað gerist við þessa breytingu:'));
+    fyllaLinur(hint, res);
+    hint.style.display = 'block';
+  }
+
   function festaVidForm(o) {
     try {
-      const sb = o && o.sb, id = o && o.id, co = (o && o.co) || {}, lesa = o && o.lesaForm;
+      haetta();                                          // alltaf hreint borð við hverja opnun
+      const sb = o && o.sb, id = o && o.id, lesa = o && o.lesaForm;
       if (!sb || !id || typeof lesa !== 'function') return;
-      const ids = ['nf-nafn', 'nf-kt', 'nf-heimilisfang'];
       const heim = document.getElementById('nf-heimilisfang');
       if (!heim) return;
       let hint = document.getElementById('audkenni-forskodun');
@@ -80,21 +113,8 @@
         if (!anchor || !anchor.parentElement) return;
         anchor.parentElement.insertBefore(hint, anchor.nextSibling);
       }
-      let rod = 0;
-      const keyra = async () => {
-        const mynd = ++rod;
-        const nytt = lesa();
-        const m = munur(co, nytt);
-        if (!eitthvad(m)) { hint.style.display = 'none'; hint.textContent = ''; return; }
-        const res = await athuga(sb, id, co, nytt, false);
-        if (mynd !== rod) return;                       // nýrra kall komið
-        hint.textContent = '';
-        if (!res || (!res.tharf.length && !res.sjalfkrafa.length)) { hint.style.display = 'none'; return; }
-        hint.appendChild(el('div', 'font-weight:700;margin-bottom:2px;color:#78350f', 'Áður en þú vistar — hvað gerist við þessa breytingu:'));
-        fyllaLinur(hint, res);
-        hint.style.display = 'block';
-      };
-      ids.forEach((i) => {
+      samhengi = { sb, id, snap: snap(o.co), lesa, rod: 0 };
+      ['nf-nafn', 'nf-kt', 'nf-heimilisfang'].forEach((i) => {
         const x = document.getElementById(i);
         if (x && !x._audkenniWired) { x._audkenniWired = true; x.addEventListener('change', keyra); x.addEventListener('blur', keyra); }
       });
@@ -129,5 +149,5 @@
     } catch (_) { return null; }
   }
 
-  window.AudkenniVidvorun = { festaVidForm, eftirVistun, athuga, munur, _digits: digits };
+  window.AudkenniVidvorun = { festaVidForm, haetta, eftirVistun, athuga, munur, _digits: digits, _samhengi: () => samhengi };
 })();

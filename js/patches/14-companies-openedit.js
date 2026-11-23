@@ -194,6 +194,7 @@
     }
 
     function restore() {
+      try { if (window.AudkenniVidvorun) window.AudkenniVidvorun.haetta(); } catch (_) {}   // 527: gluggi lokaður — ekkert gamalt samhengi lifir
       if (titleEl && origTitle != null) titleEl.textContent = origTitle;
       if (saveBtn) {
         saveBtn.disabled = false;

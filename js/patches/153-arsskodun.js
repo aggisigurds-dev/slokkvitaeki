@@ -5116,6 +5116,8 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
       const _oldNafn = (c.nafn || '').trim();
       const { error } = await SB.from('fyrirtaeki').update(patch).eq('id', coId);
       if (error) { alert('Vista mistókst: ' + error.message); return; }
+      // 527: viðvörun um það sem þarf mannshönd eftir nafn-/heimilisfangs-/kt-breytingu — stöðvar aldrei vistun
+      try { if (window.AudkenniVidvorun) window.AudkenniVidvorun.eftirVistun(SB, coId, c, Object.assign({}, c, patch)); } catch (_) {}
       // 2026-08-13 — LÁTA NAFNBREYTINGU FYLGJA TÆKJUNUM (sama og 14-companies-
       // openedit.js:178). Þetta breytingarform getur breytt `nafn` og tækin
       // (uttaeki/lanstaeki) tengjast fyrirtækinu AÐEINS gegnum client-nafnið.

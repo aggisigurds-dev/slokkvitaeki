@@ -972,6 +972,8 @@
         };
         const r = await SB.from('fyrirtaeki').update(updateRec).eq('id', coId);
         if (r.error) { showErr('Vista mistókst: ' + r.error.message); return; }
+        // 527: viðvörun um það sem þarf mannshönd eftir nafn-/heimilisfangs-/kt-breytingu — stöðvar aldrei vistun
+        try { if (window.AudkenniVidvorun) window.AudkenniVidvorun.eftirVistun(SB, coId, co, Object.assign({}, co, updateRec)); } catch (_) {}
         // 2026-08-13 — LÁTA NAFNBREYTINGU FYLGJA TÆKJUNUM (sama og 14-companies-
         // openedit.js:178 gerir). `uttaeki`/`lanstaeki` eiga engan staðar-lykil;
         // tækjalistinn finnst með `u.client === c.nafn`. Þessi brunakerfis-
