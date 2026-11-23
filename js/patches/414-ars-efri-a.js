@@ -228,7 +228,44 @@
     r('.b414-man button.nu i', 'background:linear-gradient(180deg,#ffcf7d,#f29031 28%,#57230f);box-shadow:0 0 10px #ec8b4359'),
     r('.b414-man button em,.b414-man button u', 'font-family:' + SANS + ';letter-spacing:0;color:#e3eaf3')
   ];
-  var inni = rules.concat(yfirbragd).join('\n');
+  // Shared inspection KPI presentation; each renderer keeps its own
+  // selectors, stored values and interactions.
+  function metricCardStyles(prefix, rule) {
+    const card = '.' + prefix + '-k';
+    const face = '.' + prefix + '-i';
+    const metric = suffix => '.' + prefix + '-' + suffix;
+    const tones = [
+      ['gull','#fff0b9','#e5ba72','#765025','#1a1e25'],
+      ['graent','#c6ffdb','#50bc76','#1e603f','#123624'],
+      ['rautt','#ffd5d0','#d97070','#742833','#3c1b22'],
+      ['stal','#d0ecff','#72a9ce','#2c506c','#1a3447']
+    ];
+    const variants = tones.flatMap(([id, shine, rim, shade, surface]) => {
+      const target = card + '.' + id;
+      return [
+        rule(target, '--metric-edge:' + rim + ';--metric-shine:' + shine + ';--metric-shade:' + shade +
+          ';background:linear-gradient(177deg,' + shine + ',' + rim + ' 16%,' + shade + ' 62%,' + rim + ');padding:2.5px;border-radius:0;filter:none;clip-path:polygon(0 0,calc(100% - 15px) 0,100% 15px,100% 100%,15px 100%,0 calc(100% - 15px))'),
+        rule(target + ' > ' + face, 'background:linear-gradient(145deg,' + surface + ',#10151a);border-radius:0;clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px));box-shadow:inset 0 1px 1px #fff0bb35,inset 0 -2px 5px #0009;gap:9px'),
+        rule(target + ' > ' + face + '::before,' + target + ' > ' + face + '::after', 'display:none')
+      ];
+    });
+    return variants.concat([
+      rule(card + ' .hn', 'display:block;width:4px;height:4px;background:var(--metric-shine);box-shadow:0 0 6px var(--metric-edge)'),
+      rule(card + ' .hn:nth-of-type(3),' + card + ' .hn:nth-of-type(4)', 'display:none'),
+      rule(card + ' ' + metric('t'), 'font-family:' + DISPLAY + ';font-weight:800;line-height:1;white-space:normal;font-variant-numeric:lining-nums tabular-nums'),
+      rule(card + ' ' + metric('t') + ' small', 'font-family:' + DISPLAY),
+      rule(card + ' ' + metric('s') + ',' + card + ' ' + metric('tikk') + ' .bar,' + card + ' ' + metric('l') + ' i', 'display:none'),
+      rule(card + ' ' + metric('l') + ',' + card + ' ' + metric('tikk') + ',' + card + ' ' + metric('f3'), 'display:flex;flex-direction:row;gap:6px;align-items:stretch;flex-wrap:wrap;min-height:0;font-family:' + SANS),
+      rule(card + ' ' + metric('l') + '>span,' + card + ' ' + metric('tikk') + ' .r,' + card + ' ' + metric('f'), 'display:flex;flex:1 1 auto;flex-direction:column;justify-content:center;align-items:flex-start;gap:2px;min-width:0;max-width:100%;height:auto;padding:6px 8px;border:1px solid #ffffff24;border-radius:5px;background:#101820b8;color:#d2d9e3;font-family:' + SANS + ';font-size:11px;line-height:1.3;white-space:normal'),
+      rule(card + ' ' + metric('l') + ' b,' + card + ' ' + metric('tikk') + ' .r b,' + card + ' ' + metric('f') + ' .v', 'color:#fff;font-size:14px;line-height:1.2'),
+      rule(card + ' ' + metric('l') + ' small,' + card + ' ' + metric('f') + ' .l', 'margin:0;color:#d2d9e3;font-family:' + SANS + ';letter-spacing:0;text-transform:none;white-space:normal')
+    ]).join('\n');
+  }
+  window.BrunastalMetricCardStyles = metricCardStyles;
+
+  var inni = rules.concat(yfirbragd, metricCardStyles('b414', r),
+    r('.b414-k.gull > .b414-i', 'background:linear-gradient(90deg,#0a1017 0%,#0c131bef 38%,#0a101729 100%),var(--ars-hero-img) right center/cover no-repeat,#111519')
+  ).join('\n');
   var css = rv('.b414-scope', '--ars-hero-img:' + ARS_HERO + ';--ars-gold-img:' + ARS_GOLD + ';--ars-steel-img:' + ARS_STEEL) + '\n' + '@media (min-width:901px){' + simalaus(inni) + '}\n' + vitt(inni) + '\n' + simi(inni) + '\n' + [
     '@media (max-width:1720px){' + S + '.b414-p.ghost.raun' + F + '{display:none}}',
     '@media (max-width:1400px){' + S + '.b414-m > .b414-p:not(.raun)' + F + '{display:none}}'
