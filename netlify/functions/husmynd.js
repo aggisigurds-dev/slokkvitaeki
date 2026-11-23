@@ -1,3 +1,4 @@
+import Hlid from './_starfshlid.cjs';
 /**
  * Mynd af húsi — Borgarvefsjá, loftmynd 2018. Enginn lykill.
  *
@@ -236,6 +237,7 @@ async function loftmynd(x, y, signal) {
 
 export default async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors() });
+  const _hlid = await Hlid.vefHlid(req); if (_hlid) return _hlid;
   if (req.method !== 'POST') return j(405, { ok: false, error: 'post', message: 'Aðeins POST' });
 
   const edge = String(process.env.EDGE_SHARED_KEY || '').trim();

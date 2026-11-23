@@ -1,3 +1,4 @@
+import Hlid from './_starfshlid.cjs';
 /**
  * Kennitala lookup — server-side proxy.
  *
@@ -51,7 +52,7 @@ async function lesaJaIs(kt) {
 // fyrnast þegjandi. Eldri raðir eru sóttar upp á nýtt og skrifaðar yfir.
 // Bregðist taflan er þagað og farið í upprunann — ekkert brotnar.
 const SB_URL = 'https://osfdzskyvisifcwyjkuk.supabase.co';
-const SB_KEY = 'sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f';
+const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const SB_HAUS = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` };
 const KT_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -84,6 +85,7 @@ async function skrifaKt(kt, svar) {
 }
 
 export default async (req) => {
+  const _hlid = await Hlid.vefHlid(req); if (_hlid) return _hlid;
   const url = new URL(req.url);
   if (url.searchParams.get('stada')) {
     // Staða fyrir Stillingar (19): aðeins HVORT já.is-lykill sé til á þjóni.

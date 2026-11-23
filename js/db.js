@@ -30,18 +30,35 @@ var DB = {
       this.loadDemoData();
       return;
     }
+    var self = this;
+    // Bíddu eftir innskráningarathuguninni í <head>. Sé sb_jwt í svarinu fer
+    // það sem accessToken svo RLS sér starfsmann. Vanti leyndarmálið (tókt áður
+    // en farið er í loftið) er tókið autt og vafrinn notar áfram anon-lykilinn.
+    var ready = window.__hubNotandiP || Promise.resolve(null);
+    ready.then(function(s){ self._opnaClient(s); }, function(){ self._opnaClient(null); });
+  },
+
+  _opnaClient: function(s) {
     try {
       // 2026-08-01 (ósk Agnars, eftir endurtekið Realtime-tengingarrof í
       // Supabase-niðurtíma sem hefur áður valdið svipuðum vandræðum): lengri
       // timeout + hægari, veldisvaxandi endurtengingar-bil (1s→2s→4s…hám. 30s)
       // í stað sjálfgefins hám. 10s. Kemur í veg fyrir að appið hamri á
       // endurtengingu meðan Supabase-hliðin er í vandræðum.
-      this.sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      var opts = {
         realtime: {
           timeout: 30000,
           reconnectAfterMs: function (tries) { return Math.min(1000 * Math.pow(2, tries), 30000); },
         },
-      });
+      };
+      var tok = s && s.sb_jwt;
+      if (tok || window.__sbToki) {
+        opts.accessToken = function(){
+          if (window.__sbToki) return window.__sbToki();
+          return Promise.resolve(tok || null);
+        };
+      }
+      this.sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, opts);
       var _sb = document.getElementById('setup-banner'); if(_sb){ _sb.classList.add('hidden'); _sb.style.display='none'; }
       document.getElementById('sync-dot').className = 'sync-dot syncing';
       this.loadAll();

@@ -30,6 +30,7 @@
  */
 
 import './_bh-toki.cjs'; // lota 13: köll á föll Brunahólfs fá tíma-tóka (x-hub-toki)
+import Hlid from './_starfshlid.cjs';
 const AI_URL = 'https://api.anthropic.com/v1/messages';
 const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -265,6 +266,7 @@ function systemPrompt(minni) {
 /* ── Aðalfallið ────────────────────────────────────────────────────────── */
 export default async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204 });
+  const _hlid = await Hlid.vefHlid(req); if (_hlid) return _hlid;
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'POST only' }), { status: 405 });
   }

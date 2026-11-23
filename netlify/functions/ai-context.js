@@ -17,11 +17,9 @@
  * afhent við inngang. Nýtt spjall, ný lota, annað verkfæri — sama hurð, sama
  * þekking. Enginn þarf að muna neitt, hvorki Agnar né vélin.
  *
- * ── ENGIN UPPSETNING ──────────────────────────────────────────────────────
- * Engin ný tafla, ekkert SQL að keyra, enginn nýr umhverfislykill. Skráningin
- * geymist í app_settings.settings.ai_log — sama blobbi og appið notar þegar
- * fyrir arsskodun_customers og page_editor. Lyklarnir eru lesnir úr
- * js/config.js sem er deploy-að með fallinu. Það VIRKAR frá fyrstu mínútu.
+ * ── GÖGNIN ────────────────────────────────────────────────────────────────
+ * Skráningin geymist í app_settings.settings.ai_log. Fallið les og skrifar
+ * með SUPABASE_SERVICE_ROLE_KEY úr umhverfi, og aðeins eftir starfsmannahlið.
  *
  * ── ÞROSKINN ──────────────────────────────────────────────────────────────
  * Hver skýrsla inn ber `nidurstada: jakvaett | neikvaett`. Aðgerðir sem gefa
@@ -33,18 +31,13 @@
 // import, ekki require: package.json er "type": "module" og fallið notar
 // `export default` eins og hin ESM-föllin (tv-summary, postur-triage).
 import './_bh-toki.cjs'; // lota 13: köll á föll Brunahólfs fá tíma-tóka (x-hub-toki)
-import fs from 'node:fs';
-import path from 'node:path';
+import Hlid from './_starfshlid.cjs';
 
-/* Lyklar úr js/config.js — engin umhverfisstilling. Þessi anon-lykill er
-   hvort eð er opinber í útgefna bundlinu; hann bætir engu við sem ekki er
-   þegar aðgengilegt úr vafranum. */
+// Þjónustulykill úr umhverfi. anon-lykillinn í js/config.js dugar ekki eftir RLS.
 function config() {
-  const p = path.join(process.cwd(), 'js', 'config.js');
-  const src = fs.readFileSync(p, 'utf8');
-  const url = (src.match(/SUPABASE_URL\s*=\s*["']([^"']+)/) || [])[1];
-  const key = (src.match(/SUPABASE_KEY\s*=\s*["']([^"']+)/) || [])[1];
-  if (!url || !key) throw new Error('Fann ekki SUPABASE_URL/KEY í js/config.js');
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) throw new Error('SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY vantar');
   return { url, key };
 }
 
@@ -638,6 +631,7 @@ export function saga(log) {
 /* ── HURÐIN ──────────────────────────────────────────────────────────────── */
 export default async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204 });
+  const _hlid = await Hlid.vefHlid(req); if (_hlid) return _hlid;
 
   let cfg;
   try { cfg = config(); }

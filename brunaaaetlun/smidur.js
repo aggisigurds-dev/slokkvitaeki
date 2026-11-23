@@ -7,7 +7,14 @@
   var app = document.getElementById('ba-app');
   var cid = Number(new URLSearchParams(location.search).get('fyrirtaeki'));
   var sb = null;
-  try { sb = window.supabase.createClient(window.SUPABASE_URL || SUPABASE_URL, window.SUPABASE_KEY || SUPABASE_KEY); } catch (_) {}
+  async function tengjaSb() {
+    if (sb) return;
+    var s = null;
+    try { s = window.__hubNotandiP ? await window.__hubNotandiP : null; } catch (_) {}
+    var opts = {};
+    if (s && s.sb_jwt) opts.accessToken = function () { return Promise.resolve(s.sb_jwt); };
+    try { sb = window.supabase.createClient(window.SUPABASE_URL || SUPABASE_URL, window.SUPABASE_KEY || SUPABASE_KEY, opts); } catch (_) {}
+  }
   var PDFJS = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/';
   var PDFLIB = 'https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js';
   var JSZIP = 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
@@ -32,6 +39,7 @@
 
   // ───────────────────────── gögn ─────────────────────────
   async function hlada() {
+    await tengjaSb();
     if (!sb) return villa('Engin tenging við gagnagrunn.');
     if (!cid) return valmynd();
     var r = await Promise.all([

@@ -1,3 +1,4 @@
+import Hlid from './_starfshlid.cjs';
 // teikn-mynd — same-origin proxy fyrir gólfplan-myndina.
 //
 // Tekur FotoWeb .info-permalink (úr teikn-listi), sækir myndina gegnum
@@ -25,6 +26,7 @@ function villa(status, error) {
 
 export default async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
+  const _hlid = await Hlid.vefHlid(req); if (_hlid) return _hlid;
 
   const sp = new URL(req.url).searchParams;
   const raw = sp.get('url') || '';

@@ -11,7 +11,7 @@
 // Reuses the exact Nominatim variant logic from geocode.js. Polite 1.1s throttle.
 
 const SUPABASE_URL = 'https://osfdzskyvisifcwyjkuk.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f';
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const CC = 'is';
 const THROTTLE_MS = 1100;
 const MAX_PER_RUN = 600;
@@ -111,6 +111,10 @@ async function writeCache(q, lat, lon, displayName) {
 }
 
 exports.handler = async () => {
+  if (!SUPABASE_KEY) {
+    console.error('[geocode-all] SUPABASE_SERVICE_ROLE_KEY vantar');
+    return { statusCode: 500, body: JSON.stringify({ error: 'SUPABASE_SERVICE_ROLE_KEY vantar' }) };
+  }
   const start = Date.now();
   const [addrs, cached] = await Promise.all([getCompanyAddresses(), getCachedQueries()]);
   const todo = addrs.filter(a => !cached.has(a)).slice(0, MAX_PER_RUN);

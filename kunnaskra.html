@@ -1,4 +1,22 @@
-<!doctype html><html lang=is><head><meta charset=utf-8>
+<!doctype html><html lang=is><head>
+<style>html.hub-gate-pending body{visibility:hidden}</style>
+<script>
+(function(){try{
+  var d=document.documentElement; d.classList.add('hub-gate-pending');
+  var next=location.pathname+location.search+location.hash;
+  var inn='/innskraning.html?next='+encodeURIComponent(next);
+  var done=false, open=function(){ if(done)return; done=true; d.classList.remove('hub-gate-pending'); };
+  var t=setTimeout(function(){ location.replace(inn); }, 8000);
+  var p=window.__hubNotandiP=fetch('/api/hub-adgangar',{credentials:'same-origin',cache:'no-store'}).then(function(r){return r.json();});
+  p.then(function(s){
+    clearTimeout(t);
+    if(s && s.sb_jwt) window.__sbTok = s.sb_jwt;
+    if(s && s.authed) open();
+    else location.replace(inn);
+  }).catch(function(){ clearTimeout(t); location.replace(inn); });
+}catch(e){ location.replace('/innskraning.html'); }})();
+</script>
+<meta charset=utf-8>
 <meta name="color-scheme" content="light"/>
 <!-- Chrome Android Force Dark endurlitar síður sjálfkrafa og gerði sumar
      síður ólæsilegar í síma Agnars. `only light` er opt-out Blink.
@@ -52,11 +70,19 @@ td.h{color:#64748b;font-size:10px}td.v{text-align:right;font-weight:700;white-sp
 <div id=wrap><div class=loading>Hled...</div></div>
 </div><div class=toast id=toast></div>
 <script>
-var SB=window.supabase.createClient("https://osfdzskyvisifcwyjkuk.supabase.co","sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f");
+var SB=null;
+async function tengjaSb(){
+ if(SB)return;
+ var s=null; try{ s=window.__hubNotandiP?await window.__hubNotandiP:null; }catch(e){}
+ var opts={};
+ if(s&&s.sb_jwt) opts.accessToken=function(){return Promise.resolve(s.sb_jwt);};
+ SB=window.supabase.createClient("https://osfdzskyvisifcwyjkuk.supabase.co","sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f",opts);
+}
 var MAN={1:"jan",2:"feb",3:"mar",4:"apr",5:"mai",6:"jun",7:"jul",8:"agu",9:"sep",10:"okt",11:"nov",12:"des"};
 var DATA=[],filt="svc",sortCol=1,sortDir=1;
 function kr(v){return v?(""+v).replace(/\B(?=(\d{3})+(?!\d))/g,".")+" kr":"-";}
 async function load(){
+ await tengjaSb();
  var all=[],from=0,pg=1000;
  while(true){
    var r=await SB.from("fyrirtaeki").select("id,nafn,kennitala,netfang,heimilisfang,er_i_thjonustu").order("nafn").range(from,from+pg-1);

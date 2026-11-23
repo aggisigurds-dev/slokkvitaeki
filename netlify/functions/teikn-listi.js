@@ -1,3 +1,4 @@
+import Hlid from './_starfshlid.cjs';
 // teikn-listi — same-origin proxy fyrir teikningaskrá.
 //
 // Vafrinn má EKKI kalla Kjarna-APIð beint: það sendir enga CORS-hausa, svo
@@ -170,6 +171,7 @@ function audgaStadfong(d) {
 
 export default async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
+  const _hlid = await Hlid.vefHlid(req); if (_hlid) return _hlid;
 
   const sp = new URL(req.url).searchParams;
   const heimilisfang = (sp.get('heimilisfang') || '').normalize('NFC').trim();
