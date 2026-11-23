@@ -64,7 +64,11 @@
 
   const SLIM_ART = {
     'blatt-stal': 'linear-gradient(142deg,transparent 17%,#81c8ef26 17.2%,transparent 22%),radial-gradient(ellipse at 46% 0%,#216a8a 0%,transparent 60%),linear-gradient(102deg,#08121b,#102f41 45%,#070e14)',
-    'kopar-mjott': 'linear-gradient(135deg,#1a1a1d 0 16%,#a5552b 16.2%,transparent 16.6%),radial-gradient(ellipse at 30% 114%,#b45123 0%,transparent 49%),repeating-linear-gradient(120deg,#ffffff06 0 1px,transparent 1px 5px),linear-gradient(#191a1d,#0b0d0f)'
+    'kopar-mjott': [
+      'radial-gradient(ellipse at 29% 118%, #e4753b60, transparent 40%)',
+      'linear-gradient(152deg, transparent 19%, #dce5f20d 25%, #dce5f203 62%, transparent 69%)',
+      'linear-gradient(180deg, #24262b 0%, #191b1f 23%, #101114 57%, #151315 100%)'
+    ].join(',')
   };
   const slim = 'html[data-thm-preset="brunastal"][data-bstal-banner="on"]:not([data-bstal-mini="1"]):is([data-bordi="blatt-stal"],[data-bordi="kopar-mjott"])';
   const underBanner = slim + ' .view.active:not(#view-field):not(#view-counter):not(#view-workshop)';
@@ -89,6 +93,10 @@
       H(id) + B + ' .bb-flames{display:none!important}',
       H(id) + B + ' .bb-face::after{content:"";position:absolute;inset:auto 2px 0;height:2px;pointer-events:none;background:' + glowLine + ';box-shadow:0 0 8px #ed793b}'
     ]),
+    H('kopar-mjott') + B + ' .bb-face{box-shadow:inset 0 1px #ffffff24,inset 0 -1px #ffffff0e}',
+    H('kopar-mjott') + B + ' .bb-face::after{display:none}',
+    H('kopar-mjott') + B + ' .bb-clockbox{background:linear-gradient(#241e1b,#111114)!important}',
+    H('kopar-mjott') + B + ' .bb-clock{text-shadow:none!important}',
     /* ── sameiginlegt: glóðar-/æðaröndin er teiknuð á .bb-face, sem á engin
        pseudo-element fyrir (leitað: engin ::before/::after á .bb-face) ── */
     H('glod') + B + ' .bb-flames,' + H('stal') + B + ' .bb-flames{display:none!important}',
