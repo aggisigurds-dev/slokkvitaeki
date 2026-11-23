@@ -345,6 +345,72 @@
     else setTimeout(byrja, 8000);
   }
 
+  /* 23.11.2026 (Agnar: „svo þetta geti virkað og vistast allstaðar“) — BREYTT HNIT BERAST Á HINAR VÉLARNAR.
+   * MÆLT: pinni sem er færður (431 „Uppfæra eftir heimilisfangi“, 178 „Laga staðsetningu“) fór í geocode_cache OG í localStorage þeirrar tölvu — en hver önnur
+   * tölva og sími sem átti `__co__:<id>` fyrir hélt gamla staðnum: 173 (AppSettings-blobbinn) og `syncSharedToLocal` láta STAÐBUNDIÐ vinna og sækja aðeins lykla
+   * sem VANTAR. Ný vél (tómt localStorage) fékk heldur gamla pinnann úr blobbnum.
+   * Nú: `geocode_cache.updated_at` (kveikja sem hækkar hann aðeins þegar lat/lng breytast) + `_slokk_gc_stamp` á hverri vél. Við ræsingu (og þegar flipinn
+   * birtist aftur eftir ≥ 5 mín.) sækjum við EINGÖNGU raðir nýrri en stimpillinn — oftast 0 raðir, ein beiðni — og breytt/ný hnit ERU YFIRSKRIFUÐ á staðnum.
+   * Stimpillinn er miðaður við netþjónsklukkuna (engin skekkja milli véla) og dreginn 10 s til baka svo röð úr langri færslu sem lauk seint tapist ekki; endurtekin
+   * röð er hnitaskipti án áhrifa. Bilun (HTTP/net) hreyfir ekki stimpilinn — næsta umferð reynir aftur. Óháð _cancelled (431 má ekki drepa þetta; sjá
+   * tools/audit-geocache-hemill.cjs: lestur á okkar eigin töflu má hvorki hemjast né deyja með ytri uppflettingunni). */
+  const STAMP_KEY = '_slokk_gc_stamp';
+  const STAMP_UPPHAF = '2026-11-23T00:00:00+00:00';   // dagurinn sem updated_at varð til; eldri raðir bera created_at og voru þegar til staðar
+  const BREYTT_BIL_MS = 5 * 60 * 1000;
+  let _breyttFlug = null, _breyttSidast = 0;
+  function saekjaBreytt() {
+    if (_breyttFlug) return _breyttFlug;
+    _breyttFlug = (async () => {
+      const utkoma = { breytt: 0, lesid: 0, ok: false };
+      if (!window.SUPABASE_URL || !window.SUPABASE_KEY) return utkoma;
+      let stimpill = STAMP_UPPHAF;
+      try { stimpill = localStorage.getItem(STAMP_KEY) || STAMP_UPPHAF; } catch (_) {}
+      const lest = [];
+      for (let sida = 0; sida < 5; sida++) {
+        let r;
+        try {
+          r = await fetch(window.SUPABASE_URL + '/rest/v1/geocode_cache?select=query,lat,lng,display_name,updated_at&updated_at=gt.' + encodeURIComponent(stimpill) +
+            '&order=updated_at.asc,query.asc&limit=1000&offset=' + (sida * 1000), {
+            headers: { apikey: window.SUPABASE_KEY, Authorization: 'Bearer ' + window.SUPABASE_KEY }
+          });
+        } catch (e) { console.warn('[geocode-prewarm] breytt hnit: netvilla', e); return utkoma; }
+        if (!r || !r.ok) { console.warn('[geocode-prewarm] breytt hnit: HTTP', r && r.status); return utkoma; }
+        const page = await r.json();
+        if (!Array.isArray(page) || !page.length) break;
+        for (const row of page) lest.push(row);
+        if (page.length < 1000) break;
+      }
+      utkoma.lesid = lest.length;
+      const gc = readGc();
+      let breytt = 0, nyjast = 0;
+      for (const row of lest) {
+        if (!row || !row.query || typeof row.lat !== 'number' || typeof row.lng !== 'number' || !isFinite(row.lat) || !isFinite(row.lng)) continue;
+        const t = Date.parse(row.updated_at);
+        if (t > nyjast) nyjast = t;
+        const cur = gc[row.query];
+        if (cur && Math.abs(cur.lat - row.lat) < 1e-7 && Math.abs(cur.lng - row.lng) < 1e-7) continue;
+        gc[row.query] = { lat: row.lat, lng: row.lng, display_name: row.display_name || (cur && cur.display_name) || null };
+        breytt++;
+      }
+      if (breytt) {
+        writeGc(gc);
+        try { if (window.Leidsogn && window.Leidsogn.refresh) window.Leidsogn.refresh(); } catch (_) {}
+        try { if (window.ArsMapEmbed && window.ArsMapEmbed.refresh) window.ArsMapEmbed.refresh(); } catch (_) {}
+        console.log('[geocode-prewarm] breytt/ný hnit úr sameiginlegu töflunni:', breytt);
+      }
+      if (nyjast > 0) { try { localStorage.setItem(STAMP_KEY, new Date(nyjast - 10000).toISOString()); } catch (_) {} }
+      utkoma.breytt = breytt; utkoma.ok = true;
+      return utkoma;
+    })().catch((e) => { console.warn('[geocode-prewarm] breytt hnit', e); return { breytt: 0, lesid: 0, ok: false }; })
+      .then((u) => { _breyttFlug = null; _breyttSidast = Date.now(); return u; });
+    return _breyttFlug;
+  }
+  // Ræsing: stuttu eftir load (engin áhrif á ræsingu — oftast 0 raðir) og aftur þegar flipinn/síminn kemur fram eftir hlé.
+  setTimeout(() => { if (!document.hidden) saekjaBreytt(); else _breyttSidast = 0; }, 4000);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && Date.now() - _breyttSidast > BREYTT_BIL_MS) saekjaBreytt();
+  });
+
   /* 07.10.2026 (Agnar: „frekar bara refresh takka"). Niðurhalið er EKKI sjálfvirkt.
    * Punktarnir koma sem FASTIR PUNKTAR með `app_settings` (lyklar `__co__:<id>`, 741 félag í
    * þjónustu + brunakerfisþjónustu) sem appið sækir hvort eð er — engin aukabeiðni við ræsingu.
@@ -360,6 +426,8 @@
      * (bfcache, hætt við leiðsögn) sat flaggið fast í `true` og takkinn þagnaði þegjandi.
      * Skilar `{ added, updated }` svo kallandinn viti hvort nokkuð bættist við. */
     saekjaPunkta: () => syncSharedToLocal(),
+    /* 23.11.2026: sækir aðeins HNIT SEM BREYTTUST síðan síðast og yfirskrifar staðbundin (sjá saekjaBreytt) — keyrir sjálfkrafa við ræsingu og þegar flipinn birtist. */
+    saekjaBreytt: () => saekjaBreytt(),
     cancel: () => { _cancelled = true; },
     start: () => { _cancelled = false; if (!_started) raesaSidar(); }
   };

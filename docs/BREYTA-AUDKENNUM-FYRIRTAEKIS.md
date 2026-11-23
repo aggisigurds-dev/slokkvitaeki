@@ -44,6 +44,8 @@ Uppfærsluborð (431) „Uppfæra eftir heimilisfangi“ (`Uppfaerslubord.uppfae
 Að vista heimilisfang er skýr aðgerð notandans, svo 431 leyfir nákvæmlega eina umferð á hús og kort fyrir þetta fyrirtæki. Aldrei bæta við eigin `fetch('/api/geocode')` annars staðar.
 Handvirkt í SQL (agentar): `select query, lat, lng from geocode_cache where query in ('__co__:<id>', '<heimilisfang>')` — pinninn og heimilisfangslykillinn eiga að vera sama hnit.
 
+**Hvernig nýi pinninn kemst á ALLAR vélar (23.11.2026):** áður vann staðbundna minnið (`_slokk_gc`) alltaf — vél sem átti `__co__:<id>` fyrir fékk aldrei nýja pinnann, og ný vél fékk gamla pinnann úr AppSettings-blobbnum (173). Nú ber `geocode_cache` dálkinn `updated_at` (kveikja `trg_geocode_cache_stimpill`: hækkar AÐEINS þegar lat/lng breytast) og papp 156 `saekjaBreytt()` sækir við ræsingu (4 s eftir load) og þegar flipinn birtist eftir ≥ 5 mín. EINGÖNGU raðir nýrri en `_slokk_gc_stamp` (oftast 0 raðir) og **yfirskrifar** staðbundin hnit sem breyttust. Stimpillinn er dreginn 10 s til baka (seinar færslur tapast ekki); bilun hreyfir hann ekki. Þarf því EKKI að skrifa AppSettings-blobbinn — hann fyllir aðeins það sem vantar. Handvirk neyðarleið: `GeocodePrewarm.saekjaBreytt()` í vélinni sem sýnir gamlan pinna. Í SQL: ef þú breytir `geocode_cache` beint með ÓBREYTT lat/lng berst ekkert; breyttu lat/lng.
+
 ## 3. Viðvörunin (guli kassinn eftir vistun)
 
 Texti hennar kemur úr `audkenni_afleidingar` og getur verið:
