@@ -362,3 +362,8 @@ test('modalOpinn horfir aðeins á class „open“ — display:none frá fixcom
   await d.reitir['nf-nafn'].fire('change');
   assert.equal(kall.length, 1);
 });
+
+test('00-legacy: .single() sem skilar fylki (minnislag rest-samnyting) opnar ekki tóman Breyta-glugga', () => {
+  const L = lesa('js/patches/00-legacy.js');
+  assert.match(L, /var c=r\.data;[\s\S]{0,400}?if\(Array\.isArray\(c\)\) c=c\[0\];\n\s*if\(!c\|\|c\.id==null\)\{alert\('Fyrirtaeki ekki fundid'\);return;\}/);
+});
