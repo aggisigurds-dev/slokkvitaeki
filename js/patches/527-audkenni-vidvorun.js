@@ -65,59 +65,81 @@
   }
 
   // 1) Forskoðun undir eyðublaðinu.
-  // EITT samhengi fyrir ALLAR opnanir: glugginn og nf-reitirnir eru sameiginlegir öllum fyrirtækjum og „Nýtt fyrirtæki“. Hlustarar eru settir einu sinni
-  // og lesa samhengið ÞEGAR ÞEIR KEYRA — annars bæru þeir viðmiðið úr fyrstu opnun og annað fyrirtækið yrði borið saman við það fyrsta.
-  let samhengi = null;                                  // { sb, id, snap, lesa, rod }
+  // EITT samhengi fyrir ALLAR opnanir: glugginn og reitirnir eru sameiginlegir (14: #modal-nyfyrirtaeki, 00-legacy: nýr gluggi við hverja opnun).
+  // Hlustarar eru settir einu sinni á hvern reit og lesa samhengið ÞEGAR ÞEIR KEYRA — annars bæru þeir viðmiðið úr fyrstu opnun.
+  let samhengi = null;                                  // { sb, id, snap, lesa, ids, virkur, hint, rod }
+  let sidastiHint = null;
+  const IDS_14 = { nafn: 'nf-nafn', kt: 'nf-kt', heimilisfang: 'nf-heimilisfang' };
   const snap = (co) => ({ nafn: (co || {}).nafn, kennitala: (co || {}).kennitala, heimilisfang: (co || {}).heimilisfang, customer_base_id: (co || {}).customer_base_id });
+  const modalOpinn = (m) => !!m && !!m.classList && m.classList.contains('open') && !(m.style && m.style.display === 'none');
   const erBreytaGluggi = () => {
     const m = document.getElementById('modal-nyfyrirtaeki');
     const h = m && m.querySelector && m.querySelector('h2');
-    return !!h && trim(h.textContent) === 'Breyta fyrirtæki';
+    return !!h && trim(h.textContent) === 'Breyta fyrirtæki' && modalOpinn(m);
   };
   function fela() {
-    const hint = document.getElementById('audkenni-forskodun');
-    if (hint) { hint.style.display = 'none'; hint.textContent = ''; }
+    if (sidastiHint) { sidastiHint.style.display = 'none'; sidastiHint.textContent = ''; }
   }
   function haetta() { samhengi = null; fela(); }          // gluggi lokaður / nýtt fyrirtæki: ekkert gamalt samhengi lifir
 
   async function keyra() {
-    const sh = samhengi;
-    if (!sh) { fela(); return; }
-    if (!erBreytaGluggi()) { haetta(); return; }         // glugginn er í „Nýtt fyrirtæki“-ham — engin forskoðun
-    const mynd = ++sh.rod;
-    const nytt = sh.lesa();
-    if (!eitthvad(munur(sh.snap, nytt))) { fela(); return; }
-    const res = await athuga(sh.sb, sh.id, sh.snap, nytt, false);
-    if (samhengi !== sh || mynd !== sh.rod) return;       // annað fyrirtæki eða nýrra kall komið
-    const hint = document.getElementById('audkenni-forskodun');
-    if (!hint) return;
-    hint.textContent = '';
-    if (!res || (!res.tharf.length && !res.sjalfkrafa.length)) { hint.style.display = 'none'; return; }
-    hint.appendChild(el('div', 'font-weight:700;margin-bottom:2px;color:#78350f', 'Áður en þú vistar — hvað gerist við þessa breytingu:'));
-    fyllaLinur(hint, res);
-    hint.style.display = 'block';
+    try {
+      const sh = samhengi;
+      if (!sh) { fela(); return; }
+      if (!sh.virkur()) { haetta(); return; }              // glugginn lokaður eða í „Nýtt fyrirtæki“-ham — engin forskoðun
+      const mynd = ++sh.rod;
+      const nytt = sh.lesa();
+      if (!eitthvad(munur(sh.snap, nytt))) { fela(); return; }
+      const res = await athuga(sh.sb, sh.id, sh.snap, nytt, false);
+      if (samhengi !== sh || mynd !== sh.rod) return;       // annað fyrirtæki eða nýrra kall komið
+      const hint = sh.hint;
+      hint.textContent = '';
+      if (!res || (!res.tharf.length && !res.sjalfkrafa.length)) { hint.style.display = 'none'; return; }
+      hint.appendChild(el('div', 'font-weight:700;margin-bottom:2px;color:#78350f', 'Áður en þú vistar — hvað gerist við þessa breytingu:'));
+      fyllaLinur(hint, res);
+      hint.style.display = 'block';
+    } catch (_) { /* aldrei stöðva eyðublaðið */ }
   }
 
+  // Sameiginlegi glugginn (14) lokast stundum án þess að restore() keyri (smellt á bakgrunn → Modal.closeAll): fylgjumst með honum EINUM
+  // (aðeins class/style á þessum eina hnút — ekkert body-vítt) og hreinsum samhengið þegar hann hverfur.
+  let gluggaVakt = false;
+  function vaktaGlugga() {
+    if (gluggaVakt || typeof MutationObserver !== 'function') return;
+    const m = document.getElementById('modal-nyfyrirtaeki');
+    if (!m) return;
+    gluggaVakt = true;
+    new MutationObserver(() => { if (!modalOpinn(m)) haetta(); }).observe(m, { attributes: true, attributeFilter: ['class', 'style'] });
+  }
+
+  // o: { sb, id, co, lesaForm, ids?: {nafn, kt, heimilisfang}, virkur?: () => boolean, eftir?: Element }  — sjálfgefið eyðublað 14 (nf-*).
+  // eftir = hnúturinn sem viðvörunin er sett EFTIR (sjálfgefið línan utan um heimilisfangsreitinn).
   function festaVidForm(o) {
     try {
       haetta();                                          // alltaf hreint borð við hverja opnun
       const sb = o && o.sb, id = o && o.id, lesa = o && o.lesaForm;
       if (!sb || !id || typeof lesa !== 'function') return;
-      const heim = document.getElementById('nf-heimilisfang');
+      const ids = (o && o.ids) || IDS_14;
+      const erSjalfgefid = !(o && o.ids);
+      const virkur = (o && typeof o.virkur === 'function') ? o.virkur : erBreytaGluggi;
+      const heim = document.getElementById(ids.heimilisfang);
       if (!heim) return;
-      let hint = document.getElementById('audkenni-forskodun');
-      if (!hint) {
+      let hint = heim._audkenniHint;
+      if (!hint || !hint.parentNode) {
         hint = el('div', 'display:none;margin:10px 0;padding:10px 12px;border:1px solid #fcd34d;background:#fffbeb;border-radius:8px;font-size:12.5px;line-height:1.45');
         hint.id = 'audkenni-forskodun';
-        const anchor = heim.closest('.form-row, .field, .modal-row, .nf-row') || heim.parentElement;
+        const anchor = (o && o.eftir) || heim.closest('.form-row, .field, .modal-row, .nf-row') || heim.parentElement;
         if (!anchor || !anchor.parentElement) return;
         anchor.parentElement.insertBefore(hint, anchor.nextSibling);
+        heim._audkenniHint = hint;
       }
-      samhengi = { sb, id, snap: snap(o.co), lesa, rod: 0 };
-      ['nf-nafn', 'nf-kt', 'nf-heimilisfang'].forEach((i) => {
+      sidastiHint = hint;
+      samhengi = { sb, id, snap: snap(o.co), lesa, ids, virkur, hint, rod: 0 };
+      [ids.nafn, ids.kt, ids.heimilisfang].forEach((i) => {
         const x = document.getElementById(i);
         if (x && !x._audkenniWired) { x._audkenniWired = true; x.addEventListener('change', keyra); x.addEventListener('blur', keyra); }
       });
+      if (erSjalfgefid) vaktaGlugga();
     } catch (_) { /* aldrei stöðva eyðublaðið */ }
   }
 

@@ -217,7 +217,7 @@
     const ids = Object.keys(map).filter(k => !!map[k]).map(k => +k).filter(Boolean);
     let companies = [];
     if (ids.length) {
-      const { data } = await SB.from('fyrirtaeki').select('id,nafn,kennitala,simi,heimilisfang,netfang,athugasemdir,tengiliður').in('id', ids);
+      const { data } = await SB.from('fyrirtaeki').select('id,nafn,kennitala,simi,heimilisfang,netfang,athugasemdir,tengiliður,customer_base_id').in('id', ids);   // customer_base_id: viðvörun 527 þarf gamla greiðandann
       companies = (data || []).map(c => ({ ...c, _bk: map[String(c.id)] || {} }));
     }
     if (gen !== _bkLoadGen) return gen;

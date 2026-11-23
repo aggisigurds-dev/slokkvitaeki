@@ -168,6 +168,8 @@ function domMed() {
   const body = mk('body');
   const doc = { body, createElement: mk, getElementById(id) { const f = (n) => (n.id === id ? n : n.children.map(f).find(Boolean)); return f(body) || null; } };
   const modal = mk('div'); modal.id = 'modal-nyfyrirtaeki'; body.appendChild(modal);
+  modal.opinn = true;
+  modal.classList = { contains: (c) => (c === 'open' ? modal.opinn : false) };
   const h2 = mk('h2'); h2.textContent = 'Breyta fyrirtæki'; modal.appendChild(h2);
   const reitir = {};
   ['nf-nafn', 'nf-kt', 'nf-heimilisfang'].forEach((id) => {
@@ -181,8 +183,10 @@ function hladaForm(svar) {
   const window = {};
   const kall = [];
   const sb = { rpc: async (n, a) => { kall.push(a); return svar ? svar(a) : { data: { breytt: true, tharf_adgerd: ['viðvörun fyrir #' + a.p_id], gert_sjalfkrafa: [] } }; } };
-  vm.runInNewContext(SRC, { window, document: d.doc, setTimeout: () => 0, String, Array, Object }, { filename: '527-audkenni-vidvorun.js' });
-  return { A: window.AudkenniVidvorun, d, sb, kall };
+  const vaktir = [];
+  function MutationObserver(cb) { this.cb = cb; this.observe = (el, o) => { vaktir.push({ el, o, cb }); }; }
+  vm.runInNewContext(SRC, { window, document: d.doc, setTimeout: () => 0, String, Array, Object, MutationObserver }, { filename: '527-audkenni-vidvorun.js' });
+  return { A: window.AudkenniVidvorun, d, sb, kall, vaktir };
 }
 const FA = { nafn: 'Félag A', kennitala: '111111-1111', heimilisfang: 'A-gata 1', customer_base_id: 1 };
 const FB = { nafn: 'Félag B', kennitala: '222222-2222', heimilisfang: 'B-gata 2', customer_base_id: 2 };
@@ -254,4 +258,81 @@ test('allar breytileiðir fyrirtækis kalla á viðvörunina í try/catch og bí
   }
   assert.match(lesa('js/patches/157-allir-vidskiptavinir.js'), /const gamalt = company \? Object\.assign\(\{\}, company\) : null;[^\n]*\n\s*if \(company\) Object\.assign\(company, upd\);/, '157: viðmiðið er tekið ÁÐUR en listaröðin er yfirskrifuð');
   assert.match(lesa('js/patches/14-companies-openedit.js'), /function restore\(\) \{\n\s*try \{ if \(window\.AudkenniVidvorun\) window\.AudkenniVidvorun\.haetta\(\); \} catch \(_\) \{\}/);
+});
+
+test('eyðublað: glugginn lokast með því að smella á bakgrunn (Modal.closeAll, restore() keyrir ekki) → samhengið hreinsast', async () => {
+  const { A, d, sb, kall, vaktir } = hladaForm();
+  A.festaVidForm({ sb, id: 1, co: FA, lesaForm: lesaFrom(d) });
+  assert.equal(vaktir.length, 1, 'aðeins EINN hnútur vaktaður (glugginn), ekkert body-vítt');
+  assert.equal(vaktir[0].el.id, 'modal-nyfyrirtaeki');
+  assert.deepEqual(Array.from(vaktir[0].o.attributeFilter), ['class', 'style']);
+  setForm(d, { ...FA, nafn: 'Breytt' });
+  await d.reitir['nf-nafn'].fire('change');
+  assert.equal(kall.length, 1);
+  d.modal.opinn = false;                                   // Modal.closeAll fjarlægir class „open“ en h2 stendur enn „Breyta fyrirtæki“
+  vaktir[0].cb();
+  assert.equal(A._samhengi(), null);
+  assert.equal(d.doc.getElementById('audkenni-forskodun').style.display, 'none');
+  d.modal.opinn = true;                                    // „Nýtt fyrirtæki“ opnað í sama glugga með gamla titlinum
+  setForm(d, { nafn: 'Nýtt', kennitala: '999999-9999', heimilisfang: 'X 1' });
+  await d.reitir['nf-heimilisfang'].fire('change');
+  assert.equal(kall.length, 1, 'engin forskoðun um gamla fyrirtækið inni í nýja formi');
+});
+
+test('eyðublað: gluggi sem er lokaður gefur enga forskoðun þótt samhengið sé enn til (virkur() skoðað við hverja keyrslu)', async () => {
+  const { A, d, sb, kall } = hladaForm();
+  A.festaVidForm({ sb, id: 1, co: FA, lesaForm: lesaFrom(d) });
+  d.modal.opinn = false;
+  setForm(d, { ...FA, nafn: 'Breytt' });
+  await d.reitir['nf-nafn'].fire('change');
+  assert.equal(kall.length, 0);
+});
+
+test('00-legacy-glugginn: viðvörunin kemur beint undir heimilisfangsreitnum og tengist hverjum nýjum glugga fyrir sig', async () => {
+  const { A, d, sb, kall } = hladaForm();
+  const box = d.doc.createElement('div'); d.doc.body.appendChild(box);
+  const mkInp = (id) => { const i = d.doc.createElement('input'); i.id = id; box.appendChild(i); return i; };
+  const lNafn = mkInp('_ed_nafn'), lKt = mkInp('_ed_kt'), lAddr = mkInp('_ed_addr'); const lSimi = mkInp('_ed_simi');
+  Object.assign(lNafn, { value: FA.nafn }); Object.assign(lKt, { value: FA.kennitala }); Object.assign(lAddr, { value: FA.heimilisfang });
+  let lifir = true;
+  A.festaVidForm({ sb, id: 7, co: { ...FA, customer_base_id: 55 }, lesaForm: () => ({ nafn: lNafn.value, kennitala: lKt.value, heimilisfang: lAddr.value }),
+    ids: { nafn: '_ed_nafn', kt: '_ed_kt', heimilisfang: '_ed_addr' }, eftir: lAddr, virkur: () => lifir });
+  const i = box.children.indexOf(lAddr);
+  assert.equal(box.children[i + 1].id, 'audkenni-forskodun', 'viðvörunin er næsta systkini heimilisfangsreitsins');
+  assert.equal(box.children[i + 2], lSimi, 'og á undan næsta reit');
+  lNafn.value = 'Nýtt nafn';
+  await lNafn.fire('change');
+  assert.equal(kall.length, 1);
+  assert.equal(kall[0].p_id, 7);
+  assert.equal(kall[0].p_gamall_base, 55, 'gamli greiðandinn er sendur með');
+  assert.match(box.children[i + 1].textContent, /viðvörun fyrir #7/);
+  lifir = false;                                           // glugginn fjarlægður (m.remove())
+  lNafn.value = 'Enn annað';
+  await lNafn.fire('change');
+  assert.equal(kall.length, 1, 'enginn kall eftir að glugginn hvarf');
+  assert.equal(A._samhengi(), null);
+});
+
+test('forskoðun: rpc sem kastar eða skilar rusli veldur aldrei villu út úr hlustara', async () => {
+  const { A, d, sb } = hladaForm();
+  sb.rpc = async () => { throw new Error('net'); };
+  A.festaVidForm({ sb, id: 1, co: FA, lesaForm: lesaFrom(d) });
+  setForm(d, { ...FA, nafn: 'Breytt' });
+  await d.reitir['nf-nafn'].fire('change');                // ef þetta kastaði félli prófið
+  assert.equal(d.doc.getElementById('audkenni-forskodun').style.display, 'none');
+});
+
+test('breytileiðir: 00-legacy tengir forskoðunina við sinn glugga og 147 sækir customer_base_id', () => {
+  const L = lesa('js/patches/00-legacy.js');
+  assert.match(L, /AudkenniVidvorun\.festaVidForm\(\{ sb:window\.DB\.sb, id:companyId, co:c, lesaForm:lesa, ids:\{nafn:'_ed_nafn',kt:'_ed_kt',heimilisfang:'_ed_addr'\}, eftir:document\.getElementById\('_ed_addr'\), virkur:function\(\)\{ return document\.body\.contains\(m\); \} \}\)/);
+  assert.match(lesa('js/patches/147-brunakerfi.js'), /select\('id,nafn,kennitala,simi,heimilisfang,netfang,athugasemdir,tengiliður,customer_base_id'\)\.in\('id', ids\)/);
+});
+
+test('SQL: gamli greiðandinn óþekktur → ekkert giskað (oviss), rofinn sést í viðvöruninni, ógildar sölur teljast ekki skuld, kt_breyting_faera lokuð anon', () => {
+  assert.match(SQL, /elsif kt_br then gr := 'oviss';/);
+  assert.match(SQL, /gbase := case when p_gamall_base is not null then p_gamall_base when kt_br then null else f\.customer_base_id end;/);
+  assert.match(SQL, /Sjálfvirka keðjan er SLÖKKT/);
+  assert.match(SQL, /s\.status <> 'void' and coalesce\(s\.hidden, false\) = false/);
+  assert.match(SQL, /revoke all on function public\.kt_breyting_faera\(bigint, bigint, text, text, boolean\) from public, anon, authenticated;/);
+  assert.match(SQL, /create or replace function public\.kt_breyting_virkt\(\) returns boolean\nlanguage sql stable security definer set search_path to 'public'/);
 });

@@ -37,7 +37,7 @@ insert into public.app_kv (key, value) values ('kt_breyting_sjalfvirk', '{"virkt
 on conflict (key) do nothing;
 
 create or replace function public.kt_breyting_virkt() returns boolean
-language sql stable as $$
+language sql stable security definer set search_path to 'public' as $$
   select coalesce((select (value->>'virkt')::boolean from public.app_kv where key = 'kt_breyting_sjalfvirk'), true)
      and coalesce(current_setting('app.kt_breyting_af', true), '') <> '1'
 $$;
@@ -192,3 +192,6 @@ create trigger trg_kt_breyting_faerist after update of kennitala on public.fyrir
   for each row when (old.kennitala is distinct from new.kennitala) execute function public.trg_kt_breyting_faerist();
 
 -- Keyrt handvirkt fyrir #424 (kt breytt áður en kveikjurnar voru til): select kt_breyting_faera(424, 327, 'Húsfélagið Stigahlíð 10', '520391-1859');
+
+-- Rýni 23.11.2026: security definer-fall sem skrifar í margar töflur má ekki vera kallanlegt með anon-lykli. Kveikjurnar (eigandi) virka áfram.
+revoke all on function public.kt_breyting_faera(bigint, bigint, text, text, boolean) from public, anon, authenticated;

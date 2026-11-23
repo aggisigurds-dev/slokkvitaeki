@@ -1,6 +1,7 @@
 -- 23.11.2026 — NAFN og HEIMILISFANG fyrirtækis færast sjálfkrafa þar sem það er óhætt; kerfið VARAR við því sem þarf mannshönd (LIVE í grunni sama dag;
 -- þetta er skráin sem geymir hvað var keyrt). Viðbót við sql/2026-11-23_kt_breyting_faerist.sql.
 --
+-- ATH: keyra EFTIR 2026-11-23_kt_breyting_faerist.sql (hún skilgreinir kt_breyting_log og kt_breyting_virkt, sem þessi skrá notar).
 -- Agnar (mál #1744): „Þetta má ekki vera svona flókið fyrir okkur starfsfólkið að breyta svona … þetta á líka við heimilisfang og nafn fyrirtækis ..
 -- þá má ekkert fara í rugl við það, settu einhverskonar viðvörun, varnir svo það gerist aldrei“.
 --
@@ -40,7 +41,7 @@ declare
   f public.fyrirtaeki%rowtype; cb public.customers_base%rowtype;
   onafn text; nnafn text; okt text; nkt text; ohf text; nhf text;
   kt_br boolean; nafn_br boolean; hf_br boolean;
-  gbase bigint; adrir int := 0; gr text := 'enginn';
+  gbase bigint; adrir int := 0; gr text := 'enginn'; virkt boolean;
   n_opnar int := 0; n_sendar int := 0; sendar_nr text := ''; n_skyrslur int := 0;
   hvad text[] := '{}'; hv text;
   adgerd jsonb := '[]'::jsonb; sjalfkrafa jsonb := '[]'::jsonb;
@@ -59,8 +60,11 @@ begin
   if not (kt_br or nafn_br or hf_br) then
     return jsonb_build_object('breytt', false, 'tharf_adgerd', '[]'::jsonb, 'gert_sjalfkrafa', '[]'::jsonb);
   end if;
+  virkt := public.kt_breyting_virkt();
 
-  gbase := coalesce(p_gamall_base, f.customer_base_id);
+  -- greiðandinn á GAMLA base. Vanti gamla base (viðmótið sendi hann ekki) og kt breytist er núverandi base þegar fluttur af kveikjunni —
+  -- þá er EKKERT giskað: gr = 'oviss' og engin greiðandalína.
+  gbase := case when p_gamall_base is not null then p_gamall_base when kt_br then null else f.customer_base_id end;
   if gbase is not null then
     select * into cb from public.customers_base where id = gbase;
     if found then
@@ -69,6 +73,7 @@ begin
       elsif adrir > 0 then gr := 'deildur';
       else gr := 'eigin'; end if;
     end if;
+  elsif kt_br then gr := 'oviss';
   end if;
 
   -- ósendar, ekki kreditfærðar sölur sem bera gömlu auðkennin (PDF-ið er þegar teiknað með þeim)
@@ -79,8 +84,9 @@ begin
      and not exists (select 1 from public.solur c where c.credit_of = s.id and coalesce(c.is_credit, false))
      and ((kt_br and regexp_replace(coalesce(s.customer_kt, ''), '\D', '', 'g') = okt)
           or (nafn_br and btrim(coalesce(s.customer_nafn, '')) = onafn) or hf_br);
+  -- sendar, ógreiddar, ekki kreditfærðar sölur (ógildar og faldar sölur teljast aldrei skuld)
   select count(*), coalesce(string_agg(s.num::text, ', ' order by s.id), '') into n_sendar, sendar_nr from public.solur s
-   where s.customer_id = p_id and coalesce(s.is_credit, false) = false
+   where s.customer_id = p_id and coalesce(s.is_credit, false) = false and s.status <> 'void' and coalesce(s.hidden, false) = false
      and (s.krafa_sent_at is not null or s.invoiced_at is not null or s.dk_invoice_id is not null) and s.paid_at is null
      and s.created_at > now() - interval '12 months'
      and not exists (select 1 from public.solur c where c.credit_of = s.id and coalesce(c.is_credit, false))
@@ -94,6 +100,9 @@ begin
   if hf_br then hvad := hvad || 'heimilisfang'::text; end if;
   hv := array_to_string(hvad, ' / ');
 
+  if not virkt then
+    adgerd := adgerd || to_jsonb('Sjálfvirka keðjan er SLÖKKT (app_kv kt_breyting_sjalfvirk) — ekkert færist sjálfkrafa: færðu skjöl, greiðanda, mál og tæki handvirkt.'::text);
+  end if;
   if kt_br and gr = 'annar' then
     adgerd := adgerd || to_jsonb(format('Greiðandinn (customers_base #%s) er ANNAR aðili en staðurinn og færist ekki sjálfkrafa — athugaðu hvort greiðandi á líka að breytast (kunnaskrá).', gbase));
   elsif kt_br and gr = 'deildur' then
@@ -111,12 +120,14 @@ begin
     adgerd := adgerd || to_jsonb(format('Úttektarskýrsla ársins ber gamla %s — gerðu nýja skýrslu (SkyrslaSolu.endurnyja) og láttu hana fylgja reikningnum.', hv));
   end if;
 
-  if kt_br and gr = 'eigin' then sjalfkrafa := sjalfkrafa || to_jsonb('Greiðandi færist á nýju kennitöluna; skjöl, pör, tæki, mál og saga fylgja customer id (óbreytt).'::text); end if;
-  if nafn_br then sjalfkrafa := sjalfkrafa || to_jsonb('Nafnið færist á skjöl, mál, CRM-spjald, tæki og (ef staðurinn er eigin greiðandi) greiðandann.'::text); end if;
-  if hf_br and gr = 'eigin' then sjalfkrafa := sjalfkrafa || to_jsonb('Heimilisfangið færist á greiðandann.'::text); end if;
+  if virkt then
+    if kt_br and gr = 'eigin' then sjalfkrafa := sjalfkrafa || to_jsonb('Greiðandi færist á nýju kennitöluna; skjöl, pör, tæki, mál og saga fylgja customer id (óbreytt).'::text); end if;
+    if nafn_br then sjalfkrafa := sjalfkrafa || to_jsonb('Nafnið færist á skjöl, mál, CRM-spjald, tæki og (ef staðurinn er eigin greiðandi) greiðandann.'::text); end if;
+    if hf_br and gr = 'eigin' then sjalfkrafa := sjalfkrafa || to_jsonb('Heimilisfangið færist á greiðandann.'::text); end if;
+  end if;
 
   return jsonb_build_object('breytt', true, 'kt_breytt', kt_br, 'nafn_breytt', nafn_br, 'heimilisfang_breytt', hf_br,
-    'greidandi', gr, 'opnar_solur', n_opnar, 'sendar_ogreiddar_solur', n_sendar, 'sendar_nr', sendar_nr, 'skyrslur_ars', n_skyrslur,
+    'greidandi', gr, 'virkt', virkt, 'opnar_solur', n_opnar, 'sendar_ogreiddar_solur', n_sendar, 'sendar_nr', sendar_nr, 'skyrslur_ars', n_skyrslur,
     'tharf_adgerd', adgerd, 'gert_sjalfkrafa', sjalfkrafa);
 end
 $fn$;
@@ -197,3 +208,13 @@ language sql security definer set search_path to 'public' as $$
   select count(*)::int from u
 $$;
 revoke all on function public.audkenni_kvitta(bigint, text) from public, anon, authenticated;
+
+-- RÝNI 23.11.2026 (óháður rýnir): kt_breyting_faera er security definer og var kallanleg með anon-lykli (skrifar í margar töflur) → LOKUÐ.
+-- Kveikjurnar kalla á hana sem eigandi og virka áfram (rollback-prófað). kt_breyting_virkt les app_kv sem eigandi (security definer) svo viðmótið
+-- sjái réttan rofa. audkenni_afleidingar: gamli greiðandi óþekktur → ekkert giskað (oviss); rofi af → viðvörun í stað „allt færðist“.
+revoke all on function public.kt_breyting_faera(bigint, bigint, text, text, boolean) from public, anon, authenticated;
+create or replace function public.kt_breyting_virkt() returns boolean
+language sql stable security definer set search_path to 'public' as $$
+  select coalesce((select (value->>'virkt')::boolean from public.app_kv where key = 'kt_breyting_sjalfvirk'), true)
+     and coalesce(current_setting('app.kt_breyting_af', true), '') <> '1'
+$$;
