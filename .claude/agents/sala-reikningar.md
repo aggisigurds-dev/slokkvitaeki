@@ -107,11 +107,18 @@ Tilefni: umsýsluaðili (t.d. Eignarekstur) skrifar að húsfélag hafi verið s
 4b. **Athugaðu auðkennin (Agnar 23.11.2026: „þarf að ath hvort customer id hafi breyst líka“).** Mældu, ekki gefa þér:
    - `customer_id` (= `fyrirtaeki.id` STAÐARINS) breytist EKKI þótt kt eða nafn spjaldsins breytist. Tæki, skjöl, skjalapör, saga, mál og verkferli hanga á því.
      Teldu raðir á id-inu (`fyrirtaeki_id`/`customer_id`/`co_id`-dálkar) og skráðu í málið. Salan má aldrei missa `customer_id` (aldrei null).
-   - `customer_base_id` (GREIÐANDINN) breytist á nýju sölunni; `fyrirtaeki.customer_base_id` og `customer_documents.customer_base_id` vísa enn á gamla.
-     Ákveða og skrá hvort spjaldið færist á nýja greiðandann.
+   - `customer_base_id` (GREIÐANDINN) breytist: gamli → nýi á spjaldinu, tækjum, skjölum, pörum og málum. Það gerist SJÁLFVIRKT (H.4c) — mældu að það hafi gerst.
    - Skýrslan: keyrðu `bera()` (`_skyrsla-solu.cjs`, eða payday-push `skyrsla_athugun`) á nýju söluna. Með `customer_id` óbreytt og spjaldið óbreytt stemmir
      núverandi skýrsla (staðurinn er sá sami, greiðandinn annar). Sé spjaldið endurnefnt/fært á nýja kt stöðvar sendingin þar til NÝ skýrsla er gerð.
      Ný skýrsla á nýju nafni er því afleiðing af kt-breytingu á spjaldinu (þrep 4), ekki sjálfstætt skref.
+4c. **Gamlir reikningar, skjöl, tæki og mál fylgja nýja greiðandanum — sjálfvirkt (Agnar 23.11.2026).** Kveikjurnar `trg_zz_kt_breyting_base` og
+   `trg_kt_breyting_faerist` á `fyrirtaeki.kennitala` kalla á `kt_breyting_faera(id, gamall_base, gamalt_nafn, gamalt_kt)` þegar kennitala breytist (`sql/2026-11-23_kt_breyting_faerist.sql`):
+   - Finnur/stofnar greiðandann fyrir nýju kt og færir `customer_base_id` á `uttaeki`, `customer_documents` (+ heiti), `document_pairs` (nema árekstur), `umsjonarpostur_tengsl`,
+     `fyrirtaeki_virkni`, `krofu_verkferli`, `thjonustubeidni` (+ heiti), `crm_cache`, `uttekt_skyrsla_lines`. `customer_id` (fyrirtaeki.id) breytist aldrei.
+   - **Aðeins** þegar staðurinn var sinn eigin greiðandi og enginn annar staður deilir honum (rekstrarfélög og deildir greiðendur eru látnir í friði) og sá sem breytir valdi ekki greiðandann sjálfur.
+   - **Sölur eru ALDREI færðar** (aðeins taldar í `kt_breyting_log`): kt-breyting í grunni sendir ekki `sale-edited`, svo reiknings-PDF og skýrsla yrðu úrelt. Sendar sölur og saga um gömlu kt (Stólpi, Payday-spegill) breytast aldrei.
+   - Þurrkeyrsla: `select kt_breyting_faera(<id>, <gamall base>, '<gamalt nafn>', '<gamalt kt>', true);`. Rofi: `app_kv.kt_breyting_sjalfvirk.virkt`, eða `set local app.kt_breyting_af = '1'`.
+   - Eftir keyrslu: mældu spjaldið (#company/<id>), Ársskoðunarlistann (leit á nýju kt — „Fyrirtæki í þjónustu“) og parið á spjaldinu. Par ársins með gamla reikningnum stendur hjá gamla greiðandanum þar til hann er afturkallaður og bakfærður.
 5. Ný sala á nýja greiðandann með SÖMU línum og verðum (Leiðrétta / Klára heimsókn með ástæðu). „Klára sölu“ sendir ekkert; 517 gerir nýtt reiknings-PDF.
 6. Ný úttektarskýrsla: „Búa til úttektarskýrslu“ — fær nýju kt og nafn, handskrifaði textinn óskertur, sú gamla merkt leyst af hólmi, engu eytt.
 7. Leiðrétta krafan birtist ÓSEND í Kröfuyfirliti (sendiskjárinn ✓ stemmir). Gamla salan er kreditfærð.
