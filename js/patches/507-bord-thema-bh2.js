@@ -50,6 +50,7 @@
 
   function stilla(host, nafn) {
     if (!host) return;
+    host.toggleAttribute('data-agnar-dagskra', nafn === 'Agnar');
     if (thema(nafn) === 'bh2') {
       letur();
       if (host.getAttribute('data-thema') !== 'bh2') host.setAttribute('data-thema', 'bh2');

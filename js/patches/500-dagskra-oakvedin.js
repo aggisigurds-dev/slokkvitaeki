@@ -32,6 +32,10 @@
   const drog = {};     // 'eig|r1' -> texti sem hefur ekki enn verið staðfestur af þjóni
   const stada = {};    // 'eig|r1' -> { t: 'bid'|'vistar'|'ok', s: texti }
   const tm = {}, retry = {};
+  const pendingChecks = new Map();
+  const boundRoots = new WeakSet();
+  const AGNAR = ':host([data-agnar-dagskra]) .mod[aria-label="Dagskrá"]';
+  const COLORS = ['#f97342', '#28a9e2', '#7951bd', '#69a74c', '#b34e94'];
 
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const P = k => { try { return (window.AppSettings && AppSettings.path) ? AppSettings.path(k) : null; } catch (_) { return null; } };
@@ -39,6 +43,128 @@
   const lesa = (eig, r) => { const v = P(slod(eig, r)); return typeof v === 'string' ? v : ''; };
   const klukka = d => String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
   const toast = (m, bad) => { try { if (window.Toast && Toast.show) Toast.show(m, bad ? 'error' : undefined); } catch (_) {} };
+
+  const currentText = (key, eig, r) => drog[key] != null ? drog[key] : lesa(eig, r);
+  const checkPath = (eig, r) => 'skipulagsbord.by_staff.' + eig + '.oakvedinLokid.' + r;
+  const checkedText = (key, eig, r) => pendingChecks.has(key) ? pendingChecks.get(key) : P(checkPath(eig, r));
+
+  function updateCheck(box, key) {
+    const check = box.querySelector('[data-ov-check]');
+    const input = box.querySelector('[data-ov]');
+    const [eig, r] = key.split('|');
+    const text = input.value.trim();
+    check.disabled = !text || pendingChecks.has(key);
+    check.checked = !!text && checkedText(key, eig, r) === text;
+  }
+
+  const companyPath = (eig, r) => 'skipulagsbord.by_staff.' + eig + '.oakvedinFyrirtaeki.' + r;
+  const companyFor = (eig, r) => P(companyPath(eig, r));
+
+  function openCompanyPicker(root, button) {
+    const [eig, r] = button.dataset.ovCompany.split('|');
+    const tools = API.fyrirtaeki;
+    if (!tools || root.querySelector('.ov-company-picker')) return;
+    const linked = companyFor(eig, r);
+    if (linked && linked.id) { tools.opna(linked.id); return; }
+
+    const dialog = document.createElement('dialog');
+    dialog.className = 'ov-company-picker';
+    dialog.setAttribute('aria-label', 'Tengja fyrirtæki');
+    dialog.innerHTML = '<form method="dialog"><div class="ov-picker-head"><strong>Tengja fyrirtæki</strong><button type="submit">Loka</button></div></form>' +
+      '<input type="search" aria-label="Leita að fyrirtæki" placeholder="Nafn, heimilisfang eða kennitala" autocomplete="off">' +
+      '<p role="status"></p><div class="ov-picker-results"></div>';
+    root.appendChild(dialog);
+    const search = dialog.querySelector('input');
+    const status = dialog.querySelector('[role=status]');
+    const results = dialog.querySelector('.ov-picker-results');
+    const close = dialog.querySelector('button');
+    let seq = 0, timer, saving = false;
+    dialog.addEventListener('close', () => {
+      clearTimeout(timer);
+      dialog.remove();
+      if (button.isConnected) button.focus();
+    });
+    dialog.addEventListener('cancel', event => { if (saving) event.preventDefault(); });
+
+    function queueSearch() {
+      const id = ++seq;
+      const query = search.value.trim();
+      clearTimeout(timer);
+      results.replaceChildren();
+      if (query.length === 1) { status.textContent = 'Sláðu inn að minnsta kosti tvo stafi.'; return; }
+      status.textContent = 'Sæki fyrirtæki…';
+      timer = setTimeout(async () => {
+        let companies;
+        try { companies = await tools.leita(query); }
+        catch (_) {
+          if (dialog.open && id === seq) status.textContent = 'Ekki tókst að sækja fyrirtæki.';
+          return;
+        }
+        if (!dialog.open || id !== seq) return;
+        status.textContent = companies.length ? 'Veldu fyrirtæki' : 'Engin fyrirtæki fundust.';
+        for (const company of companies) {
+          const item = document.createElement('button');
+          item.type = 'button';
+          item.textContent = [company.nafn, company.heim, company.kt].filter(Boolean).join(' · ');
+          item.onclick = async () => {
+            if (saving) return;
+            saving = true;
+            search.disabled = close.disabled = true;
+            results.querySelectorAll('button').forEach(choice => { choice.disabled = true; });
+            status.textContent = 'Vista tengingu…';
+            let ok = false;
+            try {
+              ok = !!(await AppSettings.save({ skipulagsbord: { by_staff: {
+                [eig]: { oakvedinFyrirtaeki: { [r]: { id: company.id, nafn: company.nafn } } }
+              } } }));
+            } catch (_) {}
+            saving = false;
+            if (ok) { dialog.close(); tools.render(); return; }
+            search.disabled = close.disabled = false;
+            results.querySelectorAll('button').forEach(choice => { choice.disabled = false; });
+            status.textContent = 'Tengingin vistaðist ekki. Reyndu aftur.';
+          };
+          results.appendChild(item);
+        }
+      }, query ? 160 : 0);
+    }
+    search.addEventListener('input', queueSearch);
+    dialog.showModal();
+    search.focus();
+    queueSearch();
+  }
+
+  function bindChecks() {
+    const root = API.rot && API.rot();
+    if (!root || boundRoots.has(root)) return;
+    boundRoots.add(root);
+    root.addEventListener('click', event => {
+      const button = event.target.closest?.('[data-ov-company]');
+      if (button) openCompanyPicker(root, button);
+    });
+    root.addEventListener('change', async event => {
+      const check = event.target;
+      const key = check.dataset?.ovCheck;
+      if (!key || pendingChecks.has(key)) return;
+      const [eig, r] = key.split('|');
+      const box = check.closest('.ovbox');
+      const text = box.querySelector('[data-ov]').value.trim();
+      if (!text) return;
+      pendingChecks.set(key, check.checked ? text : '');
+      updateCheck(box, key);
+      let ok = false;
+      try {
+        ok = !!(await AppSettings.save({ skipulagsbord: { by_staff: {
+          [eig]: { oakvedinLokid: { [r]: pendingChecks.get(key) } }
+        } } }));
+      } catch (_) {}
+      pendingChecks.delete(key);
+      root.querySelectorAll('[data-ov-check]').forEach(input => {
+        if (input.dataset.ovCheck === key) updateCheck(input.closest('.ovbox'), key);
+      });
+      if (!ok) toast('Ekki tókst að vista stöðu atriðis.', true);
+    });
+  }
 
   function stimpla(key) {
     const root = API.rot && API.rot();
@@ -82,6 +208,8 @@
       const key = el.dataset.ov;
       if (!key) return;
       drog[key] = el.value;
+      const box = el.closest('.ovbox');
+      if (box && box.querySelector('[data-ov-check]')) updateCheck(box, key);
       stada[key] = { t: 'bid', s: 'Óvistað…' };
       stimpla(key);
       clearTimeout(tm[key]);
@@ -100,13 +228,21 @@
     },
     html(eig) {
       eig = eig || 'Allir';
+      bindChecks();
       const reitur = (r, i) => {
         const key = eig + '|' + r;
-        const g = drog[key] != null ? drog[key] : lesa(eig, r);
+        const g = currentText(key, eig, r);
         const st = stada[key];
         const linur = Math.min(8, Math.max(1, String(g).split('\n').length));
-        return '<div class="ovbox">' +
+        const text = g.trim();
+        const company = companyFor(eig, r);
+        const companyLabel = company?.id ? 'Opna ' + (company.nafn || 'fyrirtæki') : 'Tengja fyrirtæki við atriði ' + (i + 1);
+        return '<div class="ovbox" style="--ov-accent:' + COLORS[i % COLORS.length] + '">' +
+          '<input class="ovcheck" type="checkbox" data-ov-check="' + esc(key) + '" aria-label="Merkja atriði ' + (i + 1) + ' sem lokið"' +
+          (text && checkedText(key, eig, r) === text ? ' checked' : '') + (!text || pendingChecks.has(key) ? ' disabled' : '') + '>' +
           '<textarea data-ov="' + esc(key) + '" rows="' + linur + '" aria-label="Óákveðið verk vikunnar ' + (i + 1) + '" placeholder="Skrifaðu hér…">' + esc(g) + '</textarea>' +
+          '<button type="button" class="ovcompany" data-ov-company="' + esc(key) + '" aria-label="' + esc(companyLabel) + '" title="' + esc(companyLabel) + '"' +
+          (company?.id ? ' data-linked="true"' : '') + '>' + (company?.id ? '✓' : '＋') + '</button>' +
           '<span class="ovst ' + (st ? st.t : '') + '" data-ovst="' + esc(key) + '">' + esc(st ? st.s : '') + '</span></div>';
       };
       const fjoldi = REITIR.filter(r => { const k = eig + '|' + r; return String(drog[k] != null ? drog[k] : lesa(eig, r)).trim() !== ''; }).length;
@@ -134,7 +270,30 @@
         '.ovbox textarea::placeholder{color:var(--mute);opacity:.45}',
         '.ovst{position:absolute;right:14px;bottom:3px;max-width:80%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;pointer-events:none;background:rgba(255,253,247,.85);padding:0 3px;font-family:var(--mono);font-size:9.5px;letter-spacing:.05em;color:var(--mute)}',
         '.ovst.ok{color:var(--green)}.ovst.vistar,.ovst.bid{color:var(--gink)}',
-        '@media (max-width:420px){.ovgrid{grid-template-columns:minmax(0,1fr)}}'
+        '@media (max-width:420px){.ovgrid{grid-template-columns:minmax(0,1fr)}}',
+        '.ovcheck,.ovcompany{display:none}',
+        AGNAR + ' .ov{margin:0 10px 10px;padding:9px;border:1px solid #e1e7f0;border-radius:12px;background:#f3f6fb}',
+        AGNAR + ' .ovh{padding:0 0 8px;border:0;align-items:center}',
+        AGNAR + ' .ovh h3{font:700 14px/1.25 var(--body);color:#101e43;letter-spacing:0;text-transform:none}',
+        AGNAR + ' .ovh span{padding:2px 7px;border-radius:999px;background:#fce8da;color:#8a3618;font-weight:650}',
+        AGNAR + ' .ovgrid{gap:8px;border:0;overflow:visible;background:transparent}',
+        AGNAR + ' .ovbox{display:grid;grid-template-columns:30px minmax(0,1fr) 30px;align-items:start;padding-inline-start:3px;border:1px solid #dce4ef;border-radius:9px;background:#fff;box-shadow:0 2px 4px rgba(2,25,60,.06)}',
+        AGNAR + ' .ovbox::before{content:"";position:absolute;inset:6px auto 6px 3px;width:3px;border-radius:3px;background:var(--ov-accent);pointer-events:none}',
+        AGNAR + ' .ovbox:has(.ovcheck:disabled) textarea:placeholder-shown{color:#51627b}',
+        AGNAR + ' .ovbox:has(textarea:placeholder-shown)::before{background:#c2ccd9}',
+        AGNAR + ' .ovcheck{display:block;margin:10px 0 0 9px;width:16px;height:16px;accent-color:#22653e}',
+        AGNAR + ' .ovcompany{display:grid;place-items:center;width:26px;height:30px;margin:5px 0;padding:0;border:1px solid #aab9cb;border-radius:6px;background:#fff;color:#24547e;font:700 15px/1 var(--body);cursor:pointer}',
+        AGNAR + ' .ovcompany[data-linked]{background:#e5f4e9;border-color:#82ae8d;color:#215634}',
+        '.ov-company-picker{box-sizing:border-box;width:min(490px,calc(100vw - 24px));max-height:75vh;overflow:auto;padding:16px;border:1px solid #bdcde0;border-radius:12px;background:#fff;color:#101e43;font:14px/1.5 var(--body)}',
+        '.ov-company-picker::backdrop{background:#0b203866}',
+        '.ov-picker-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:9px}',
+        '.ov-company-picker input,.ov-company-picker button{box-sizing:border-box;padding:8px 10px;border:1px solid #bdcde0;border-radius:7px;background:#fff;color:inherit;font:inherit}',
+        '.ov-company-picker input{width:100%}.ov-picker-results{display:grid;gap:6px}.ov-picker-results button{text-align:left;overflow-wrap:anywhere}',
+        AGNAR + ' .ovbox textarea{min-height:40px;padding:8px 8px 8px 2px;border:0;border-radius:8px;background:transparent;color:#101e43;box-shadow:none;font:500 13px/1.45 var(--body)}',
+        AGNAR + ' .ovbox textarea:focus{outline:2px solid #2f6fe4;outline-offset:-2px;background:#fff}',
+        AGNAR + ' .ovbox:has(.ovcheck:checked){background:#f0f8f2}',
+        AGNAR + ' .ovcheck:checked + textarea{color:#42604e;text-decoration:line-through}',
+        AGNAR + ' .ovst:not(:empty){position:static;grid-column:2;justify-self:end;margin:0 5px 3px;line-height:1.3}'
       ].join('\n');
     }
   };
