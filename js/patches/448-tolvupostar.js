@@ -129,7 +129,12 @@
           // 18.11.2026 (Agnar: „þú mátt líka setja frá mörgum starfsmönnum inn á sömu erindið“): channel_ref ber einn aðalpóst
           // og er óbreyttur (240, 368 og 309 lesa hann strangt). Auðkenni hinna póstanna — þá sem aðrir starfsmenn kúnnans
           // sendu um sama verk í öðrum þræði — liggja í thjonustubeidni_postar og eru lesin hér svo hvaða þráður sem er finni málið.
-          c.from('thjonustubeidni_postar').select('beidni_id,email_id').limit(4000)
+          // PostgREST skilar aðeins 1000. .limit(4000) fékk því 1000 og þagði. Blaðsíður.
+          (window.DB && DB.fetchAll
+            ? DB.fetchAll(function (from, to) {
+                return c.from('thjonustubeidni_postar').select('beidni_id,email_id').order('beidni_id').order('email_id').range(from, to);
+              }).then(function (data) { return { data: data }; }).catch(function (error) { return { data: [], error: error }; })
+            : c.from('thjonustubeidni_postar').select('beidni_id,email_id').order('beidni_id').order('email_id').limit(1000))
         ]);
         if (p.error) throw p.error;
         S.postar = p.data || [];
