@@ -84,6 +84,13 @@
     r('.b425-t small', 'font-size:16px;font-weight:700;color:#d9dee6;margin-left:6px;letter-spacing:0;font-family:' + DISPLAY),
     r('.b425-k.gull .b425-t', 'color:#f3d98a;text-shadow:0 0 18px rgba(230,190,90,.35),0 1px 0 rgba(0,0,0,.7)'),
     r('.b425-k.gull .b425-t small', 'color:#d3ab4e'),
+    // 23.11.2026 (Agnar: „húsið og/eða fyrsti kassinn frá Fyrirtæki í þjónustu á að vera líka á hinum hero boxes“): sama hetjumynd
+    // (bygging hægra megin, dofnar í kolið til vinstri) og á Fyrirtæki í þjónustu (414). Myndin er EIN :root-breyta sem 414
+    // setur (--ars-hero-img); varagildið heldur málmhallanum óbreyttum ef 414 hefur ekki hlaðið.
+    r('.b425-k.gull > .b425-i', 'background-image:linear-gradient(90deg,#111519 8%,#111519ed 33%,#11151920 100%),var(--ars-hero-img,linear-gradient(#0000,#0000));background-size:auto,cover;background-position:0 0,right center;background-repeat:no-repeat;background-color:#111519'),
+    r('.b425-k.gull .b425-t', 'color:#ffca7c;text-shadow:none'),
+    // skýringin raðast í dálk (eins og 414/418) svo hún lendi ekki ofan á byggingunni hægra megin
+    r('.b425-k.gull .b425-l', 'flex-direction:column;align-items:flex-start;gap:6px;flex-wrap:nowrap'),
     r('.b425-s', 'height:9px;border-radius:5px;background:#131316;box-shadow:inset 0 1px 2px rgba(0,0,0,.7);display:flex;overflow:hidden;gap:2px;flex:none'),
     r('.b425-s', 'display:none'),
     r('.b425-s.stor', 'height:12px;border-radius:4px'),
@@ -98,13 +105,15 @@
     //    aukasíunum í hólfi · leitin sem fyllir línuna · Velja margar. Virkar aukasíur sem flísar með ✕. Hlutahaus
     //    „Viðskiptavinir" með fjölda og Kort/Listi hægra megin. Markupið er í 157 (sömu klasar/data-eigindi og áður).
     r('.b425-rod', 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 10px'),
-    r('.b425-sia', 'display:inline-flex;flex:none;max-width:100%;height:44px;gap:0;margin:0;background:' + SILVER + ';border:1px solid rgba(20,24,34,.22);border-radius:3px;overflow:hidden;box-shadow:0 6px 16px -12px rgba(0,0,0,.5);flex-wrap:nowrap'),
-    r('.b425-sia ._av-ft', 'height:44px;padding:0 15px;margin:0;border:0;border-radius:0;background:transparent;box-shadow:none;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-family:' + SANS + ';font-size:12.5px;font-weight:600;line-height:1.15;letter-spacing:0;text-transform:none;color:#3a4250;white-space:nowrap;cursor:pointer;text-shadow:none'),
+    // 23.11.2026 (Agnar: „gráa filtersboxið á að vera líka á hinum kössunum í þjónustunni“): stikan DÖKKGRÁ eins og .arsm-seg á
+    // Fyrirtæki í þjónustu (#262d35→#161b20, rammi #48525e, horn 8px, valið appelsínugult #ffc46c→#ff8a30, heiti og tala #edf3fa).
+    r('.b425-sia', 'display:inline-flex;flex:none;max-width:100%;height:44px;gap:0;margin:0;background:linear-gradient(180deg,#262d35,#161b20);border:1px solid #48525e;border-radius:8px;overflow:hidden;box-shadow:0 6px 16px -12px rgba(0,0,0,.5);flex-wrap:nowrap'),
+    r('.b425-sia ._av-ft', 'height:44px;padding:0 15px;margin:0;border:0;border-radius:0;background:transparent;box-shadow:none;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-family:' + SANS + ';font-size:12.5px;font-weight:600;line-height:1.15;letter-spacing:0;text-transform:none;color:#edf3fa;white-space:nowrap;cursor:pointer;text-shadow:none'),
     r('.b425-sia ._av-ft + ._av-ft', 'border-left:1px solid rgba(20,24,34,.14)'),
-    r('.b425-sia ._av-ft:hover:not(.on)', 'background:rgba(20,24,34,.06)'),
-    r('.b425-sia ._av-ft b', 'font-family:' + MONO + ';font-size:11.5px;font-weight:700;color:#5b6472'),
-    r('.b425-sia ._av-ft.on', 'background-image:' + INNI + ';background-color:#0a0a0c;color:#fff;font-weight:700;text-shadow:0 1px 1px rgba(0,0,0,.5)'),
-    r('.b425-sia ._av-ft.on b', 'color:rgba(255,255,255,.78)'),
+    r('.b425-sia ._av-ft:hover:not(.on)', 'background:rgba(255,255,255,.07)'),
+    r('.b425-sia ._av-ft b', 'font-family:' + MONO + ';font-size:11.5px;font-weight:700;color:#edf3fa'),
+    r('.b425-sia ._av-ft.on', 'background-image:linear-gradient(180deg,#ffc46c,#ff8a30);background-color:#ff8a30;color:#221409;font-weight:700;text-shadow:none'),
+    r('.b425-sia ._av-ft.on b', 'color:rgba(34,20,9,.78)'),
     r('.b425-more', 'position:relative;flex:none;display:inline-flex'),
     r('#_av-more', 'height:44px;display:inline-flex;align-items:center;gap:8px;padding:0 13px;margin:0;border:1px solid rgba(20,24,34,.16);border-radius:3px;background:' + SILVER + ';box-shadow:none;color:#3a4250;font-family:' + SANS + ';font-size:12.5px;font-weight:600;cursor:pointer;text-shadow:none'),
     r('#_av-more b', 'display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:2px;background:' + R_RAUTT + ';color:#fff;font-family:' + MONO + ';font-size:10px;font-weight:700'),

@@ -102,6 +102,12 @@
     r('.b418-t small', 'font-size:16px;font-weight:700;color:#d9dee6;margin-left:6px;letter-spacing:0'),
     r('.b418-t.gull', 'color:#f3d98a;text-shadow:0 0 18px rgba(230,190,90,.35),0 1px 0 rgba(0,0,0,.7)'),
     r('.b418-t.gull small', 'color:#d3ab4e'),
+    // 23.11.2026 (Agnar: „húsið og/eða fyrsti kassinn frá Fyrirtæki í þjónustu á að vera líka á hinum hero boxes"): sama hetjumynd
+    // (bygging hægra megin, dofnar í kolið til vinstri) og á Fyrirtæki í þjónustu (414). Myndin er :root-breytan --ars-hero-img
+    // sem 414 setur; varagildið heldur málmhallanum óbreyttum ef 414 hefur ekki hlaðið. Flísarnar og talan eins og þar.
+    r('.b418-k.gull > .b418-i', 'background-image:linear-gradient(90deg,#111519 8%,#111519ed 33%,#11151920 100%),var(--ars-hero-img,linear-gradient(#0000,#0000));background-size:auto,cover;background-position:0 0,right center;background-repeat:no-repeat;background-color:#111519'),
+    r('.b418-k.gull .b418-f', 'background:#1d2325de;border-color:#ffffff1a'),
+    r('.b418-t.gull', 'color:#ffca7c;text-shadow:none'),
     r('.b418-s', 'height:9px;border-radius:5px;background:#131316;box-shadow:inset 0 1px 2px rgba(0,0,0,.7);display:flex;overflow:hidden;gap:2px;flex:none'),
     r('.b418-s.stor', 'height:12px;border-radius:4px'),
     r('.b418-s span', 'height:100%;display:block;box-shadow:inset 0 1px 0 rgba(255,255,255,.16)'),
@@ -159,16 +165,17 @@
     // 30.09.2026 (Agnar: „breyta ávölu ljósu tökkunum frekar eins og er í fyrirtæki í þjónustu“): stöðuröðin er EIN samfelld
     // silfurstika (sömu flísar, engin bil, skil á milli), valið í málmi, talan undir heitinu — eins og síustikan á Ársskoðun.
     // 02.10.2026 (HT-2.10): hornin 3px og skugginn undir eins og síustikan á Fyrirtæki í þjónustu (394) — sama stika á öllum þremur síðum.
-    r('._sk-kpis + ._sk-sia', 'display:inline-flex!important;width:max-content;max-width:100%;gap:0!important;background:' + SILVER + '!important;border:1px solid rgba(20,24,34,.22)!important;border-radius:3px!important;overflow:hidden;box-shadow:0 6px 16px -12px rgba(0,0,0,.5)!important'),
-    r('._sk-kpis + ._sk-sia ._sk-chip', 'height:44px!important;padding:0 17px!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;line-height:1.15;color:#3a4250;font:600 12.5px ' + SANS + '!important;white-space:nowrap'),
+    // 23.11.2026 (Agnar: „gráa filtersboxið á að vera líka á hinum kössunum í þjónustunni“): stöðustikan er nú DÖKKGRÁ eins og
+    // .arsm-seg á Fyrirtæki í þjónustu (394/414: #262d35→#161b20, rammi #48525e, horn 8px, valið appelsínugult #ffc46c→#ff8a30,
+    // heiti #edf3fa, talan sama lit) — gildin lesin úr lifandi síðunni. Rauð/græn/gul talan (fram/orukkad/buid) víkur: hún
+    // var lesin á ljósum grunni og er ólæsileg á dökkum; staðan stendur áfram í HEITINU (litur aldrei eini burðarmaðurinn).
+    r('._sk-kpis + ._sk-sia', 'display:inline-flex!important;width:max-content;max-width:100%;gap:0!important;background:linear-gradient(180deg,#262d35,#161b20)!important;border:1px solid #48525e!important;border-radius:8px!important;overflow:hidden;box-shadow:0 6px 16px -12px rgba(0,0,0,.5)!important'),
+    r('._sk-kpis + ._sk-sia ._sk-chip', 'height:44px!important;padding:0 17px!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;line-height:1.15;color:#edf3fa;font:600 12.5px ' + SANS + '!important;white-space:nowrap'),
     r('._sk-kpis + ._sk-sia ._sk-chip + ._sk-chip', 'border-left:1px solid rgba(20,24,34,.14)!important'),
-    r('._sk-kpis + ._sk-sia ._sk-chip:not(.on):hover', 'background:rgba(20,24,34,.06)!important'),
-    r('._sk-kpis + ._sk-sia ._sk-chip b', 'height:auto;min-width:0;padding:0;margin:0!important;background:transparent!important;color:#5b6472!important;font:700 11.5px ' + MONO + '!important'),
-    r('._sk-kpis + ._sk-sia ._sk-chip.on', 'background:' + INNI + '!important;color:#fff;font-weight:700!important;text-shadow:0 1px 1px rgba(0,0,0,.5)'),
-    r('._sk-kpis + ._sk-sia ._sk-chip.on b', 'color:rgba(255,255,255,.78)!important'),
-    r('._sk-kpis + ._sk-sia ._sk-chip[data-st="fram"]:not(.on) b', 'color:#b42318!important'),
-    r('._sk-kpis + ._sk-sia ._sk-chip[data-st="orukkad"]:not(.on) b', 'color:#7a4f06!important'),
-    r('._sk-kpis + ._sk-sia ._sk-chip[data-st="buid"]:not(.on) b', 'color:#0b6b3a!important'),
+    r('._sk-kpis + ._sk-sia ._sk-chip:not(.on):hover', 'background:rgba(255,255,255,.07)!important'),
+    r('._sk-kpis + ._sk-sia ._sk-chip b', 'height:auto;min-width:0;padding:0;margin:0!important;background:transparent!important;color:#edf3fa!important;font:700 11.5px ' + MONO + '!important'),
+    r('._sk-kpis + ._sk-sia ._sk-chip.on', 'background:linear-gradient(180deg,#ffc46c,#ff8a30)!important;color:#221409;font-weight:700!important;text-shadow:none'),
+    r('._sk-kpis + ._sk-sia ._sk-chip.on b', 'color:rgba(34,20,9,.78)!important'),
     r('._sk-sia:has(._sk-inp) select._sk-inp', 'background:' + SILVER + '!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1)!important;font-weight:600!important;max-width:180px'),
     r('._sk-inp', 'height:38px!important;border-radius:9px!important;background:#eef1f6!important;border:1px solid rgba(20,24,34,.14)!important;box-shadow:inset 0 2px 5px rgba(0,0,0,.18)!important;color:#1f2530;font:400 13px ' + SANS + '!important'),
     r('#_sk-leit', 'flex:1;min-width:260px'),
