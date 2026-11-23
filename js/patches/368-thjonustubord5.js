@@ -1302,6 +1302,7 @@
       '.dnota textarea:focus{outline:2px solid var(--g5);outline-offset:1px;background:#fffdf7}',
       '.dnota textarea::placeholder{color:var(--mute);opacity:.45}',
       // 23.11.2026: tóm nóta = ein lína (sjá dagNotaHtml). Vex með textanum og fær hærra lágmark þegar skrifað er í hana.
+      '.nuna{margin:14px 0}',
       '.dnota.tomt textarea{min-height:24px;padding:2px 6px;field-sizing:content;resize:none}',
       '.dnb{width:22px;height:22px;flex:none;border:0;border-radius:3px;background:transparent;color:var(--mute);font:14px/1 var(--body);cursor:pointer;padding:0;opacity:.55}',
       '.dnb:hover,.dnb:focus-visible{opacity:1;color:var(--ink)}',
@@ -5154,7 +5155,7 @@
       skilabod: synd(min.filter(r => hefur(r, 'skilabod') && !hefur(r, 'forgangsmal')).sort((a, b) => tStamp(b.created_at) - tStamp(a.created_at))).map(r => mk(r, 'skilabod'))
     };
   }
-  /* ÞARF ÞIG NÚNA (526, 23.11.2026) — spjaldið efst á vinnuborði Agnars. Ekki eining (engin færsla í MODS/flipum): það er
+  /* ÞARF ÞIG NÚNA (526, 23.11.2026) — spjaldið UNDIR Dagskrár-vikuplaninu á vinnuborði Agnars (sjá nunaMed). Ekki eining (engin færsla í MODS/flipum): það er
    * borði eins og 523 Yfirsýnarröndin, svo það lendir hvorki í „Velja einingar" né á flipa. Fellur saman með ▴ og valið
    * vistast á þjón (Vidmot `bord.nuna.opid`, eins á öllum vélum) — 520 „Í dag" var tekin af borðinu 19.11 af því hún varð
    * ekki felld saman. Haus sýnir samantektina (hve margir póstar og reikningar) þótt spjaldið sé lokað. */
@@ -6229,9 +6230,17 @@
      * og röðin undir dagatalinu er Checklisti | VIP-mál með einni skilalínu (tvísmellur → helmingur á hvorn). */
     const rod3c1 = efstBreidd();
     const dskHtml = dskLyft ? einingHtml('dagskra') : '';
+    /* 23.11.2026 — „ÞARF ÞIG NÚNA" (526) UNDIR VIKUPLANINU. Agnar: „Þarf þig núna þarf að vera undir dagskrá vikuplaninu …
+     * dagskrá vikuplanið er opið öllum" — Dagskráin er sameiginleg og stendur því í sama stað hjá öllum; persónulega spjaldið
+     * hans kemur beint fyrir neðan hana (á undan Checklisti | VIP-mál). Áður (sama dag): „ekki setja neitt fyrir ofan
+     * yfirsýnina" — Yfirsýnarröndin stendur áfram efst. Aðeins á „Mitt vinnuborð" eigandans, ekki í raðham, ekki hjá öðrum.
+     * Sé Dagskráin ekki fremst (annar flipi) stendur spjaldið á undan einingaristinni. Fellur saman, valið vistað. */
+    const nunaMed = stjornStika && mode.mitt && !radar;
     const efst = !dskLyft ? '' : '<div class="efst">' + flipaHtml() +
       (selEininga ? '<div class="sel inline">' + selMarkup + '</div>' : '') +
       '<div class="modgrid einn"><div class="modcell" data-sp="3">' + dskHtml + '</div></div>' +
+      // 23.11.2026 — 526 „Þarf þig núna" stendur UNDIR Dagskrár-vikuplaninu (sjá nunaMed).
+      (nunaMed ? nunaHtml() : '') +
       (hlidDalkur
         ? '<div class="efst-rod3" style="--c1:' + rod3c1 + '%;--rod3h:' + efstHaed() + 'px">' +
             '<div class="modcell" data-sp="3">' + einingHtml(HLID_EININGAR[0]) + '</div>' +
@@ -6282,10 +6291,6 @@
         // 21.11.2026 (Agnar, skjáskot með grænum örvum: „mátt svissa þessu í leiðinni"): röndin stendur nú EFST, beint undir
         // borðanum, og Flýtileiðir fyrir neðan hana — áður var röðin öfug.
         (() => { try { return window.YfirsynRond ? YfirsynRond.html(n, { master: S.rows.length, mine: S.rows.filter(r => onBoardOf(r, n)).length }) : ''; } catch (_) { return ''; } })() +
-        // 23.11.2026 — 526 „Þarf þig núna": póstur sem bíður svars + reikningar sem bíða sendingar, BEINT UNDIR Yfirsýnarröndinni
-        // (Agnar 23.11: „ekki setja neitt fyrir ofan yfirsýnina" — röndin stendur efst eins og 21.11). Aðeins á „Mitt vinnuborð"
-        // eigandans (ekki hinum hömum, ekki borðum annarra). Fellur saman og valið er vistað.
-        (stjornStika && mode.mitt && !radar ? nunaHtml() : '') +
         // 18.11.2026 — Flýtileiðir standa beint undir borðanum (Agnar, með ör af þeim upp í stikuna sem fór); frá 21.11 undir
         // Yfirsýnarröndinni. Þær eru leiðin út úr borðinu (Keldan, Drive, Payday, Tímavera).
         linksHtml(c.mode, stjornStika) +
@@ -6327,6 +6332,7 @@
           ' <button type="button" class="btn iv sm" data-t5="fela-endurlesa">Reyna aftur</button></p>' : '') +
         // 368aa: KPI-spjöldin eiga við borðið — einingahamir og vinnusvæði bera sínar eigin tölur.
         (mode.board && !baraMitt ? '<div class="kpis">' + kpiHtml(master, mine) + '</div>' : '') +
+        (nunaMed && !dskLyft ? nunaHtml() : '') +
         layout +
         // 21.11.2026 — „Annað á borðinu": það sem Agnar merkti blátt (færa neðst, samanbrotið) — ekkert hent.
         nedstHtml(n, stjornStika, nedstEiningar.map(einingHtml).join(''), hlidDalkur) +
