@@ -37,6 +37,40 @@
     }).catch(function(){ endurnyjun=null; return window.__sbTok||null; });
     return endurnyjun;
   };
+  // 23.11.2026: Frá 09:36 hefur anon ekkert GRANT á 127 töflum (rls_starfsfolk_20261123). Kóði sem sækir beint
+  // með fetch og opinbera lyklinum sem Bearer (177 í-þjónustu, 156, 387, 435, 441 og samskipti-hleðslan neðst á
+  // síðunni) fékk 401: „í þjónustu“ hlóðst með 0 félögum (mælt). Beiðni á /rest/v1/ þar sem Authorization er
+  // nákvæmlega 'Bearer ' + apikey-hausinn fær hér starfsmannatáknið í staðinn. Annað fer óbreytt. Ekkert tákn
+  // (óinnskráður) = óbreytt beiðni.
+  try{
+    var _of=window.fetch;
+    if(_of && !_of.__starfstok){
+      var nyr=function(input, init){
+        try{
+          var url=typeof input==='string'?input:(input&&input.url)||'';
+          if(init && init.headers && url.indexOf('.supabase.co/rest/v1/')>-1){
+            var h=init.headers, isH=(typeof Headers!=='undefined' && h instanceof Headers);
+            var key=isH?h.get('apikey'):(h.apikey||h.Apikey);
+            var auth=isH?h.get('Authorization'):(h.Authorization||h.authorization);
+            if(key && auth==='Bearer '+key){
+              var self=window, args=arguments;
+              return window.__sbToki().then(function(tok){
+                if(!tok) return _of.apply(self,args);
+                var nh;
+                if(isH){ nh=new Headers(h); nh.set('Authorization','Bearer '+tok); }
+                else { nh={}; for(var k in h){ if(k!=='authorization') nh[k]=h[k]; } nh.Authorization='Bearer '+tok; }
+                var ni={}; for(var j in init) ni[j]=init[j]; ni.headers=nh;
+                return _of.call(self,input,ni);
+              },function(){ return _of.apply(self,args); });
+            }
+          }
+        }catch(e){}
+        return _of.apply(window,arguments);
+      };
+      nyr.__starfstok=true;
+      window.fetch=nyr;
+    }
+  }catch(e){}
   var t=setTimeout(function(){ location.replace(inn); }, 8000);
   var p=window.__hubNotandiP=fetch('/api/hub-adgangar',{credentials:'same-origin',cache:'no-store'}).then(function(r){return r.json();});
   p.then(function(s){
