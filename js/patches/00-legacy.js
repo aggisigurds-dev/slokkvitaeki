@@ -2710,6 +2710,10 @@ console.log('[patch-master] loaded with all fixes');
     window.DB.sb.from('fyrirtaeki').select('*').eq('id',companyId).single().then(function(r){
       if(!r.data){alert('Fyrirtaeki ekki fundid');return;}
       var c=r.data;
+      // 23.11.2026 (mælt á lifandi vef): rétt eftir hleðslu kom .single() stundum sem FYLKI úr minnislagi rest-samnyting (Accept-haus ólæsilegur) — glugginn
+      // opnaðist þá með ÖLLUM reitum tómum. Taka fyrstu röð; finnist engin röð: ekki opna tóman glugga sem gæti verið skrifaður yfir gögn.
+      if(Array.isArray(c)) c=c[0];
+      if(!c||c.id==null){alert('Fyrirtaeki ekki fundid');return;}
       var m=document.createElement('div');m.className='_pm_modal';
       // 2026-06-28: HTML-escape every customer field. Previously c.nafn /
       // c.kennitala / c.athugasemdir were concatenated straight into
