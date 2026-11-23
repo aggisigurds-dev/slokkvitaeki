@@ -20,6 +20,14 @@
 
 const P = require('./_portal.cjs');
 const HUB = require('./hub-adgangar.cjs');
+const JWT = require('./_sb-jwt.cjs');
+
+function bearer(event) {
+  const h = (event && event.headers) || {};
+  const raw = h.authorization || h.Authorization || '';
+  const m = /^Bearer\s+(.+)$/i.exec(String(raw).trim());
+  return m ? m[1] : '';
+}
 
 // Sama hlið, en skilar líka hver er inni: { villa: svar|null, nafn }. Föll sem SKRÁ hver gerði hvað (t.d. færsla
 // innflutnings á birgðir, 16.11.2026) nota þetta; hin nota krefjastStarfsmanns sem byggir á því.
@@ -36,6 +44,8 @@ const OSTADFEST = () => P.json(503, { error: 'Náði ekki að staðfesta innskr�
 const VANTAR = () => P.json(401, { error: 'Innskráning starfsmanns vantar', need_login: true, login: '/innskraning.html' });
 
 async function starfsmadur(event) {
+  const tok = bearer(event);
+  if (tok && JWT.verifyStaffJwt(tok)) return { villa: null, nafn: 'Starfsmaður' };
   if (P.hubConfigured() && P.staffFromEvent(event)) return { villa: null, nafn: 'Starfsmaður' };
   const s = await innskraning(event);
   if (!s) return { villa: OSTADFEST(), nafn: null };
@@ -74,7 +84,7 @@ async function krefjastStarfsmannsEdaInnri(event) {
 function atburdurUr(req) {
   const h = (req && req.headers) || { get: () => '' };
   const g = (n) => String((typeof h.get === 'function' ? h.get(n) : h[n]) || '');
-  return { headers: { cookie: g('cookie'), host: g('host'), [HUB.INNRI_HAUS]: g(HUB.INNRI_HAUS) } };
+  return { headers: { cookie: g('cookie'), host: g('host'), authorization: g('authorization'), [HUB.INNRI_HAUS]: g(HUB.INNRI_HAUS) } };
 }
 async function vefHlid(req, opts) {
   const e = atburdurUr(req);

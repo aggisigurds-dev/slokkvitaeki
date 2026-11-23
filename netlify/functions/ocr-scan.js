@@ -1,3 +1,4 @@
+import Hlid from './_starfshlid.cjs';
 /**
  * OCR-skönnun — les EINN reit af mynd úr myndavélinni (Scan Mode, js/scanmode.js).
  *
@@ -35,6 +36,7 @@ const DEFAULT_PROMPT =
 
 export default async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors() });
+  const _hlid = await Hlid.vefHlid(req); if (_hlid) return _hlid;
   if (req.method !== 'POST') return j(405, { error: 'POST only' });
 
   // Default-open shared-secret gate: enforced AÐEINS þegar EDGE_SHARED_KEY er sett.

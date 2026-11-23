@@ -1,3 +1,4 @@
+import Hlid from './_starfshlid.cjs';
 // teikn-pdf — upprunalega PDF-skjalið á bak við FotoWeb-permalink, af SÖMU rót.
 //
 // 20.09.2026 (383): teikn-mynd skilar 6006 px JPEG af blaðinu. CAD-uppdrættir eru hins vegar VIGUR-PDF (Fiskislóð 41,
@@ -59,6 +60,7 @@ async function saekjaMedThaki(slod, ms, valkostir) {
 
 export default async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
+  const _hlid = await Hlid.vefHlid(req); if (_hlid) return _hlid;
 
   const raw = new URL(req.url).searchParams.get('url') || '';
   let target;

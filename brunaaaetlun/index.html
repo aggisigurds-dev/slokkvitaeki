@@ -2,6 +2,23 @@
 <html lang="is">
 <head>
 <meta charset="utf-8">
+<style>html.hub-gate-pending body{visibility:hidden}</style>
+<script>
+(function(){try{
+  var d=document.documentElement; d.classList.add('hub-gate-pending');
+  var next=location.pathname+location.search+location.hash;
+  var inn='/innskraning.html?next='+encodeURIComponent(next);
+  var done=false, open=function(){ if(done)return; done=true; d.classList.remove('hub-gate-pending'); };
+  var t=setTimeout(function(){ location.replace(inn); }, 8000);
+  var p=window.__hubNotandiP=fetch('/api/hub-adgangar',{credentials:'same-origin',cache:'no-store'}).then(function(r){return r.json();});
+  p.then(function(s){
+    clearTimeout(t);
+    if(s && s.sb_jwt) window.__sbTok = s.sb_jwt;
+    if(s && s.authed) open();
+    else location.replace(inn);
+  }).catch(function(){ clearTimeout(t); location.replace(inn); });
+}catch(e){ location.replace('/innskraning.html'); }})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#16171b">
@@ -18,6 +35,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="takn.js?v=20261014r"></script>
 <script src="snidmat.js?v=20261014r"></script>
-<script src="smidur.js?v=20261014r"></script>
+<script src="smidur.js?v=20261123b"></script>
 </body>
 </html>

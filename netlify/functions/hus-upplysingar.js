@@ -1,3 +1,4 @@
+import Hlid from './_starfshlid.cjs';
 /**
  * Húsupplýsingar úr opinberum skrám — fyrir fyrirtækjabannerinn (patch 363).
  *
@@ -104,7 +105,7 @@ const minni = new Map();
 // Sama mynstur og geocode.js hefur notað fyrir geocode_cache.
 // Bregðist taflan (vantar, RLS, net) er þagað og farið í upprunann — ekkert brotnar.
 const SB_URL = 'https://osfdzskyvisifcwyjkuk.supabase.co';
-const SB_KEY = 'sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f';
+const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const SB_HAUS = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` };
 const UTGAFA = '2026-10-19b';   // Mosfellsbær bættist við (bein kortasjá); tóm 270/271-svör frá 2026-10-02 detta út
 
@@ -588,6 +589,7 @@ export async function husUpplysingar(heimilisfang, frestMs = FRESTUR_MS) {
 
 export default async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
+  const _hlid = await Hlid.vefHlid(req); if (_hlid) return _hlid;
   const url = new URL(req.url);
   const heimilisfang = (url.searchParams.get('heimilisfang') || '').normalize('NFC').trim();
   if (heimilisfang.length < 4) return json({ error: 'heimilisfang vantar' }, 400);

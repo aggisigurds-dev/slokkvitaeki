@@ -1,3 +1,4 @@
+import Hlid from './_starfshlid.cjs';
 /**
  * Séruppdrættir Reykjavíkur — FotoWeb-safn 5004, einu sinni á landnúmer.
  *
@@ -32,7 +33,7 @@ const OPID = 'https://skjalasafn.reykjavik.is/fotoweb/archives/5004-Séruppdræt
 const WFS = 'https://geo.fasteignaskra.is/ws/geoserver/wfs';
 
 const SB_URL = 'https://osfdzskyvisifcwyjkuk.supabase.co';
-const SB_KEY = 'sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f';
+const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const SB_HAUS = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` };
 const UTGAFA = 'serupp-1';
 const HUS_UTGAFA = '2026-09-14';
@@ -292,6 +293,7 @@ function medCache(svar, cache) {
 
 export default async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
+  const _hlid = await Hlid.vefHlid(req); if (_hlid) return _hlid;
   const sp = new URL(req.url).searchParams;
   const endurnyja = sp.get('endurnyja') === '1';
   const landnrBeint = (sp.get('landnr') || '').replace(/[^0-9]/g, '');

@@ -1,3 +1,4 @@
+import Hlid from './_starfshlid.cjs';
 // teikn-blad — BLAÐSTÆRÐ teikningar í mm (06.10.2026, 383: raunhæð veggja í 3D).
 //
 // 3D-líkanið þarf að vita hve margir dílar frummyndarinnar eru í metra. Skjalasafnið gefur ekki upp kvarðann, en
@@ -63,6 +64,7 @@ async function pdfBlad(r) {
 
 export default async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
+  const _hlid = await Hlid.vefHlid(req); if (_hlid) return _hlid;
   const raw = new URL(req.url).searchParams.get('url') || '';
   let target;
   try { target = new URL(raw); } catch { return svara(400, { villa: 'Ógild slóð' }); }

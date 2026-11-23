@@ -1,3 +1,4 @@
+import Hlid from './_starfshlid.cjs';
 /**
  * Þjónustuver AI-flokkun (triage) — batch classify email-mál into the board's
  * own vocabulary so incoming póstur lands on the Þjónustuborð already sorted.
@@ -39,6 +40,7 @@ const MODELS_OK = { 'claude-haiku-4-5-20251001': 1, 'claude-sonnet-5': 1 };
 
 export default async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors() });
+  const _hlid = await Hlid.vefHlid(req); if (_hlid) return _hlid;
   if (req.method !== 'POST') return j(405, { error: 'POST only' });
 
   // Default-open shared-secret gate: enforced AÐEINS þegar EDGE_SHARED_KEY er sett.

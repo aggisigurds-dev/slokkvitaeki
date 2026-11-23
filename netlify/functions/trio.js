@@ -26,14 +26,12 @@
  * PRÓFÍLL vs SKÝRSLA er sterkari mælirinn og á fjórfalt fleiri fyrirtæki (501 á móti 132). Reikningur nær aðeins yfir það sem var þjónustað þann daginn,
  * svo hann víkur oft af fullkomlega eðlilegum ástæðum.
  */
-import fs from 'node:fs';
-import path from 'node:path';
+import Hlid from './_starfshlid.cjs';
 
 function config() {
-  const src = fs.readFileSync(path.join(process.cwd(), 'js', 'config.js'), 'utf8');
-  const url = (src.match(/SUPABASE_URL\s*=\s*["']([^"']+)/) || [])[1];
-  const key = (src.match(/SUPABASE_KEY\s*=\s*["']([^"']+)/) || [])[1];
-  if (!url || !key) throw new Error('Fann ekki SUPABASE_URL/KEY í js/config.js');
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) throw new Error('SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY vantar');
   return { url, key };
 }
 
@@ -125,6 +123,7 @@ async function maela(cfg) {
 
 export default async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors() });
+  const _hlid = await Hlid.vefHlid(req); if (_hlid) return _hlid;
 
   let cfg;
   try { cfg = config(); } catch (e) { return json(500, { villa: String(e.message) }); }

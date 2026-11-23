@@ -1,3 +1,4 @@
+import Hlid from './_starfshlid.cjs';
 /**
  * fasteign-opin — opin gögn um eign sem kosta ekkert og þurfa engan lykil („Greining fasteignar", 451). LES AÐEINS.
  *
@@ -30,7 +31,7 @@ const BVS = 'https://borgarvefsja.reykjavik.is/arcgis/rest/services/Borgarvefsja
 // fer í SÉR kall (?osm=1) með sitt eigið 10 s þak; aðalkallið les aðeins skyndiminnið og bíður aldrei eftir Overpass.
 const OVERPASS = [['https://overpass-api.de/api/interpreter', 7600], ['https://overpass.kumi.systems/api/interpreter', 1600]];
 const SB_URL = 'https://osfdzskyvisifcwyjkuk.supabase.co';
-const SB_KEY = 'sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f';
+const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const SB_HAUS = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` };
 const OSM_UTGAFA = 'osm-2', OSM_DAGAR = 14;   // osm-2: með breytingardags hverrar færslu (out meta)
 async function osmLesa(heitinr) {
@@ -198,6 +199,7 @@ async function vefur(raw) {
 
 export default async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
+  const _hlid = await Hlid.vefHlid(req); if (_hlid) return _hlid;
   const sp = new URL(req.url).searchParams;
   // ?staerdir=1&u=<pdf>&u=… — stærð PDF-blaða teikningasafna (HEAD) svo skemmd blöð sjáist án þess að sækja þau.
   // Mælt 09.10.2026: þrjár loftræsiteikningar Dalshrauns 10 hjá Hafnarfirði eru 742 bæti (tómar). Aðeins söfnin fjögur.

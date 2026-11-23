@@ -5,23 +5,47 @@
      og í patch-skránum. Skýrslan fer á /api/villur hjá Brunahólfi (CORS *) —
      EITT borð yfir bæði öppin, ekki tvö sem enginn les. -->
 <script src="/js/villuvakt.js?v=20261014a"></script>
-<!-- Innskráningarkrafa (19.10.2026, Agnar: „hafa það að þurfi alltaf að skrá sig inn … rofi á meðan allir eru að aðlagast").
-     Rofinn (krefjast_slokk) býr á brunaholf.netlify.app/adgangar.html og er SLÖKKT sjálfgefið. Kveikt + óinnskráð(ur) → sendur á
-     /innskraning.html?next=… og aftur hingað eftir innskráningu. Bilar OPIÐ: svari þjónninn ekki innan 3,5 s eða villa komi upp opnast
-     appið eins og áður — hliðið má aldrei loka afgreiðsluna úti. Viðmótshlið (ekki API-vörn). Fyrst í <head>, svo síðan blikki ekki. -->
+<!-- Innskráningarkrafa. Hliðið er LOKAÐ: óinnskráður, tímabrot eða villa sendir á
+     /innskraning.html. Fyrst í <head>, svo síðan blikki ekki. -->
 <style>html.hub-gate-pending body{visibility:hidden}</style>
 <script>
 (function(){try{
   var d=document.documentElement; d.classList.add('hub-gate-pending');
+  var next=location.pathname+location.search+location.hash;
+  var inn='/innskraning.html?next='+encodeURIComponent(next);
   var done=false, open=function(){ if(done)return; done=true; d.classList.remove('hub-gate-pending'); };
-  var t=setTimeout(open,3500);
+  function gildur(t){
+    try{
+      var b=String(t).split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
+      while(b.length%4) b+='=';
+      var p=JSON.parse(atob(b));
+      return !!(p && p.exp && p.exp*1000 > Date.now()+60000);
+    }catch(e){ return false; }
+  }
+  var endurnyjun=null;
+  window.__sbToki=function(){
+    if(window.__sbTok && gildur(window.__sbTok)) return Promise.resolve(window.__sbTok);
+    if(endurnyjun) return endurnyjun;
+    var fyrst=window.__hubNotandiP||Promise.resolve(null);
+    endurnyjun=fyrst.then(function(s){
+      if(s && s.sb_jwt && gildur(s.sb_jwt)){ window.__sbTok=s.sb_jwt; endurnyjun=null; return s.sb_jwt; }
+      return fetch('/api/hub-adgangar',{credentials:'same-origin',cache:'no-store'}).then(function(r){return r.json();}).then(function(n){
+        endurnyjun=null;
+        if(n && n.sb_jwt) window.__sbTok=n.sb_jwt;
+        return window.__sbTok||null;
+      });
+    }).catch(function(){ endurnyjun=null; return window.__sbTok||null; });
+    return endurnyjun;
+  };
+  var t=setTimeout(function(){ location.replace(inn); }, 8000);
   var p=window.__hubNotandiP=fetch('/api/hub-adgangar',{credentials:'same-origin',cache:'no-store'}).then(function(r){return r.json();});
   p.then(function(s){
     clearTimeout(t);
-    if(s && s.gate && !s.authed){ location.replace('/innskraning.html?next='+encodeURIComponent(location.pathname+location.search+location.hash)); }
-    else open();
-  }).catch(function(){ clearTimeout(t); open(); });
-}catch(e){ document.documentElement.classList.remove('hub-gate-pending'); }})();
+    if(s && s.sb_jwt) window.__sbTok = s.sb_jwt;
+    if(s && s.authed) open();
+    else location.replace(inn);
+  }).catch(function(){ clearTimeout(t); location.replace(inn); });
+}catch(e){ location.replace('/innskraning.html'); }})();
 </script>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, viewport-fit=cover"/>
@@ -528,12 +552,34 @@ html[data-bh="1"],html[data-bh="1"] body{overflow-x:hidden}
 <div id="printarea"></div>
 <!-- Supabase SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+/* Öll createClient-köll (líka varaleiðir í plástrum) bíða eftir starfsmannatákninu.
+   Skili fallið null er anon-lykillinn notaður — það heldur appinu gangandi
+   þangað til RLS-færslan er keyrð. */
+(function(){
+  if(!window.supabase||!window.supabase.createClient||window.supabase.createClient.__staff) return;
+  var orig=window.supabase.createClient;
+  function wrapped(url,key,opts){
+    opts=opts||{};
+    if(!opts.accessToken){
+      opts.accessToken=function(){
+        if(window.__sbToki) return window.__sbToki();
+        var p=window.__hubNotandiP||Promise.resolve(null);
+        return p.then(function(s){ return (s&&s.sb_jwt)||window.__sbTok||null; }).catch(function(){ return null; });
+      };
+    }
+    return orig.call(window.supabase,url,key,opts);
+  }
+  wrapped.__staff=true;
+  window.supabase.createClient=wrapped;
+})();
+</script>
 <script src="/js/config.js"></script>
 <script src="/js/patches/514-bh-bru.js?v=20261123a"></script><!-- lota 13: tóki á köll til Brunahólfs (fyrir aðra plástra) -->
 <!-- 451: sýndarvörður — stöðvar hvert skrif á sýndarfyrirtækið (Greining fasteignar) ÁÐUR en supabase-js grípur fetch -->
 <script src="/js/sydarvordur.js?v=20261009a"></script>
 <script src="/js/rest-samnyting.js?v=20261014mjor"></script>
-<script src="/js/db.js?v=20261012ferskt"></script>
+<script src="/js/db.js?v=20261123b"></script>
 <!-- Problem registry: loads right after db.js so window.logProblem + auto error
      capture are live before every patch below (records problems to app_problems). -->
 <script src="/js/patches/309-problem-registry.js?v=20261005a"></script>

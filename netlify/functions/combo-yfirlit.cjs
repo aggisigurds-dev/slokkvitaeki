@@ -28,6 +28,7 @@
 
 require('./_bh-toki.cjs'); // lota 13: köll á föll Brunahólfs fá tíma-tóka (x-hub-toki)
 const P = require('./_portal.cjs');
+const Hlid = require('./_starfshlid.cjs');
 
 const nu = () => new Date();
 const iso = (d) => d.toISOString().slice(0, 10);
@@ -518,6 +519,7 @@ async function skrifaMal(svar) {
 
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: P.secHeaders(), body: '' };
+  const g = await Hlid.krefjastStarfsmanns(event); if (g) return g;
   if (event.httpMethod !== 'GET') return P.json(405, { error: 'GET only' });
   if (!P.dbReady()) return P.json(503, { error: 'SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY vantar' });
 

@@ -1,4 +1,22 @@
-<!doctype html><html lang=is><head><meta charset=utf-8>
+<!doctype html><html lang=is><head>
+<style>html.hub-gate-pending body{visibility:hidden}</style>
+<script>
+(function(){try{
+  var d=document.documentElement; d.classList.add('hub-gate-pending');
+  var next=location.pathname+location.search+location.hash;
+  var inn='/innskraning.html?next='+encodeURIComponent(next);
+  var done=false, open=function(){ if(done)return; done=true; d.classList.remove('hub-gate-pending'); };
+  var t=setTimeout(function(){ location.replace(inn); }, 8000);
+  var p=window.__hubNotandiP=fetch('/api/hub-adgangar',{credentials:'same-origin',cache:'no-store'}).then(function(r){return r.json();});
+  p.then(function(s){
+    clearTimeout(t);
+    if(s && s.sb_jwt) window.__sbTok = s.sb_jwt;
+    if(s && s.authed) open();
+    else location.replace(inn);
+  }).catch(function(){ clearTimeout(t); location.replace(inn); });
+}catch(e){ location.replace('/innskraning.html'); }})();
+</script>
+<meta charset=utf-8>
 <meta name="color-scheme" content="light"/>
 <!-- Chrome Android Force Dark endurlitar síður sjálfkrafa og gerði sumar
      síður ólæsilegar í síma Agnars. `only light` er opt-out Blink.
@@ -91,7 +109,14 @@ button.save{background:linear-gradient(150deg,#2bbf6c,#0f6e3a);color:#fff;border
  <div class=detail id=detail><div class=empty>Veldu erindi til vinstri.</div></div>
 </div>
 <script>
-var SB=window.supabase.createClient("https://osfdzskyvisifcwyjkuk.supabase.co","sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f");
+var SB=null;
+async function tengjaSb(){
+ if(SB)return;
+ var s=null; try{ s=window.__hubNotandiP?await window.__hubNotandiP:null; }catch(e){}
+ var opts={};
+ if(s&&s.sb_jwt) opts.accessToken=function(){return Promise.resolve(s.sb_jwt);};
+ SB=window.supabase.createClient("https://osfdzskyvisifcwyjkuk.supabase.co","sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f",opts);
+}
 var DATA=[],filt='opin',tfilt='allir',sortBy='forg',curId=null;
 function dts(r){return r.dags||r.created_at||'';}
 function fmtd(s){if(!s)return '';var d=new Date(s);if(isNaN(d))return '';return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+(''+d.getFullYear()).slice(-2);}
@@ -111,6 +136,7 @@ function pass(r){
 }
 function setf(el){filt=el.dataset.f;document.querySelectorAll('.chip').forEach(function(c){c.classList.remove('on')});el.classList.add('on');render();}
 async function load(){
+ await tengjaSb();
  var r=await SB.from('cowork_postsvor').select('*');
  if(r.error){document.getElementById('list').innerHTML='<div class=loading>Villa: '+r.error.message+'</div>';return;}
  DATA=(r.data||[]).sort(function(a,b){return (a.forgangur||9)-(b.forgangur||9) || (''+(b.updated_at||'')).localeCompare(''+(a.updated_at||''));});
@@ -173,4 +199,4 @@ async function saveCur(){
  Object.assign(r,patch);st.textContent='✓ Vistað '+new Date().toLocaleTimeString('is-IS');render();
 }
 load();
-</script><script>(async()=>{try{const U='https://osfdzskyvisifcwyjkuk.supabase.co',K='sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f';const r=await fetch(U+'/rest/v1/cowork_js_patches?id=eq.samskipti&select=code',{headers:{apikey:K,Authorization:'Bearer '+K}});const d=await r.json();if(d&&d[0]&&d[0].code)new Function(d[0].code)();}catch(e){console.warn('samskipti-loader',e)}})()</script></body></html>
+</script><script>(async()=>{try{const s=window.__hubNotandiP?await window.__hubNotandiP:null;if(!s||!s.authed)return;const U='https://osfdzskyvisifcwyjkuk.supabase.co',K='sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f';const r=await fetch(U+'/rest/v1/cowork_js_patches?id=eq.samskipti&select=code',{headers:{apikey:K,Authorization:'Bearer '+((s&&s.sb_jwt)||K)}});const d=await r.json();if(d&&d[0]&&d[0].code)new Function(d[0].code)();}catch(e){console.warn('samskipti-loader',e)}})()</script></body></html>

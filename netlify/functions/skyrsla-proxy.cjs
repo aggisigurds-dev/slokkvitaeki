@@ -13,8 +13,10 @@
  * (ekkert opið proxy).
  */
 const SUPABASE_URL = 'https://osfdzskyvisifcwyjkuk.supabase.co';
+const Hlid = require('./_starfshlid.cjs');
 
 exports.handler = async (event) => {
+  const g = await Hlid.krefjastStarfsmanns(event); if (g) return g;
   const p = (event.queryStringParameters && event.queryStringParameters.p) || '';
   if (!/^brunakerfi-skyrslur\/[\w\-]+\/[\w\-.]+\.html$/.test(p)) {
     return { statusCode: 400, body: 'invalid path' };

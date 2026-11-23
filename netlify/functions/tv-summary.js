@@ -1,3 +1,4 @@
+import Hlid from './_starfshlid.cjs';
 /**
  * Þjónustuver AI summary — one short Icelandic "next action" line per request.
  *
@@ -8,6 +9,7 @@
  * Server-side so ANTHROPIC_API_KEY stays off the client. Uses Haiku (cheap).
  */
 export default async (req) => {
+  const _hlid = await Hlid.vefHlid(req); if (_hlid) return _hlid;
   if (req.method !== 'POST') return j(405, { error: 'POST only' });
 
   // Default-open shared-secret gate: enforced AÐEINS þegar EDGE_SHARED_KEY er sett.

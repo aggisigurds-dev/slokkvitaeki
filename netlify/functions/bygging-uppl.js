@@ -33,12 +33,13 @@
  * reiti. Þetta fall skrifar ekkert.
  */
 import { husUpplysingar, thattaHeimilisfang } from './hus-upplysingar.js';
+import Hlid from './_starfshlid.cjs';
 
 const FOTOWEB = 'https://skjalasafn.reykjavik.is';
 const RVK_SAFN = '/fotoweb/archives/5000-A%C3%B0aluppdr%C3%A6ttir/';
 const KJARNI_HAMARK = 150;      // Kjarni sækir 6 síður × 25; fleiri blöð = listinn styttur → bein orðaleit
 const SB_URL = 'https://osfdzskyvisifcwyjkuk.supabase.co';
-const SB_KEY = 'sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f';
+const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const OCR_MIN_SKJAL = 2.5;      // mælt miðgildi 143 s per skjal á skrifstofutölvunni (samanburdur/lestur/_timar.json)
 
 const cors = {
@@ -317,6 +318,7 @@ export async function byggingUppl({ heimilisfang, landnr, mhl }) {
 
 export default async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
+  const _hlid = await Hlid.vefHlid(req); if (_hlid) return _hlid;
   const sp = new URL(req.url).searchParams;
   const heimilisfang = (sp.get('heimilisfang') || '').normalize('NFC').trim();
   const landnr = (sp.get('landnr') || '').replace(/[^0-9]/g, '');

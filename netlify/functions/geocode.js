@@ -28,13 +28,14 @@
  * falls back to the no-cache path; nothing breaks.
  */
 const SUPABASE_URL = 'https://osfdzskyvisifcwyjkuk.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f';
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 // Staðfangaskrá HMS — opið WFS, enginn lykill. Sama heimild og
 // netlify/functions/hus-upplysingar.js notar fyrir bannerinn.
 const WFS_STADFANG = 'https://geo.fasteignaskra.is/ws/geoserver/wfs';
 
 async function readCache(q) {
+  if (!SUPABASE_KEY) return null;
   try {
     const u = `${SUPABASE_URL}/rest/v1/geocode_cache?query=eq.${encodeURIComponent(q)}&select=lat,lng,display_name&limit=1`;
     const r = await fetch(u, {
@@ -56,6 +57,7 @@ async function readCache(q) {
 // hver vél endurreiknar 295 heimilisföng (~7 mín) og við nálgumst Nominatim-þakið.
 // Nú fer staðan í fallalogg Netlify, þar sem hana má finna.
 async function writeCache(q, lat, lon, displayName, source) {
+  if (!SUPABASE_KEY) return;
   try {
     const u = `${SUPABASE_URL}/rest/v1/geocode_cache`;
     const r = await fetch(u, {

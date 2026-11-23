@@ -2,6 +2,23 @@
 <html lang="is">
 <head>
 <meta charset="utf-8">
+<style>html.hub-gate-pending body{visibility:hidden}</style>
+<script>
+(function(){try{
+  var d=document.documentElement; d.classList.add('hub-gate-pending');
+  var next=location.pathname+location.search+location.hash;
+  var inn='/innskraning.html?next='+encodeURIComponent(next);
+  var done=false, open=function(){ if(done)return; done=true; d.classList.remove('hub-gate-pending'); };
+  var t=setTimeout(function(){ location.replace(inn); }, 8000);
+  var p=window.__hubNotandiP=fetch('/api/hub-adgangar',{credentials:'same-origin',cache:'no-store'}).then(function(r){return r.json();});
+  p.then(function(s){
+    clearTimeout(t);
+    if(s && s.sb_jwt) window.__sbTok = s.sb_jwt;
+    if(s && s.authed) open();
+    else location.replace(inn);
+  }).catch(function(){ clearTimeout(t); location.replace(inn); });
+}catch(e){ location.replace('/innskraning.html'); }})();
+</script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>Rýmingaráætlun</title>
@@ -238,7 +255,14 @@ const yearOf=d=>((String(d||'').match(/(19|20)\d{2}/)||[])[0])||String(new Date(
 
 
 /* ---------- gagnagrunnur (Supabase: tafla rymingaraetlun, ein röð á fyrirtæki) ---------- */
-let sb=null;try{sb=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_KEY)}catch(e){}
+let sb=null;
+async function tengjaSb(){
+  if(sb)return;
+  var s=null; try{ s=window.__hubNotandiP?await window.__hubNotandiP:null; }catch(e){}
+  var opts={};
+  if(s&&s.sb_jwt) opts.accessToken=function(){return Promise.resolve(s.sb_jwt);};
+  try{ sb=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_KEY,opts); }catch(e){}
+}
 const CID=Number(new URLSearchParams(location.search).get('fyrirtaeki'))||0;
 let P=null,timer=null,uppfaert=null,vistar=false,aftur=false,fyr=null;
 const label=p=>p.meta.heimilisfang||p.titill||'Rýmingaráætlun';
@@ -616,6 +640,7 @@ function opnaSenda(){
 
 /* ---------- ræsing ---------- */
 (async()=>{
+  await tengjaSb();
   if(!sb){$('#doc').innerHTML='<p>Engin tenging við gagnagrunn.</p>';return}
   if(!CID){
     $('#missing').style.display='none';

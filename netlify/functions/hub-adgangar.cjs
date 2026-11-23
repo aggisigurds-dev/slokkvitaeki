@@ -2,7 +2,8 @@
 // Breyttu fallinu þar og afritaðu hingað óbreytt (nema require-línan hér að neðan). Hlið/rofi Slökkvitækis er sjálfstæður (krefjast_slokk).
 // hub-adgangar.js — notendaskrá, innskráning og aðgangsstjórn (admin) fyrir stjórnstöðina.
 //
-//   GET  /api/hub-adgangar              → { setupNeeded, authed, user }            (opið — ber engin leyndarmál)
+//   GET  /api/hub-adgangar              → { setupNeeded, authed, user, sb_jwt? }
+//   sb_jwt er aðeins með þegar lotan er þegar innskráð og SUPABASE_JWT_SECRET er sett.
 //   GET  /api/hub-adgangar?listi=1      → starfsmannalisti + stilling              (aðeins Admin)
 //   POST /api/hub-adgangar { action }
 //        opið:    login {nn,password} · logout · setup {code,password} · gleymt {postfang}
@@ -27,6 +28,7 @@
 
 const crypto = require('crypto');
 const P = require('./_portal.cjs');
+const SBJWT = require('./_sb-jwt.cjs');
 
 const COOKIE = 'hub_user';
 const TTL = 60 * 60 * 10;               // sjálfgefið: 10 klst
@@ -126,7 +128,10 @@ const URL_SLOKK = 'https://slokkvitaeki.netlify.app/';
 const hostOf = (event) => String((event.headers && (event.headers.host || event.headers.Host)) || '').toLowerCase();
 // Sama fall og sama notendaskrá þjónar báðum vefjum; hliðið (rofinn) er sjálfstætt per vef.
 const erSlokk = (event) => hostOf(event).indexOf('slokkvitaeki') > -1;
-const gateFor = (st, event) => !!(st && st.pw_hash && (erSlokk(event) ? st.krefjast_slokk : st.krefjast));
+// Slökkvitæki: hliðið er alltaf kveikt þegar lykilorð er sett. krefjast_slokk var
+// slökkt tímabundið fyrir skönnun; kóðinn krefst innskráningar óháð flagginu.
+// sql/2026-11-23_rls_starfsfolk.sql setur flaggið aftur á þegar það er keyrt.
+const gateFor = (st, event) => !!(st && st.pw_hash && (erSlokk(event) ? true : st.krefjast));
 const MAIL_ACCOUNT = process.env.HUB_MAIL_ACCOUNT || 'eldklar@eldklar.is';
 const MAIL_FROM = process.env.HUB_MAIL_FROM || 'Brunahólf <eldklar@eldklar.is>';
 
@@ -273,8 +278,14 @@ exports.handler = async (event) => {
       return P.json(200, { users, rolur: ROLUR, felog: FELOG, sidurAll: SIDUR, katalogHub: await hubKatalog(), arfur: HUB_ARFUR, pw_changed_at: s.stilling.pw_changed_at, krefjast: !!s.stilling.krefjast, krefjast_slokk: !!s.stilling.krefjast_slokk, alltaf: !!s.stilling.session_alltaf, me: publicUser(s.user) });
     }
     const st = st0;
-    // gate = rofinn „krefjast innskráningar" er kveikt OG uppsetningu er lokið; stjórnstöðin (index.html) sendir þá óinnskráða á adgangar.html
-    return P.json(200, { setupNeeded: !!(st && !st.pw_hash && st.setup_hash), configured: !!(st && st.pw_hash), gate: gateFor(st, event), authed: !!s, user: publicUser(s && s.user) });
+    // gate = innskráningar er krafist. sb_jwt er stutt PostgREST-tákn fyrir vafrann
+    // (aðeins þegar SUPABASE_JWT_SECRET er sett). Það fer ekki í log.
+    const body = { setupNeeded: !!(st && !st.pw_hash && st.setup_hash), configured: !!(st && st.pw_hash), gate: gateFor(st, event), authed: !!s, user: publicUser(s && s.user) };
+    if (s && s.user) {
+      const tok = SBJWT.staffJwt(s.user);
+      if (tok) body.sb_jwt = tok;
+    }
+    return P.json(200, body);
   }
   if (event.httpMethod !== 'POST') return P.json(405, { error: 'GET eða POST' });
 

@@ -1,3 +1,4 @@
+import Hlid from './_starfshlid.cjs';
 /**
  * Landnúmer lookup — server-side proxy (2026-08-28, ósk Agnars).
  *
@@ -31,6 +32,7 @@ export default async (req) => {
   // 204 MÁ EKKI hafa meginmál — `new Response('', {status:204})` kastar og
   // Netlify skilar þá 502 (staðfest á lifandi falli 28.08). Verður að vera null.
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
+  const _hlid = await Hlid.vefHlid(req); if (_hlid) return _hlid;
 
   const url = new URL(req.url);
   const leit = (url.searchParams.get('leit') || url.searchParams.get('term') || '').trim();

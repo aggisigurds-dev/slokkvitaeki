@@ -9,12 +9,22 @@
      SJÁLFSTÆÐ síða: hleður engu úr appinu (engir patchar, engin skel) svo bilun hér brýtur ekkert annað og öfugt.
      Gögn: GET /api/framlina (netlify/functions/framlina.cjs). Staðreyndir (póstur, svarað, mál, verðir) koma úr
      gögnunum; AI raðar aðeins í flokka og er alltaf merkt „AI“. Enginn póstur er falinn. Ekkert er sent héðan. -->
+<style>html.hub-gate-pending body{visibility:hidden}</style>
 <script>
 (function(){try{
-  fetch('/api/hub-adgangar',{credentials:'same-origin',cache:'no-store'}).then(function(r){return r.json();}).then(function(s){
-    if(s && s.gate && !s.authed) location.replace('/innskraning.html?next='+encodeURIComponent(location.pathname+location.hash));
-  }).catch(function(){});
-}catch(e){}})();
+  var d=document.documentElement; d.classList.add('hub-gate-pending');
+  var next=location.pathname+location.search+location.hash;
+  var inn='/innskraning.html?next='+encodeURIComponent(next);
+  var done=false, open=function(){ if(done)return; done=true; d.classList.remove('hub-gate-pending'); };
+  var t=setTimeout(function(){ location.replace(inn); }, 8000);
+  var p=window.__hubNotandiP=fetch('/api/hub-adgangar',{credentials:'same-origin',cache:'no-store'}).then(function(r){return r.json();});
+  p.then(function(s){
+    clearTimeout(t);
+    if(s && s.sb_jwt) window.__sbTok = s.sb_jwt;
+    if(s && s.authed) open();
+    else location.replace(inn);
+  }).catch(function(){ clearTimeout(t); location.replace(inn); });
+}catch(e){ location.replace('/innskraning.html'); }})();
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
