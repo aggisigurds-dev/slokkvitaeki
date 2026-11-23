@@ -143,7 +143,7 @@
     var gamall = s ? dagar(s.gogn.dags) < -45 : true;
     return '<div class="egp-r vb-r"><div class="egt"><b>' + esc(g.tegund || 'Mælir') + (g.maelinr ? ' <small class="vb-fag">' + esc(g.maelinr) + '</small>' : '') + '</b><span>' + [iEign ? '' : (b ? b.nafn : ''), g.stadsetning].filter(Boolean).join(' · ') + '</span>' +
       '<div class="vb-chips">' + (s ? '<span class="kst ' + (gamall ? 'til' : 'okkar') + '">' + esc(tala(s.gogn.gildi)) + ' ' + esc(ein) + ' · ' + esc(fmtDate(s.gogn.dags)) + '</span>' : '<span class="kst oskrad">Enginn álestur</span>') +
-      (n ? '<span class="kst ekki">' + esc(tala(Math.round(n.diff * 10) / 10)) + ' ' + esc(ein) + ' á ' + n.dagar + ' dögum</span>' : '') + (s && s.mynd ? '<a class="vb-th" href="' + esc(s.mynd) + '" target="_blank" rel="noopener"><img src="' + esc(s.mynd) + '" alt=""></a>' : '') + '</div></div>' +
+      (n ? '<span class="kst ekki">' + esc(tala(Math.round(n.diff * 10) / 10)) + ' ' + esc(ein) + ' á ' + n.dagar + ' dögum</span>' : '') + (s && s.mynd ? '<a class="vb-th" href="' + esc(s.mynd) + '" target="_blank" rel="noopener"><img src="' + esc(s.mynd) + '" alt="" loading="lazy" decoding="async"></a>' : '') + '</div></div>' +
       '<button type="button" class="gbtn sm" data-sr-alestur="' + r.id + '">' + ic('plus', 2.2) + 'Álestur</button><button type="button" class="kbtn sm" data-sr-edit="' + r.id + '" aria-label="Breyta" title="Breyta">' + BLY + '</button></div>';
   }
   function maelarHtml() {

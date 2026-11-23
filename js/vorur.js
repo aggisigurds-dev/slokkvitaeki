@@ -36,6 +36,11 @@
   }
 
   async function loadProducts(){
+    if (window.VorurLesa) {
+      var rows = await VorurLesa.heild();
+      if (rows) _products = rows;
+      return;
+    }
     var r = await DB.sb.from('vorur').select('*').order('flokkur',{ascending:true}).order('nafn',{ascending:true});
     _products = r.data || [];
   }
@@ -246,7 +251,7 @@
       // picture"). NB full-rammi (allar hliðar) var reyndur 2026-07-26 en Agnar
       // vildi HÁLFAN ramma → bakkað í vinstri-kant.
       var frame = tc ? ';border-left:3.6px solid '+tc+';box-sizing:border-box' : '';
-      var img = p.mynd ? '<img src="'+esc(p.mynd)+'" style="width:100%;height:72px;object-fit:cover;border-radius:7px;background:#f8fafc'+frame+'">' : '<div style="width:100%;height:72px;background:#f8fafc;border-radius:7px;display:flex;align-items:center;justify-content:center;color:#cbd5e1;font-size:22px'+frame+'">📦</div>';
+      var img = p.mynd ? '<img src="'+esc(p.mynd)+'" alt="" width="178" height="72" loading="lazy" decoding="async" style="width:100%;height:72px;object-fit:cover;border-radius:7px;background:#f8fafc'+frame+'">' : '<div style="width:100%;height:72px;background:#f8fafc;border-radius:7px;display:flex;align-items:center;justify-content:center;color:#cbd5e1;font-size:22px'+frame+'">📦</div>';
       var isSvc = p.flokkur === 'Þjónusta';
       var badge = '<span style="display:inline-block;background:'+(isSvc?'#fef3c7':'#dbeafe')+';color:'+(isSvc?'#92400e':'#1e40af')+';font-size:10px;padding:2px 7px;border-radius:12px;font-weight:700;letter-spacing:0.03em">'+esc(p.flokkur||'')+'</span>';
       var stockInfo = !isSvc && p.birgdir!=null ? '<div style="font-size:11px;color:#64748b;margin-top:4px">🏷️ '+p.birgdir+' á lager</div>' : '';
@@ -699,7 +704,11 @@
     });
   }
 
-  async function refresh(){ await loadProducts(); renderView(); }
+  async function refresh(){
+    if (window.VorurLesa) VorurLesa.ogilda();
+    await loadProducts();
+    renderView();
+  }
 
   // Inject nav button once
   function injectNav(){
@@ -742,7 +751,7 @@
     setInterval(function(){
       var v = document.getElementById('view-vorur');
       if(v && v.classList.contains('active') && !hefurGrid(v)){
-        refresh();
+        loadProducts().then(function(){ renderView(); }).catch(function(){});
       }
     }, 500);
   }

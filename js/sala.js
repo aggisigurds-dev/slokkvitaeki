@@ -43,6 +43,8 @@
     var h = (location.hash || '').replace(/^#/, '');
     if (h && h.indexOf('=') === -1 && h.indexOf('/') === -1) return;
     if (window.App && typeof App.switchView === 'function') {
+      // 500 ms varaleiðin í index.html sér þetta og kallar ekki aftur.
+      window.__salaLendingSkyrd = true;
       App.switchView('sala');
     }
   }

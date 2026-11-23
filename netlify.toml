@@ -242,6 +242,43 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
+# 23.11.2026: /gatt/* og /vefverslun/* (nema HTML) voru max-age=0, svo hver heimsókn
+# sótti portal.js, CSS og myndir aftur. Skriftur og CSS eru sóttar með ?v= og
+# vafrinn notar alla slóðina sem lykil. HTML er áfram max-age=0, svo nýtt ?v=
+# sést strax. Ekki immutable í eitt ár: ?v= er handskrifað, og gleymt merki
+# festir þá gamla skrá í ár (sama ástæða og /js/* er klukkustund). Myndir án
+# hash fylgja /img/*. Reglurnar eru eftir HTML-reglunum; Netlify tekur síðasta
+# samsvörun. /gatt/ og /vefverslun/ (HTML) falla ekki undir *.js / *.css / myndir.
+[[headers]]
+  for = "/gatt/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=3600, stale-while-revalidate=86400"
+
+[[headers]]
+  for = "/gatt/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=3600, stale-while-revalidate=86400"
+
+[[headers]]
+  for = "/gatt/myndir/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
+
+[[headers]]
+  for = "/vefverslun/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=3600, stale-while-revalidate=86400"
+
+[[headers]]
+  for = "/vefverslun/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=3600, stale-while-revalidate=86400"
+
+[[headers]]
+  for = "/vefverslun/myndir/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
+
 # Sjálfvirk greiðslu-samstilling úr Payday tvisvar á dag: kl. 10:00 og 15:00
 # (cron er í UTC; Ísland = UTC allt árið → sömu tímar að staðartíma). Sami
 # vinnsluferill og 🔄 takkinn á Kröfu yfirlit.

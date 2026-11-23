@@ -713,7 +713,7 @@ ${B('forsida.cta', `<div>${E('h3', 'cta.titill', 'Fyrirtæki, húsfélag eða b�
     }
     const thumbs = syn.length > 1 ? `<div class="vv-thumbs" role="group" aria-label="Myndir">${syn.map((s, k) => {
       const src = s.teg === 'vara' ? VV.myndSrc(`${P}.mynd`, v.mynd) : VV.myndSrc(`${P}.not.${s.n.k}.mynd`, s.n.mynd);
-      return `<button type="button" class="vv-thumb${s.teg === 'vara' ? ' vara' : ''}" data-act="mynd" data-i="${k}" aria-pressed="${k === i}" aria-label="${esc(s.teg === 'vara' ? 'Vörumynd' : s.n.t)}"><img src="${esc(src)}" alt="" loading="lazy"></button>`;
+      return `<button type="button" class="vv-thumb${s.teg === 'vara' ? ' vara' : ''}" data-act="mynd" data-i="${k}" aria-pressed="${k === i}" aria-label="${esc(s.teg === 'vara' ? 'Vörumynd' : s.n.t)}"><img src="${esc(src)}" alt="" loading="lazy" decoding="async"></button>`;
     }).join('')}</div>` : '';
     return `<div class="vv-galleri">${adal}</div>${thumbs}`;
   }
@@ -837,7 +837,7 @@ ${s.tilk ? `<div class="vv-tilk" role="status"><span>${esc(s.tilk)}</span><a cla
     return `<main class="vv-wrap vv-adal">
 <div class="vv-titilrod"><div>${E('h1', 'karfa.titill', 'Karfan þín', 'vv-yfir')}<span class="vv-undir">${fj} ${esc(texti('karfa.vorur-ord', 'vörur · öll verð með vsk'))}</span></div><a class="vv-btn ghost sm" href="#/">${ico('vinstri')}${E('span', 'karfa.halda', 'Halda áfram að versla')}</a></div>
 <div class="vv-karfa"><div class="vv-karfa-l">
-<div class="vv-blad" style="padding:8px 24px">${linur.map(({ v, n }) => `<div class="vv-lina"><a class="vv-lina-m" href="#/vara/${v.id}"><img src="${esc(varaMynd(v))}" alt="" loading="lazy"></a>
+<div class="vv-blad" style="padding:8px 24px">${linur.map(({ v, n }) => `<div class="vv-lina"><a class="vv-lina-m" href="#/vara/${v.id}"><img src="${esc(varaMynd(v))}" alt="" loading="lazy" decoding="async"></a>
 <div><h3><a href="#/vara/${v.id}">${esc(varaNafn(v))}</a></h3><small>${kr(v.verd)} stk.</small><button type="button" class="fjar" data-act="k-fjarlaegja" data-id="${v.id}">${esc(texti('karfa.fjarlaegja', 'Fjarlægja'))}</button></div>
 <div class="vv-fj"><button type="button" class="vv-stp litill" data-act="k-faerri" data-id="${v.id}" aria-label="Fækka">${ico('minus')}</button><span>${n}</span><button type="button" class="vv-stp litill" data-act="k-fleiri" data-id="${v.id}" aria-label="Fjölga">${ico('plus')}</button></div>
 <div class="samt">${kr(v.verd * n)}</div></div>`).join('')}</div>
