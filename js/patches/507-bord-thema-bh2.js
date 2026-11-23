@@ -480,6 +480,12 @@
       H + ' .djobs{flex:1}',
       H + ' .dnota{flex:1}',
       H + ' .dnota textarea{min-height:40px;padding:4px 2px;border:0;border-radius:6px;background:transparent;box-shadow:none;resize:none;field-sizing:content}',
+      // 23.11.2026 (Agnar, rauð lína undir síðasta verki dagsins): dagur án nótu er EIN lína, ekki 40+ px — spjaldið endar þar
+      // sem efnið endar. Vex með textanum (field-sizing) og stækkar í 44 px þegar smellt er í hana. Klasinn `tomt`: 368 dagNotaHtml.
+      H + ' .dnota.tomt textarea{min-height:24px;padding:2px 2px}',
+      H + ' .dnota.tomt textarea:focus{min-height:44px}',
+      H + ' .dnb{width:28px;height:28px;border:0;border-radius:8px;background:transparent;box-shadow:none;color:#5a6882;font:14px/1 var(--body);opacity:.7}',
+      H + ' .dnb:hover{background:#ebf0fe;color:#2f6fe4;opacity:1}',
       H + ' .dnota textarea:hover{background:transparent}',
       H + ' .dnota textarea::placeholder{color:transparent}',
       H + ' .day:hover .dnota textarea::placeholder,' + H + ' .dnota textarea:focus::placeholder{color:#5a6882}',

@@ -401,7 +401,7 @@
     ntDrog: {}, ntStada: {}, ntOpid: {},
     vbrBuin: false,    // 18.09.2026: sýna vinnublöð sem búið er að svara (sótt löt)
     hamDrag: null,     // 18.09.2026: eining sem verið er að draga til í útlitsritlinum
-    dnDrog: {}, dnStada: {},   // 18.09.2026: frjáls texti á dag í Dagskránni
+    dnDrog: {}, dnStada: {}, dnOpen: {},   // 18.09.2026: frjáls texti á dag í Dagskránni
     skHled: {},                // 01.10.2026: skjöl á leið á spjald { skid: [{ k, nafn, stada: 'hled'|'vistar'|'villa' }] }
     samtSkyOpid: {}, samtSkyDrog: {},   // 368w: opinn skýringarritill á samþykkismáli + óvistuð drög
     samtMeira: {},                      // 368ad: „Meira um málið" opið á B-spjaldinu í Samþykkja (id → true/false)
@@ -1301,6 +1301,16 @@
       '.dnota textarea:hover{border-color:var(--rule2);background:#fffdf7}',
       '.dnota textarea:focus{outline:2px solid var(--g5);outline-offset:1px;background:#fffdf7}',
       '.dnota textarea::placeholder{color:var(--mute);opacity:.45}',
+      // 23.11.2026: tóm nóta = ein lína (sjá dagNotaHtml). Vex með textanum og fær hærra lágmark þegar skrifað er í hana.
+      '.dnota.tomt textarea{min-height:24px;padding:2px 6px;field-sizing:content;resize:none}',
+      '.dnb{width:22px;height:22px;flex:none;border:0;border-radius:3px;background:transparent;color:var(--mute);font:14px/1 var(--body);cursor:pointer;padding:0;opacity:.55}',
+      '.dnb:hover,.dnb:focus-visible{opacity:1;color:var(--ink)}',
+      '.dnota.tomt textarea:focus{min-height:44px}',
+      // 23.11.2026: „Í vikunni, ótímasett" — fyrirsagnarlínan (rauð yfirstrikun Agnars) er ekki sýnd; reitirnir 12 standa. Falin
+      // sjónrænt, ekki með display:none, svo skjálesari sjái áfram heiti kaflans og fjöldann.
+      '.dsk-oak .ovh{position:absolute!important;width:1px;height:1px;margin:-1px!important;padding:0!important;border:0!important;overflow:hidden;clip:rect(0 0 0 0)}',
+      // 23.11.2026: „Velja einingar" stendur hægra megin í fliparöðinni (rauð ör Agnars) í stað þess að falla í eigin línu.
+      '.flipar-r{margin-left:auto;display:inline-flex;align-items:center;gap:8px;flex:none}',
       '.dnst{font-family:var(--mono);font-size:11px;letter-spacing:.05em;color:var(--mute);min-height:11px}',
       '.dnst.ok{color:var(--green)}.dnst.vistar,.dnst.bid{color:var(--gink)}',
       '.nthead{display:flex;align-items:baseline;gap:8px}',
@@ -3771,8 +3781,12 @@
     const eig = dagskraSyn(), dk = eig + '|' + d.key;
     const g = S.dnDrog[dk] != null ? S.dnDrog[dk] : dagNota(eig, d.key);
     const st = S.dnStada[dk];
-    return '<div class="dnota">' +
-      '<textarea data-dn="' + esc(dk) + '" rows="' + Math.min(10, Math.max(2, g.split('\n').length + 1)) + '"' +
+    // 23.11.2026 (Agnar, rauð lína undir síðasta verki dagsins: „þjappa þessu saman"): dagur sem á enga nótu tekur EINA línu
+    // í stað tveggja + 40–56 px lágmarks — spjaldið endar þar sem efnið endar. Skrifað er í hana eins og áður (field-sizing
+    // lætur hana vaxa með textanum); `tomt` er aðeins klasi svo CSS (368 og 507) geti minnkað hana.
+    const tomtNota = !g.trim();
+    return '<div class="dnota' + (tomtNota ? ' tomt' : '') + '">' +
+      '<textarea data-dn="' + esc(dk) + '" rows="' + (tomtNota ? 1 : Math.min(10, Math.max(2, g.split('\n').length + 1))) + '"' +
         ' aria-label="Nóta ' + d.d + ' ' + d.n + '." placeholder="Skrifaðu hér…">' + esc(g) + '</textarea>' +
       '<span class="dnst ' + (st ? st.t : '') + '" data-dnst="' + esc(dk) + '">' + esc(st ? st.s : '') + '</span>' +
     '</div>';
@@ -3824,17 +3838,23 @@
     const hefurEfni = d => d.jobs.length > 0 || String(S.dnDrog[eigD + '|' + d.key] != null ? S.dnDrog[eigD + '|' + d.key] : dagNota(eigD, d.key)).trim() !== '';
     const mjor = d => !d.today && (d.wd === 0 || d.wd === 6) && !hefurEfni(d);   // dagurinn í dag mjókkar aldrei (rýni 21.11)
     const mjoir = days.some(d => !mjor(d) && hefurEfni(d)) ? days.map(mjor) : days.map(() => false);
+    /* 23.11.2026 (Agnar, rauð lína rétt undir síðasta verki dagsins í Dagskránni): dagur sem ber verk og á enga nótu sýnir ekki
+     * tóma nótureitinn — spjaldið endar þar sem verkin enda (mælt: 223 → 176 px). ✎ í hausnum opnar nótuna ef maður vill skrifa;
+     * sé nóta skrifuð (eða drög í gangi) er hún áfram sýnd eins og áður. Dagur án verka heldur eins línu reit (dagNotaHtml `tomt`). */
+    const notaTexti = d => String(S.dnDrog[eigD + '|' + d.key] != null ? S.dnDrog[eigD + '|' + d.key] : dagNota(eigD, d.key));
+    const notaFalin = d => d.jobs.length > 0 && !S.dnOpen[eigD + '|' + d.key] && !notaTexti(d).trim();
     const vikuDalkar = mjoir.some(Boolean) ? ' style="grid-template-columns:' + mjoir.map(x => x ? 'minmax(84px,.55fr)' : 'minmax(0,1fr)').join(' ') + '"' : '';
     const body = '<div class="week"' + vikuDalkar + '>' + days.map((d, i) =>
       '<div class="day' + (d.today ? ' today' : '') + (mjoir[i] ? ' mjor' : '') + '">' +
         '<div class="dh"><button type="button" class="dlink" data-t5="mod-open" data-m="dagskra" aria-label="' + d.d + ' ' + d.n + '., ' + d.jobs.length + ' verk">' +
           '<span class="dn">' + d.d + '</span><span class="dd">' + d.n + '</span></button><span class="grow"></span>' +
           // 21.11.2026: „+ Bæta við" eftir teikningu Agnars (V2). Í Boss-þemanu er orðið falið og takkinn er „+" eins og áður.
+          (open && notaFalin(d) ? '<button type="button" class="dnb" data-t5="dn-opna" data-dk="' + esc(eigD + '|' + d.key) + '" aria-label="Skrifa nótu á ' + d.d + ' ' + d.n + '." title="Skrifa nótu á daginn">✎</button>' : '') +
           '<button type="button" class="dplus" data-t5="job-new" data-date="' + d.key + '" aria-label="Skrá verk ' + d.d + ' ' + d.n + '.">+<span class="dpt"> Bæta við</span></button></div>' +
         '<div class="djobs">' + (open
           // 18.09.2026 (Agnar: „open to write, easy edit"): dagurinn er reitur, ekki
           // eyðublað. „Ekkert skráð" var endapunktur — nú er þar hægt að skrifa.
-          ? (d.jobs.length ? d.jobs.map(jobHtml).join('') : '') + dagNotaHtml(d)
+          ? (d.jobs.length ? d.jobs.map(jobHtml).join('') : '') + (notaFalin(d) ? '' : dagNotaHtml(d))
           : '<span class="dots">' + d.jobs.map(j => '<i class="dot" style="background:' + vdLitur(j.type) + '" title="' + esc((j.time ? j.time + ' ' : '') + (j.name || '')) + '"></i>').join('') + '</span>') +
         '</div>' +
       '</div>').join('') + '</div>' +
@@ -3842,7 +3862,7 @@
       // 21.11.2026 (Agnar, eftir að reitirnir fóru í eigin einingu: „það átti ekki að taka út óráðstöfuðu verkefnin, hafa
       // 4x3 línur með þessum atriðum strax undir dagskránni hluti af þeim glugga"): reitirnir standa beint undir dögunum,
       // inni í Dagskrár-glugganum, 4 dálkar × 3 raðir. Aðeins sé eining 34 sjálf valin á borðið standa þeir þar í staðinn.
-      (open && !_dskAnOak && window.ThbOakvedin ? ThbOakvedin.html(dagskraSyn()) : '') +
+      (open && !_dskAnOak && window.ThbOakvedin ? '<div class="dsk-oak">' + ThbOakvedin.html(dagskraSyn()) + '</div>' : '') +
       (open ? '<div class="legend">' + VD_TEG.map(t => '<span><i class="dot" style="background:' + t[1] + '"></i>' + t[0] + '</span>').join('') + '</div>' : '');
     const syn = dagskraSyn();
     const val = '<label class="dgsyn"><span class="lbl">Dagskrá</span><select data-t5="dg-syn" aria-label="Hvers dagskrá er sýnd">' +
@@ -5134,6 +5154,26 @@
       skilabod: synd(min.filter(r => hefur(r, 'skilabod') && !hefur(r, 'forgangsmal')).sort((a, b) => tStamp(b.created_at) - tStamp(a.created_at))).map(r => mk(r, 'skilabod'))
     };
   }
+  /* ÞARF ÞIG NÚNA (526, 23.11.2026) — spjaldið efst á vinnuborði Agnars. Ekki eining (engin færsla í MODS/flipum): það er
+   * borði eins og 523 Yfirsýnarröndin, svo það lendir hvorki í „Velja einingar" né á flipa. Fellur saman með ▴ og valið
+   * vistast á þjón (Vidmot `bord.nuna.opid`, eins á öllum vélum) — 520 „Í dag" var tekin af borðinu 19.11 af því hún varð
+   * ekki felld saman. Haus sýnir samantektina (hve margir póstar og reikningar) þótt spjaldið sé lokað. */
+  const NUNA_LYKILL = 'bord.nuna.opid';
+  const nunaOpid = () => vmLesa(NUNA_LYKILL, true) !== false;
+  // Birtist hjá Agnari á vinnuborðinu og ekki í raðham (ritill); sama skilyrði og í `html` — notað til að VIP-póstur standi ekki tvisvar.
+  const nunaSynt = () => nu() === 'Agnar' && !!(M(cfg().mode) || {}).mitt && !(S.hamForm && S.hamForm.id) && nunaOpid() &&
+    !!(window.BordNuna && window.Tolvupostar && Tolvupostar.loaded());
+  function nunaHtml() {
+    const NU = window.BordNuna;
+    if (!NU) return '';
+    try { NU.festa(rot()); } catch (_) {}
+    const opid = nunaOpid();
+    return '<section class="panel mod nuna' + (opid ? ' open' : '') + '" aria-label="Þarf þig núna">' +
+      '<header class="phead">' + plate('NÚ') + '<h2 class="ptitle">Þarf þig núna</h2><span class="sum">' + NU.samantekt() + '</span><span class="grow"></span>' +
+        (opid ? NU.takkar() : '') +
+        '<button type="button" class="btn iv sm tog" data-t5="nunatog" aria-expanded="' + opid + '" aria-label="' + (opid ? 'Fella saman' : 'Opna') + ' Þarf þig núna" title="' + (opid ? 'Fella saman — samantektin stendur áfram' : 'Opna') + '">' + (opid ? '▴' : '▾') + '</button>' +
+      '</header>' + (opid ? NU.listi() : '') + '</section>';
+  }
   function bottomHtml(k) {
     const n = nu();
     if (CHK_FELT.indexOf(k) >= 0) return checklistiHtml(k);
@@ -5193,7 +5233,8 @@
         if (r.error) throw r.error;
         return r.data || [];
       }, 600000);
-      const vipPostur = (() => { try { return window.VipVakt ? VipVakt.html(n) : ''; } catch (_) { return ''; } })();   // villa í 513 má aldrei fella borðið
+      // 23.11.2026: ósvaraður VIP-póstur stendur í „Þarf þig núna" (526) þegar það spjald er opið — ekki líka hér.
+      const vipPostur = nunaSynt() ? '' : (() => { try { return window.VipVakt ? VipVakt.html(n) : ''; } catch (_) { return ''; } })();   // villa í 513 má aldrei fella borðið
       const fel = Array.isArray(g.data) ? g.data : [];
       const heiti = f => String(f.nafn || '').split(/\s+[-–]\s+|,\s+/)[0].trim() || String(f.nafn || '');
       const hopLykill = f => String(f.kennitala || '').trim() || heiti(f);
@@ -6040,6 +6081,14 @@
     const synRod = flipiSyn.length ? einingaRod.filter(k => flipiSyn.indexOf(k) >= 0) : einingaRod;
     // Óákveðnu reitirnir aldrei tvisvar: standi eining 34 sjálf á skjánum er hún staðurinn, annars neðst í Dagskránni.
     _dskAnOak = synRod.indexOf('oakvedin') >= 0;
+    /* 23.11.2026 — „VELJA EININGAR" Á FLIPARÖÐINNI. Agnar (rauð lína frá „Velja einingar" yfir í hægri enda fliparaðarinnar):
+     * takkinn féll í sérlínu undir hamastikunni og borðið hafði þrjár stikur ofan á hver annarri (hamar · Velja einingar ·
+     * flipar). Þegar flipar eru sýndir stendur hann nú hægra megin í þeirri röð; annars er hann áfram í hamastikunni. Sami
+     * hnappur, sömu `data-t5` — aðeins staðsetningin breytist. */
+    const veljaHtml = (mode.ser || mode.mitt)
+      ? '<button type="button" class="btn iv sm" data-t5="ham-breyta" data-mode="' + esc(c.mode) + '"><span class="t5-emo" aria-hidden="true">✎ </span>' + (mode.mitt ? 'Velja einingar' : 'Breyta ham') + '</button>'
+      // Aðeins eigandi borðsins (rýni 19.11.2026): „Mitt vinnuborð" var tekið af hinum 18.11 og má ekki laumast aftur inn hér.
+      : stjornStika ? '<button type="button" class="btn iv sm" data-t5="cfg" aria-expanded="' + S.cfgOpen + '" title="Velja hvaða einingar standa á borðinu"><span class="t5-emo" aria-hidden="true">⚙ </span>Velja einingar</button>' : '';
     const flipaHtml = () => (!flipaFaert ? '' :
       '<div class="flipar" role="tablist" aria-label="Einingar vinnuborðsins">' +
         einingaRod.map(k => {
@@ -6058,6 +6107,7 @@
             '<span class="fln">' + esc((MODS[k] && MODS[k].n) || '') + '</span>' + esc((MODS[k] && MODS[k].t) || k) + stj + '</button>';
         }).join('') +
         '<button type="button" class="flipi allt" role="tab" data-t5="flipi" data-m="*" aria-selected="' + (!flipiSyn.length) + '" title="Sýna allar einingar í stafla eins og áður">Allt · ' + einingaRod.length + '</button>' +
+        (veljaHtml ? '<span class="flipar-r" role="presentation">' + veljaHtml + '</span>' : '') +
       '</div>');
     function frumaHtml(k, i, rod) {
       let sp = radar ? hfBreidd(k) : breiddAf(mode, k);
@@ -6234,6 +6284,10 @@
         // 21.11.2026 (Agnar, skjáskot með grænum örvum: „mátt svissa þessu í leiðinni"): röndin stendur nú EFST, beint undir
         // borðanum, og Flýtileiðir fyrir neðan hana — áður var röðin öfug.
         (() => { try { return window.YfirsynRond ? YfirsynRond.html(n, { master: S.rows.length, mine: S.rows.filter(r => onBoardOf(r, n)).length }) : ''; } catch (_) { return ''; } })() +
+        // 23.11.2026 — 526 „Þarf þig núna": póstur sem bíður svars + reikningar sem bíða sendingar, BEINT UNDIR Yfirsýnarröndinni
+        // (Agnar 23.11: „ekki setja neitt fyrir ofan yfirsýnina" — röndin stendur efst eins og 21.11). Aðeins á „Mitt vinnuborð"
+        // eigandans (ekki hinum hömum, ekki borðum annarra). Fellur saman og valið er vistað.
+        (stjornStika && mode.mitt && !radar ? nunaHtml() : '') +
         // 18.11.2026 — Flýtileiðir standa beint undir borðanum (Agnar, með ör af þeim upp í stikuna sem fór); frá 21.11 undir
         // Yfirsýnarröndinni. Þær eru leiðin út úr borðinu (Keldan, Drive, Payday, Tímavera).
         linksHtml(c.mode, stjornStika) +
@@ -6262,10 +6316,8 @@
          * sérsniðnum hömum og vinnuborðinu — í innbyggðum ham (Skýrslur, Kröfur …) var engin leið héðan að því að
          * velja einingar. Nú stendur alltaf einn takki: sérsniðinn hamur fær „Breyta ham", vinnuborðið „Velja
          * einingar" og innbyggðir hamir opna „Mitt vinnuborð", þar sem einingarnar eru valdar. */
-        (mode.ser || mode.mitt
-          ? '<button type="button" class="btn iv sm" data-t5="ham-breyta" data-mode="' + esc(c.mode) + '"><span class="t5-emo" aria-hidden="true">✎ </span>' + (mode.mitt ? 'Velja einingar' : 'Breyta ham') + '</button>'
-          // Aðeins eigandi borðsins (rýni 19.11.2026): „Mitt vinnuborð" var tekið af hinum 18.11 og má ekki laumast aftur inn hér.
-          : stjornStika ? '<button type="button" class="btn iv sm" data-t5="cfg" aria-expanded="' + S.cfgOpen + '" title="Velja hvaða einingar standa á borðinu"><span class="t5-emo" aria-hidden="true">⚙ </span>Velja einingar</button>' : '') +
+        // 23.11.2026: þegar flipastikan er sýnd stendur takkinn þar (sjá veljaHtml) — ekki tvisvar.
+        (flipaFaert ? '' : veljaHtml) +
         '<span class="grow"></span>' + (mode.board ? '<div class="seg" role="group" aria-label="Borðið">' +
           '<button type="button" data-t5="bara-mitt" data-v="0" aria-pressed="' + !baraMitt + '">Master + mitt borð</button>' +
           '<button type="button" data-t5="bara-mitt" data-v="1" aria-pressed="' + baraMitt + '">Bara mitt borð</button></div>' : '') + '</div>' +
@@ -7222,6 +7274,11 @@
         render();
         return;
       // 21.11.2026: opna/fella línu í „Annað á borðinu" (nedstHtml). Viðmótsval, fer á þjóninn — eins á öllum vélum.
+      // 23.11.2026: fella/opna „Þarf þig núna" (526). Viðmótsval á þjón.
+      case 'nunatog':
+        vmSetja(NUNA_LYKILL, !nunaOpid());
+        render();
+        return;
       case 'nedst-tog': {
         const k = el.dataset.k;
         if (k) { vmSetja(NEDST_LYKILL(k), !nedstOpid(k)); render(); }
@@ -7334,6 +7391,16 @@
         return;
       }
       case 'link-del': vistaLinks(l => l.filter(x => x.id !== el.dataset.lid), 'Flýtileið fjarlægð'); return;
+      // 23.11.2026: ✎ í haus dags með verk — opnar nótureitinn (falinn meðan hann er tómur, sjá dagskraHtml). Ekkert vistað fyrr en skrifað er.
+      case 'dn-opna': {
+        const dk = el.dataset.dk;
+        if (dk) {
+          S.dnOpen[dk] = true;
+          render();
+          setTimeout(() => { try { const t = rot().querySelector('textarea[data-dn="' + dk + '"]'); if (t) t.focus(); } catch (_) {} }, 30);
+        }
+        return;
+      }
       case 'job-new':
         // 01.10.2026: sé dagskrá starfsmanns valin fer nýja verkið á hans grein (303 eigandi), annars eins og áður.
         try { if (window.Vikudagskra && Vikudagskra.open) Vikudagskra.open(el.dataset.date, null, dagskraSyn() !== DN_EIG ? dagskraSyn() : undefined); else toast('Dagskrárglugginn er ekki hlaðinn.', true); }
