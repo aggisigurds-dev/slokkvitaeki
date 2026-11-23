@@ -656,7 +656,10 @@
     const rows = [{ query: '__co__:' + co.id, lat: lat, lng: lon, display_name: displayName || null, source: 'uppferslubord' }];
     if (adr) rows.push({ query: adr, lat: lat, lng: lon, display_name: displayName || null, source: 'uppferslubord' });
     if (co.nafn) rows.push({ query: co.nafn, lat: lat, lng: lon, display_name: displayName || null, source: 'uppferslubord' });
-    (_origFetch || fetch).call(window, SB_URL + '/rest/v1/geocode_cache', {
+    // 23.11.2026 (mælt á lifandi vef): upprunalega fetch-fallið (tekið á undan hliðinu) er fetch ÁÐUR en hliðið setur starfsmannatáknið á beiðnir — skrifið fór með opinbera lykilinn og fékk 401 eftir
+    // RLS-lokunina (09:36), svo hnitið vistaðist AÐEINS í localStorage þessarar tölvu og hinar vélarnar sáu engan pinna. Nú fer skrifið um window.fetch (gegnum hliðið;
+    // geocode_cache-slóðin er ekki í neinum 431-flokki) og útkoman skilar sér: true = komið í sameiginlegu töfluna.
+    const skrif = fetch.call(window, SB_URL + '/rest/v1/geocode_cache', {
       method: 'POST',
       headers: {
         apikey: SB_KEY,
@@ -665,8 +668,9 @@
         Prefer: 'resolution=merge-duplicates'
       },
       body: JSON.stringify(rows)
-    }).catch(() => {});
+    }).then((r) => { const ok = !!(r && r.ok); if (!ok) console.warn('[431] geocode_cache svaraði HTTP ' + (r && r.status)); return ok; }).catch(() => false);
     try { if (window.Leidsogn && Leidsogn.refresh) Leidsogn.refresh(); } catch (_) {}
+    return skrif;
   }
   async function faeraPin(co, adr) {
     const r = await medBeinu('kort', () => fetch('/api/geocode?q=' + encodeURIComponent(adr)));
@@ -676,8 +680,8 @@
     const lat = d && typeof d.lat === 'number' ? d.lat : null;
     const lon = d && typeof d.lon === 'number' ? d.lon : (d && typeof d.lng === 'number' ? d.lng : null);
     if (lat == null || lon == null) throw new Error('geocode skilaði engum hnitum');
-    vistaPin(co, adr, lat, lon, (d && d.display_name) || '');
-    return { lat: lat, lon: lon };
+    const vistad = await vistaPin(co, adr, lat, lon, (d && d.display_name) || '');
+    return { lat: lat, lon: lon, vistad: !!vistad };
   }
   async function saekjaHus(id, adr) {
     const r = await medBeinu('hus', () => fetch('/.netlify/functions/hus-upplysingar?heimilisfang=' + encodeURIComponent(adr)));
@@ -729,7 +733,7 @@
     const hnit = await faeraPin(row, adr);
     const svar = hus && hus.svar;
     return { adr: adr, lat: hnit.lat, lon: hnit.lon, hus: !(hus && hus.villa), husVilla: (hus && hus.villa) || null,
-      landnr: (svar && svar.eign && svar.eign.landnr) || null, teikningar: (svar && svar.teikningar && +svar.teikningar.fjoldi) || 0 };
+      landnr: (svar && svar.eign && svar.eign.landnr) || null, teikningar: (svar && svar.teikningar && +svar.teikningar.fjoldi) || 0, vistad: !!hnit.vistad };
   }
   // Les (aðeins) húsupplýsingarnar sem „Uppfæra eftir heimilisfangi“ sótti áður á þessari tölvu — fyrir verkferilsgluggann (369), sem má ekki snerta vafrageymslu sjálfur.
   function husUrGeymslu(id, adr) {

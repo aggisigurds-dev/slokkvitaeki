@@ -455,3 +455,23 @@ test('431 husUrGeymslu skilar aðeins svari fyrir RÉTT heimilisfang og kastar a
   assert.equal(ctx.f(9, 'X'), null, 'ónýtt gildi kastar ekki');
   assert.equal(ctx.f(1, 'X'), null);
 });
+
+test('hnit sem komast ekki í sameiginlegu skrána eru sögð „aðeins á þessari tölvu“ (⚠), ekki „uppfært“', async () => {
+  const h = hladaGeo({ svar: { ...GOTT, vistad: false } });
+  const r = await h.A.eftirVistun(h.sb, 424, FA, NYTT);
+  assert.equal(r.geo.vistad, false);
+  const box = h.d.doc.getElementById('audkenni-vidvorun');
+  assert.match(box.textContent, /Hnitið vistaðist aðeins á þessari tölvu/);
+  assert.match(box.textContent, /þetta þarf mannshönd/);
+});
+
+test('431 vistaPin skrifar um window.fetch (starfsmannatákn) en ekki _origFetch, og skilar útkomunni', () => {
+  const U = lesa('js/patches/431-uppferslubord.js');
+  const m = /function vistaPin\([\s\S]*?\n  \}\n/.exec(U);
+  assert.ok(m, 'vistaPin fannst ekki');
+  assert.equal(/_origFetch/.test(m[0]), false, 'vistaPin má ekki nota _origFetch (fær 401 eftir RLS-lokun)');
+  assert.match(m[0], /const skrif = fetch\.call\(window, SB_URL \+ '\/rest\/v1\/geocode_cache'/);
+  assert.match(m[0], /return skrif;/);
+  assert.match(U, /const vistad = await vistaPin\(co, adr, lat, lon,/);
+  assert.match(U, /teikningar: \(svar && svar\.teikningar && \+svar\.teikningar\.fjoldi\) \|\| 0, vistad: !!hnit\.vistad/);
+});

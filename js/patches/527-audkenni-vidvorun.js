@@ -157,7 +157,7 @@
       const r = await U.uppfaeraHeimilisfang(co.id);
       const lat = r ? +r.lat : NaN, lng = r ? +(r.lon != null ? r.lon : r.lng) : NaN;
       if (!(Number.isFinite(lat) && Number.isFinite(lng) && lat > 62.5 && lat < 67.5 && lng > -25.5 && lng < -12.5)) return { ok: false, ast: 'hnit fundust ekki' };
-      return { ok: true, lat, lng, hus: !!r.hus, husVilla: r.husVilla || null, landnr: r.landnr || null, teikningar: +r.teikningar || 0 };
+      return { ok: true, lat, lng, hus: !!r.hus, husVilla: r.husVilla || null, landnr: r.landnr || null, teikningar: +r.teikningar || 0, vistad: r.vistad !== false };
     } catch (e) { return { ok: false, ast: String((e && e.message) || 'villa').slice(0, 90) }; }
   }
 
@@ -172,6 +172,7 @@
       ]);
       const res = { tharf: r0 ? r0.tharf.slice() : [], sjalfkrafa: r0 ? r0.sjalfkrafa.slice() : [] };
       if (geo) {
+        if (geo.ok && !geo.vistad) res.tharf.push('Hnitið vistaðist aðeins á þessari tölvu (sameiginlega skráin hafnaði skrifinu) — hinar vélarnar sjá nýja pinnann ekki fyrr en „Uppfæra eftir heimilisfangi“ er keyrt aftur.');
         if (geo.ok) res.sjalfkrafa.push('Geopunktur uppfærður (' + geo.lat.toFixed(5) + ', ' + geo.lng.toFixed(5) + ') — kort, Leiðsögn og Bílstjóri nota hann.' +
           (geo.hus && geo.landnr ? ' Teikningar: lóð ' + geo.landnr + ', ' + geo.teikningar + ' teikningar — búnaðargreining og dreifing opnast á nýja heimilisfanginu.' : (geo.husVilla ? ' Húsupplýsingar vantar (' + geo.husVilla + ') — „Uppfæra eftir heimilisfangi“ í Uppfærsluborði.' : '')));
         else res.tharf.push('Geopunktur uppfærðist ekki (' + geo.ast + ') — keyrðu „Uppfæra eftir heimilisfangi“ í Uppfærsluborði (eða „Laga staðsetningu“ á Leiðsögn) svo Teikningar og búnaðardreifing finni staðinn.');
