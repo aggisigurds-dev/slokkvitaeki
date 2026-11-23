@@ -16,20 +16,37 @@
   if (window.__bhBru) return;
   window.__bhBru = true;
   var BH = 'https://brunaholf.netlify.app';
-  var toki = '', gildirTil = 0, bidur = null;
+  var toki = '', gildirTil = 0, bidur = null, ekkiFyrrEn = 0;
 
+  // hub_user er HttpOnly, svo kökuna sést ekki hér. Stöðan kemur úr
+  // /api/hub-adgangar (loforðið í <head>, endurnýtt í 475). Óinnskráð síða
+  // sækir ekki /api/bh-toki — það var 401 á hverju kalli til Brunahólfs.
   function saekja() {
     if (toki && Date.now() < gildirTil - 60000) return Promise.resolve(toki);
+    if (Date.now() < ekkiFyrrEn) return Promise.resolve('');
     if (bidur) return bidur;
-    bidur = upphaflegt('/api/bh-toki', { credentials: 'same-origin', cache: 'no-store' })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (j) {
-        if (j && typeof j.toki === 'string' && /^\d+\.[0-9a-f]{64}$/.test(j.toki)) {
-          toki = j.toki; gildirTil = Date.now() + Math.min(Number(j.gildir_ms) || 0, 10 * 60000);
-        }
-        bidur = null; return toki;
-      })
-      .catch(function () { bidur = null; return ''; });
+    var stada = window.__hubNotandiP;
+    if (!stada || typeof stada.then !== 'function') {
+      ekkiFyrrEn = Date.now() + 60000;
+      return Promise.resolve('');
+    }
+    bidur = stada.then(function (st) {
+      if (!st || !st.authed) {
+        ekkiFyrrEn = Date.now() + 5 * 60 * 1000;
+        bidur = null;
+        return '';
+      }
+      return upphaflegt('/api/bh-toki', { credentials: 'same-origin', cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) {
+          if (j && typeof j.toki === 'string' && /^\d+\.[0-9a-f]{64}$/.test(j.toki)) {
+            toki = j.toki; gildirTil = Date.now() + Math.min(Number(j.gildir_ms) || 0, 10 * 60000);
+          } else {
+            ekkiFyrrEn = Date.now() + 60000;
+          }
+          bidur = null; return toki;
+        });
+    }).catch(function () { bidur = null; ekkiFyrrEn = Date.now() + 60000; return ''; });
     return bidur;
   }
 

@@ -17,7 +17,9 @@
 import './_bh-toki.cjs'; // lota 13: köll á föll Brunahólfs fá tíma-tóka (x-hub-toki)
 import H from './_starfshlid.cjs'; // lota 13 (17.11.2026): starfsmannahliðið
 export default async (req) => {
-  if (req.method === 'OPTIONS') return new Response('', { status: 204, headers: cors() });
+  // 204 má ekki hafa meginmál — `new Response('', {status:204})` kastar
+  // "Invalid response status code 204" og Netlify skilar 502. Sjá landnr.js.
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors() });
   if (req.method !== 'POST' && req.method !== 'GET') {
     return new Response(JSON.stringify({ error: 'GET or POST only' }), {
       status: 405,

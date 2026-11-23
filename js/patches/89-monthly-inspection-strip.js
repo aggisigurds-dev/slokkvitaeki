@@ -29,6 +29,7 @@
   const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','Maí','Jún','Júl','Ágú','Sep','Okt','Nóv','Des'];
   let _selectedMonth = null; // null = "Allt árið"; 0-11 = specific month
   let _selectedYear = new Date().getFullYear();
+  let _listCap = 80;
 
   function fmtDate(iso) {
     if (!iso) return '';
@@ -95,13 +96,13 @@
     `;
   }
 
-  function buildListHtml(rows, label) {
+  function buildListHtml(rows, label, total) {
+    const n = total == null ? rows.length : total;
     if (!rows.length) {
       return `<div style="padding:10px 14px;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;display:flex;justify-content:space-between;align-items:center"><span>Skoðun ${label}</span><button class="_mis-close" type="button" title="Loka lista" style="padding:3px 9px;background:#fff;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer;font:inherit;font-size:11px;color:#475569;font-weight:600">✕ Loka</button></div>` +
         `<div style="padding:24px;text-align:center;color:#94a3b8;font-size:13px">Engin fyrirtæki með skoðun ${label}</div>`;
     }
-    const total = rows.length;
-    const header = `<div style="padding:10px 14px;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;display:flex;justify-content:space-between;align-items:center"><span>Skoðun ${label} <span style="margin-left:8px;color:#94a3b8;font-weight:600">${total} fyrirtæki</span></span><button class="_mis-close" type="button" title="Loka lista" style="padding:3px 9px;background:#fff;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer;font:inherit;font-size:11px;color:#475569;font-weight:600">✕ Loka</button></div>`;
+    const header = `<div style="padding:10px 14px;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;display:flex;justify-content:space-between;align-items:center"><span>Skoðun ${label} <span style="margin-left:8px;color:#94a3b8;font-weight:600">${n} fyrirtæki</span></span><button class="_mis-close" type="button" title="Loka lista" style="padding:3px 9px;background:#fff;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer;font:inherit;font-size:11px;color:#475569;font-weight:600">✕ Loka</button></div>`;
     const items = rows.map(r => `
       <div class="_mis-row" data-co-id="${r.coId}" style="display:grid;grid-template-columns:24px 1fr auto auto 16px;gap:10px;align-items:center;padding:10px 14px;border-bottom:1px solid #f1f5f9;cursor:pointer;transition:background .12s" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
         <div style="width:14px;height:14px;border-radius:50%;background:${r.status.color};border:2px solid #fff;box-shadow:0 0 0 1px ${r.status.color}40,0 1px 2px rgba(0,0,0,0.1)"></div>
@@ -169,7 +170,8 @@
     rows.sort((a, b) => a.sortKey - b.sortKey || a.nafn.localeCompare(b.nafn, 'is'));
 
     const label = _selectedMonth == null ? `${_selectedYear}` : `${MONTHS_SHORT[_selectedMonth]} ${_selectedYear}`;
-    list.innerHTML = buildListHtml(rows, label);
+    const shown = rows.slice(0, _listCap);
+    list.innerHTML = buildListHtml(shown, label, rows.length);
 
     // Wire row clicks
     list.querySelectorAll('._mis-row').forEach(row => {
@@ -185,6 +187,15 @@
       });
     });
     // Wire close button — hides the list panel until user picks a month again.
+    if (shown.length < rows.length) {
+      const more = document.createElement('button');
+      more.type = 'button';
+      more.className = '_mis-more';
+      more.textContent = 'Sýna fleiri (' + (rows.length - shown.length) + ' eftir)';
+      more.style.cssText = 'display:block;width:100%;padding:12px;border:0;border-top:1px solid #e2e8f0;background:#f8fafc;font:inherit;font-weight:700;cursor:pointer;color:#0f172a';
+      more.addEventListener('click', () => { _listCap += 80; refreshList(); });
+      list.appendChild(more);
+    }
     const closeBtn = list.querySelector('._mis-close');
     if (closeBtn) {
       closeBtn.addEventListener('click', e => {
@@ -250,18 +261,20 @@
     wrap.querySelectorAll('._mis-month').forEach(btn => {
       btn.addEventListener('click', () => {
         _selectedMonth = +btn.dataset.month;
+        _listCap = 80;
         rebuildStrip();
       });
     });
     const allBtn = wrap.querySelector('._mis-all');
     if (allBtn) allBtn.addEventListener('click', () => {
       _selectedMonth = null;
+      _listCap = 80;
       rebuildStrip();
     });
     const yPrev = wrap.querySelector('._mis-year-prev');
-    if (yPrev) yPrev.addEventListener('click', () => { _selectedYear--; rebuildStrip(); });
+    if (yPrev) yPrev.addEventListener('click', () => { _selectedYear--; _listCap = 80; rebuildStrip(); });
     const yNext = wrap.querySelector('._mis-year-next');
-    if (yNext) yNext.addEventListener('click', () => { _selectedYear++; rebuildStrip(); });
+    if (yNext) yNext.addEventListener('click', () => { _selectedYear++; _listCap = 80; rebuildStrip(); });
     refreshList();
   }
 

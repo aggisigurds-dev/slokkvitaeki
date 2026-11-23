@@ -75,8 +75,8 @@
     bind();
   }
   // 03.11.2026: loforðið er deilt með 495 (Aðgangsstýring) svo innskráningarstaðan sé sótt EINU sinni við ræsingu.
-  var stadaP = window.__hubNotandiP = fetch('/api/hub-adgangar', { credentials: 'same-origin', cache: 'no-store' })
-    .then(function (r) { return r.json(); });
+  var stadaP = window.__hubNotandiP || (window.__hubNotandiP = fetch('/api/hub-adgangar', { credentials: 'same-origin', cache: 'no-store' })
+    .then(function (r) { return r.json(); }));
   stadaP
     .then(function (st) { S.ok = true; S.authed = !!st.authed; S.user = st.user || null; })
     .catch(function () { /* merkið helst eins og það var */ })

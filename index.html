@@ -15,7 +15,8 @@
   var d=document.documentElement; d.classList.add('hub-gate-pending');
   var done=false, open=function(){ if(done)return; done=true; d.classList.remove('hub-gate-pending'); };
   var t=setTimeout(open,3500);
-  fetch('/api/hub-adgangar',{credentials:'same-origin',cache:'no-store'}).then(function(r){return r.json();}).then(function(s){
+  var p=window.__hubNotandiP=fetch('/api/hub-adgangar',{credentials:'same-origin',cache:'no-store'}).then(function(r){return r.json();});
+  p.then(function(s){
     clearTimeout(t);
     if(s && s.gate && !s.authed){ location.replace('/innskraning.html?next='+encodeURIComponent(location.pathname+location.search+location.hash)); }
     else open();
@@ -64,6 +65,8 @@
      ekki body #ffffff. Patch 318 paints native widgets with theme tokens. -->
 <meta name="color-scheme" content="light"/>
 <title>Slökkvitæki ehf — Brunakerfi</title>
+<meta name="description" content="Innra verkfæri Slökkvitækja ehf. fyrir sölu, afgreiðslu, verkstæði og þjónustu.">
+<meta name="robots" content="noindex, nofollow">
 <link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32.png?v=flame1"/>
 <link rel="icon" type="image/png" sizes="192x192" href="/img/icon-192.png?v=flame1"/>
 <link rel="icon" type="image/png" sizes="512x512" href="/img/icon-512.png?v=flame1"/>
@@ -184,6 +187,7 @@ html[data-bh="1"],html[data-bh="1"] body{overflow-x:hidden}
 </style>
 </head>
 <body>
+<h1 id="hub-h1" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0">Slökkvitæki ehf — Brunakerfi</h1>
 <!-- Ræsi-hula (2026-07-17, ósk Agnars — startið „svo chaotic"): mælt boot sýndi
      ~3,5 sek þar sem stakir fljótandi takkar poppa inn á tómum grunni áður en
      fyrsta síðan birtist. Hulan liggur yfir öllu frá fyrsta ramma og lyftist
@@ -1600,5 +1604,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/369-krofu-vinnugluggi.js?v=20261011a"></script>
 <!-- 13.10.2026: djúpdvali — svæfð borð (kommentuð merki hér að ofan) opnast ekki sem autt svæði; sjá docs/DJUPDVALI.md -->
 <script defer src="/js/patches/465-djupdvali.js?v=20261119snz"></script>
+<script defer src="/js/patches/524-simi-adgerdir.js?v=20261123a"></script>
+<script defer src="/js/patches/525-field-takmark.js?v=20261123a"></script>
 </body>
 </html>

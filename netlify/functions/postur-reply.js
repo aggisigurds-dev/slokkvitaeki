@@ -14,7 +14,7 @@
  * for short Icelandic service replies). The office ALWAYS reviews before send.
  */
 export default async (req) => {
-  if (req.method === 'OPTIONS') return new Response('', { status: 204, headers: cors() });
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors() });
   if (req.method !== 'POST') return j(405, { error: 'POST only' });
 
   // Default-open shared-secret gate: enforced AÐEINS þegar EDGE_SHARED_KEY er sett.

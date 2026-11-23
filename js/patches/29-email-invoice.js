@@ -329,11 +329,27 @@
       " style="padding:7px 16px;background:#2563eb;color:#fff;border:none;border-radius:7px;cursor:pointer;font:inherit;font-size:13px;">Vista stillingar</button>`;
     container.appendChild(div);
     // Staða lykilsins af þjóninum — aðeins já/nei, gildið kemur aldrei í vafrann.
-    fetch('/api/email-send', { method: 'GET' }).then(r => r.ok ? r.json() : null).then(j => {
-      const el = document.getElementById('ei-resend-stada');
-      if (!el) return;
-      el.innerHTML = 'Stillt á þjóni: <strong style="color:' + (j && j.stillt ? '#166534' : '#991b1b') + '">' + (j ? (j.stillt ? 'já' : 'nei') : 'óþekkt') + '</strong>';
-    }).catch(() => {});
+    // Aðeins þegar innskráning er þegar staðfest. Óinnskráð GET skilaði 401
+    // á hverri ræsingu (hub_user er HttpOnly, svo stöðan er lesin úr loforðinu
+    // í <head>). Innslegið svarar áfram þegar notandinn er innskráður.
+    var stada = window.__hubNotandiP;
+    if (!stada || typeof stada.then !== 'function') {
+      var el0 = document.getElementById('ei-resend-stada');
+      if (el0) el0.innerHTML = 'Stillt á þjóni: <strong>óþekkt</strong>';
+    } else {
+      stada.then(function (st) {
+        if (!st || !st.authed) {
+          var elInn = document.getElementById('ei-resend-stada');
+          if (elInn) elInn.innerHTML = 'Stillt á þjóni: <strong>óþekkt</strong> <span style="font-weight:500;color:#64748b">(skráðu þig inn)</span>';
+          return;
+        }
+        fetch('/api/email-send', { method: 'GET', credentials: 'same-origin' }).then(r => r.ok ? r.json() : null).then(j => {
+          const el = document.getElementById('ei-resend-stada');
+          if (!el) return;
+          el.innerHTML = 'Stillt á þjóni: <strong style="color:' + (j && j.stillt ? '#166534' : '#991b1b') + '">' + (j ? (j.stillt ? 'já' : 'nei') : 'óþekkt') + '</strong>';
+        }).catch(() => {});
+      }).catch(function () {});
+    }
   }
 
   document.addEventListener('view-shown', e => {

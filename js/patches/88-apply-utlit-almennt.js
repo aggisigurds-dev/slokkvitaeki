@@ -36,7 +36,10 @@
     const a = (s && s.almennt) || (window.AppSettings && window.AppSettings.path('almennt')) || {};
     const want = a.starting_view || 'sala';
     // If the URL points at a specific view (e.g., deeplink), respect it.
-    if (location.hash && /^#?view-/.test(location.hash)) { _startingApplied = true; return; }
+    // 23.11.2026: gamla athugunin náði AÐEINS #view-… svo #markmid og #vorur
+    // urðu switchView('sala') og 218 skrifaði hashið yfir. Sama regla og sala.js.
+    var h = (location.hash || '').replace(/^#/, '');
+    if (h && h.indexOf('=') === -1 && h.indexOf('/') === -1) { _startingApplied = true; return; }
     // If a view is already active AND it matches what we want, we're done.
     const activeView = document.querySelector('.view.active');
     if (activeView && activeView.id === 'view-' + want) { _startingApplied = true; return; }

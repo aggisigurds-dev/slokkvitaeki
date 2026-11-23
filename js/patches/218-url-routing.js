@@ -154,12 +154,12 @@
         if (!_suppress && v && typeof v === 'string') {
           var pending = cleanHash();
           var pendingView = pending ? resolveView(pending) : '';
-          var pendingMissing = !!(pending && pendingView && pendingView !== v &&
-            !document.getElementById('view-' + pendingView) &&
-            !(pendingView === 'leidsogn' && window.App && App._leidsognPatched));
-          if (pendingMissing && !userTouched) {
-            // Deep-link view not mounted yet. Keep the hash so 368 and late
-            // patches can still land; a boot lander must not rewrite it.
+          // Halda djúptenglinum þangað til notandi snertir, líka þegar
+          // view-ið er þegar til (#vorur, #markmid). Áður var hashið aðeins
+          // varið meðan elementið vantaði, og ræsingin skrifaði #sala yfir.
+          var pendingDeep = !!(pending && pendingView && pendingView !== v && !userTouched);
+          if (pendingDeep) {
+            // Boot lander must not rewrite a deep link.
           } else {
             var slug = slugForView(v);
             if (cleanHash() !== slug) history.replaceState(null, '', '#' + slug);

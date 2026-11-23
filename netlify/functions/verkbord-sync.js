@@ -19,7 +19,7 @@ import V from './_verkbord-sync.cjs';
 const MODEL = 'claude-haiku-4-5-20251001';
 
 export default async (req) => {
-  if (req.method === 'OPTIONS') return new Response('', { status: 204, headers: cors() });
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors() });
   if (req.method !== 'POST') return j(405, { error: 'POST only' });
 
   const GATE = (process.env.EDGE_SHARED_KEY || '').trim();

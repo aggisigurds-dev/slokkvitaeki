@@ -38,7 +38,7 @@ const MODEL = 'claude-haiku-4-5-20251001';
 const MODELS_OK = { 'claude-haiku-4-5-20251001': 1, 'claude-sonnet-5': 1 };
 
 export default async (req) => {
-  if (req.method === 'OPTIONS') return new Response('', { status: 204, headers: cors() });
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors() });
   if (req.method !== 'POST') return j(405, { error: 'POST only' });
 
   // Default-open shared-secret gate: enforced AÐEINS þegar EDGE_SHARED_KEY er sett.
