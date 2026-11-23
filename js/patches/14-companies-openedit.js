@@ -165,6 +165,8 @@
     // annars yrði tómt gildi skrifað yfir það sem er í grunninum.
     const thekktir = new Set(Object.keys(co));
     const upphaf = lesaForm();
+    // 23.11.2026 (527): forskoðun á því sem fylgir nafni/heimilisfangi/kt-breytingu — stöðvar aldrei vistun.
+    try { if (window.AudkenniVidvorun) window.AudkenniVidvorun.festaVidForm({ sb: window.DB && DB.sb, id: id, co: co, lesaForm: lesaForm }); } catch (_) {}
 
     const titleEl = modal.querySelector('h2');
     const origTitle = titleEl ? titleEl.textContent : null;
@@ -254,6 +256,8 @@
           restore();
           if (window.Modal && Modal.close) Modal.close('modal-nyfyrirtaeki');
           if (window.Toast && Toast.show) Toast.show('✓ ' + nafn + ' uppfært');
+          // 23.11.2026 (527): viðvörun um það sem þarf mannshönd (ósendur/sendur reikningur, skýrsla, deildur greiðandi). Ekki beðið eftir henni.
+          try { if (window.AudkenniVidvorun) window.AudkenniVidvorun.eftirVistun(sb, id, co, r.data); } catch (_) {}
           setTimeout(() => Companies.openDetail(id), 100);
         } catch (e) {
           if (window.Toast && Toast.show) Toast.show('Villa: ' + (e.message || e));
