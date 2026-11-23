@@ -63,8 +63,17 @@
     // _vorurTs stays 0, so the next call retries once the connection is up.
     // Guard: tools/audit-db-null-guard.cjs
     if (!window.DB || !DB.sb) return Promise.resolve();
-    _vorurInflight = DB.sb.from('vorur').select('*').eq('virkt',true).order('nafn').then(function(r){
-      var all = r.data || [];
+    // Sama select('*') og Vörur. VorurLesa deilir einni beiðni; virkt er síað hér
+    // (áður .eq('virkt', true)). Röð flísanna er sortTiles, ekki röð svarsins.
+    var heild = (window.VorurLesa && VorurLesa.heild)
+      ? VorurLesa.heild()
+      : DB.sb.from('vorur').select('*').eq('virkt', true).order('nafn').then(function (r) {
+          if (r && r.error) throw r.error;
+          return r.data || [];
+        });
+    _vorurInflight = heild.then(function (all) {
+      if (all == null) return;
+      all = all.filter(function (p) { return p && p.virkt === true; });
       state.services = all.filter(function(p){return p.flokkur==='Þjónusta';});
       state.products = all.filter(function(p){return p.flokkur!=='Þjónusta';});
       _vorurTs = Date.now();
@@ -77,7 +86,10 @@
     return _vorurInflight;
   }
   // Let product edits (Stillingar / Vörur) force the next loadAll to re-fetch.
-  function invalidateVorur(){ _vorurTs = 0; _vorurInflight = null; }
+  function invalidateVorur(){
+    _vorurTs = 0; _vorurInflight = null;
+    try { if (window.VorurLesa) VorurLesa.ogilda(); } catch (_) {}
+  }
   function refreshCatalogIfStale(){
     if (_vorurTs || _vorurInflight) return;
     loadAll().then(function(){
@@ -626,7 +638,7 @@
         : (/reyk|skynjari/.test(_n)) ? 'y'
         : (/duft/.test(_n)) ? 'b' : '';
     }
-    var img = item.mynd ? '<img src="'+esc(item.mynd)+'" style="width:42px;height:42px;object-fit:cover;border-radius:10px'+frame+'" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">' : '';
+    var img = item.mynd ? '<img src="'+esc(item.mynd)+'" alt="" width="42" height="42" loading="lazy" decoding="async" style="width:42px;height:42px;object-fit:cover;border-radius:10px'+frame+'" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">' : '';
     var icCol = tc || col;
     var iconDiv = '<div class="pos-tile-ic"'+(bstic?' data-bstic="'+bstic+'"':'')+' style="width:42px;height:42px;background:'+icCol+'15;color:'+icCol+';border-radius:10px'+frame+';display:'+(item.mynd?'none':'flex')+';align-items:center;justify-content:center">' + ICONS[ic] + '</div>';
     var stockChip = (!isService && item.birgdir != null) ? '<div style="position:absolute;top:4px;right:6px;color:#065f46;font-size:11px;font-weight:700;text-shadow:0 1px 2px rgba(255,255,255,0.9),0 0 4px rgba(255,255,255,0.7)">'+item.birgdir+'</div>' : '';
