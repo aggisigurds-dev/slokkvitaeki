@@ -46,15 +46,12 @@
     return out;
   }
   function activeViewEl() {
+    const doc = liveDoc();
+    const selector = '.view.active[id]';
     try {
-      const fd = frameDoc();
-      if (fd) {
-        const v = fd.querySelector('.view.active');
-        if (v) return v;
-      }
-    } catch (_) {}
-    // 13.10.2026 (afköst í kyrrstöðu): leitin geymd þar til DOM-ið breytist (252 DomKynslod) — leit sem finnur ekkert gengur í gegnum allt skjalið.
-    try { return window.DomKynslod ? DomKynslod.qs('.view.active') : document.querySelector('.view.active'); } catch (_) { return null; }
+      return doc === document && window.DomKynslod
+        ? DomKynslod.qs(selector) : doc.querySelector(selector);
+    } catch (_) { return null; }
   }
 
   const KEY = 'page_editor_v1_json';
@@ -74,8 +71,9 @@
   function resolveTarget() {
     if (!target || target.isConnected || !targetSel) return target;
     try {
-      const root = (targetVid && document.getElementById(targetVid)) || document;
-      const nt = root.querySelector(targetSel);
+      const doc = liveDoc();
+      const root = (targetVid && doc.getElementById(targetVid)) || doc;
+      const nt = targetSel === ':scope' ? doc.getElementById(targetVid) : root.querySelector(targetSel);
       if (nt) target = nt;
     } catch (_) {}
     return target;
@@ -147,6 +145,7 @@
       const raw = window.AppSettings && AppSettings.path ? AppSettings.path(KEY) : null;
       if (raw) state = Object.assign({ rules: [], bg: { all: null, pages: {} }, favs: [], zones: {}, zoom: {} }, JSON.parse(raw));
       if (!state.bg) state.bg = { all: null, pages: {} };
+      if (!state.bg.pages || typeof state.bg.pages !== 'object') state.bg.pages = {};
       if (!Array.isArray(state.rules)) state.rules = [];
       if (!Array.isArray(state.favs)) state.favs = [];
       if (!Array.isArray(state.versions)) state.versions = [];
@@ -314,6 +313,7 @@
   // EVERY step, so the selector matches every sibling with the same tag+class
   // (e.g. every row in a table) instead of pinning to just the one clicked.
   function relSelector(el, general) {
+    if (el.matches('.view[id]')) return ':scope';
     const parts = [];
     let node = el;
     const stopBody = (el.ownerDocument && el.ownerDocument.body) || document.body;
@@ -344,7 +344,7 @@
     // („div > div > div > div > div", 2026-08-17: litaði ALLAN texta appsins
     // hvítan) — á ÖLLUM síðum næði yfir allt appið. Færum slíka reglu
     // sjálfkrafa á síðuna sem er opin.
-    if (scp === 'all' && !/[.#\[]/.test(String(sel || ''))) {
+    if (scp === 'all' && sel !== ':scope' && !/[.#\[]/.test(String(sel || ''))) {
       const cur = activeViewEl();
       if (cur && cur.id) {
         scp = cur.id;
@@ -428,6 +428,7 @@
       css += '#' + vid + '#' + vid + '{zoom:' + (z / 100) + '}' + String.fromCharCode(10);
     }
     const colorSels = [];
+    const workspaceStyles = [];
     for (const r of state.rules) {
       const keys = r.decls ? Object.keys(r.decls) : [];
       if (!keys.length) continue;
@@ -441,8 +442,11 @@
       // VINNA á contrast-/þema-læsingum með !important id-pinnum (232/313
       // o.fl.) — notandinn valdi þetta sjálfur (Agnar 26.08: „næ ekki að
       // breyta litnum af neinum af fyrirsögnunum").
-      const sel = r.scope === 'all' ? 'html ' + r.sel : '#' + r.scope + '#' + r.scope + ' ' + r.sel;
-      css += sel + '{' + body + '}\n';
+      const page = r.scope === 'all' ? 'html .view[id]' : 'html body #' + cssEsc(r.scope) + '#' + cssEsc(r.scope);
+      const sel = r.sel === ':scope' ? page : r.scope === 'all' ? 'html ' + r.sel : page + ' ' + r.sel;
+      const rule = sel + '{' + body + '}\n';
+      if (r.sel === ':scope') workspaceStyles.push(rule);
+      else css += rule;
       // TAFLA: frumurnar (th/td) hafa sínar EIGIN letur-, lita- og bil-reglur í
       // stílblöðum appsins, svo regla sem sett er á <table> erfist aldrei niður
       // í þær — taflan leit út fyrir að vera ósnert þótt sleðinn hreyfðist
@@ -459,11 +463,20 @@
       if (r.decls.color) colorSels.push(sel);
     }
     window.__peColorSels = colorSels;
-    const bgDecl = (v, fixed) => String(v).indexOf('css:') === 0
-      ? 'background:' + v.slice(4) + ' !important'
-      : 'background-image:url(' + v + ') !important;background-size:cover !important;background-position:center !important' + (fixed ? ';background-attachment:fixed !important' : '');
-    if (state.bg && state.bg.all) css += 'body{' + bgDecl(state.bg.all, true) + '}\n';
-    if (state.bg && state.bg.pages) for (const vid in state.bg.pages) { if (state.bg.pages[vid]) css += '#' + vid + '{' + bgDecl(state.bg.pages[vid], false) + '}\n'; }
+    const bgDecl = (value, fixed) => value.startsWith('css:')
+      ? 'background:' + value.slice(4) + ' !important'
+      : 'background:url(' + JSON.stringify(value) + ') center / cover no-repeat' +
+        (fixed ? ' fixed' : '') + ' !important';
+    // Important declarations in a layer take precedence over the unlayered
+    // theme backgrounds. Page overrides are more specific than the shared one.
+    const backgrounds = [];
+    if (typeof state.bg?.all === 'string' && state.bg.all) backgrounds.push('body,.view[id]{' + bgDecl(state.bg.all, true) + '}');
+    for (const [id, value] of Object.entries(state.bg?.pages || {})) {
+      if (typeof value === 'string' && value) backgrounds.push('.view#' + cssEsc(id) + '{' + bgDecl(value, false) + '}');
+    }
+    if (backgrounds.length || workspaceStyles.length) {
+      css += '@layer page-editor-workspace{\n' + backgrounds.concat(workspaceStyles).join('\n') + '\n}\n';
+    }
     paintDocs().forEach(d => {
       try {
         let st = d.getElementById(STYLE_ID);
@@ -2110,7 +2123,8 @@
       '</div>' +
       (designSystemIndex === 1 ? fullTicketSection() + (fullTicketLibrary ? '' : ticketKitPreview(kit)) : '') +
       '<h5>Veldu stíl</h5>' + filters +
-      (category === 'all' || category === 'bg' ? '<h5>Bakgrunnar</h5><div class="pe-kit-grid">' + backgrounds + '</div>' : '') +
+      (category === 'all' || category === 'bg' ? '<h5>Bakgrunnar</h5>' +
+        backgroundActions() + '<div class="pe-kit-grid">' + backgrounds + '</div>' : '') +
       (category !== 'bg' ? '<p class="pe-sub">Veldu stíl og smelltu á hlut á síðunni.</p><div class="pe-kit-grid">' + parts + '</div>' : '') +
     '</section>';
   }
@@ -2133,6 +2147,16 @@
       '<h4>Borðaútlit</h4><p class="pe-sub">' +
       (readOnly ? 'Borðaval er sameiginlegt og er aðgengilegt utan vinnudraga.' : 'Valið gildir á öllum vélum.') +
       '</p><div class="pe-banner-grid">' + items + '</div></section>';
+  }
+
+  function backgroundActions() {
+    const id = scope === 'all' ? 'all' : activeViewEl()?.id;
+    const background = id === 'all' ? state.bg.all : state.bg.pages[id] || state.bg.all;
+    const color = /^css:#[0-9a-f]{6}$/i.test(background || '') ? background.slice(4) : '#182638';
+    return '<div class="pe-grp">' +
+      '<button type="button" class="pe-btn pri" id="pe-bg">Bæta við bakgrunnsmynd</button>' +
+      '<button type="button" class="pe-btn" id="pe-bgg-clear">Hreinsa bakgrunn</button>' +
+      '<label>Bakgrunnslitur <input type="color" id="pe-bg-color" value="' + color + '"></label></div>';
   }
 
   function kitShortcut(category, label) {
@@ -2177,6 +2201,7 @@
     const styleTools = '<div class="pe-pickrow">' +
         '<button class="pe-btn big ' + (picking ? 'on' : 'pri') + '" id="pe-pick">' + (picking ? '🎯 Hætta að velja' : '🎯 Velja hlut') + '</button>' +
         '<button class="pe-btn big' + (multiPick ? ' on' : '') + '" id="pe-multi" title="Smelltu á nokkra hluti — sömu breytingar fara á þá alla">☑ Velja marga</button>' +
+        '<button type="button" class="pe-btn" id="pe-workspace">Velja vinnusvæði</button>' +
       '</div>' +
       zoneMapSection() +
       (target ? '<div class="pe-targetrow"><span class="pe-target" title="' + esc(targetLbl) + '"><b>' + esc(friendlyName(target)) + '</b> · ' + esc(targetLbl) + '</span>' +
@@ -2257,12 +2282,13 @@
     }
     const bannerControl = document.getElementById('_bd-skipta');
     const hasHeader = !!zoneEl(ALLZONES.find(zone => zone.id === 'haus'));
+    const backgrounds = backgroundActions() + kitShortcut('bg', 'Bakgrunnar úr hönnunarkerfum') + bgGallerySection();
     const groups = {
       header: bannerGallery(false) +
         (bannerControl && !window.BordiUtlit ? '<p class="pe-sub">Borðavalið gildir á öllum vélum.</p><button class="pe-btn" id="pe-banner-style">Skipta um borða</button>' : '') +
         (hasHeader ? ' <button class="pe-btn" id="pe-header-style">Stilla haus</button>' : '') +
         (!bannerControl && !hasHeader ? '<p class="pe-sub">Engar hausstillingar fyrir þessa sýn.</p>' : ''),
-      backgrounds: '<button class="pe-btn pri" id="pe-bg">Bæta við bakgrunnsmynd</button> ' + kitShortcut('bg', 'Bakgrunnar úr hönnunarkerfum') + bgGallerySection(),
+      backgrounds,
       layout: layoutTools + '<div class="pe-grp"><span class="pe-grplbl">Stækkun</span>' + zoom + '</div>' + tableHelpSection() + linkasafnSection(),
       styles: kitShortcut('all', 'Stílar úr hönnunarkerfum') + styleTools + cardSection() + body + presetsSection(),
       versions: designSystemSection() + (draftMode ? '<p class="pe-sub">Veldu bakgrunn eða stíl úr safni til að prófa hann í drögunum.</p>' : versionsSection()),
@@ -2279,7 +2305,6 @@
     p.classList.toggle('pe-full', panelFull);
     if (draftMode) {
       groups.header = bannerGallery(true) + (hasHeader ? '<button class="pe-btn" id="pe-header-style">Stilla haus</button>' : '');
-      groups.backgrounds = kitShortcut('bg', 'Bakgrunnar úr hönnunarkerfum') + bgGallerySection();
       groups.layout = '<div class="pe-grp"><span class="pe-grplbl">Stækkun</span>' + zoom + '</div>';
       groups.styles = kitShortcut('all', 'Stílar úr hönnunarkerfum') + styleTools + body + presetsSection();
       groups.settings = '<p class="pe-sub">Birtu eða fleygðu drögunum til að opna aðrar stillingar.</p>';
@@ -2368,21 +2393,30 @@
     const g = BG_GALLERY[i]; if (!g) return;
     setGalleryBackground(g[0], g[1]);
   }
-  function setGalleryBackground(label, background) {
+  function backgroundTarget() {
+    const id = scope === 'all' ? 'all' : activeViewEl()?.id;
+    if (!id) toast('Opnaðu síðuna sem á að fá bakgrunninn.');
+    return id;
+  }
+  function setBackground(id, value) {
     snapshot();
-    const val = 'css:' + background;
-    if (scope === 'all') { state.bg.all = val; }
-    else {
-      const cur = activeViewEl();
-      if (!cur || !cur.id) { state.bg.all = val; } else { state.bg.pages[cur.id] = val; }
-    }
-    persist(); renderPanel(); toast('🖼 ' + label + (scope === 'all' ? ' — allar síður' : ' — þessi síða'));
+    if (id === 'all') state.bg.all = value;
+    else if (value === null) delete state.bg.pages[id];
+    else state.bg.pages[id] = value;
+    persist();
+    renderPanel();
+  }
+  function setGalleryBackground(label, background) {
+    const id = backgroundTarget();
+    if (!id) return;
+    setBackground(id, 'css:' + background);
+    toast('🖼 ' + label + (id === 'all' ? ' — allar síður' : ' — þessi síða'));
   }
   function clearGalleryBg() {
-    snapshot();
-    if (scope === 'all') state.bg.all = null;
-    else { const cur = activeViewEl(); if (cur && cur.id) state.bg.pages[cur.id] = null; else state.bg.all = null; }
-    persist(); toast('Bakgrunnur hreinsaður');
+    const id = backgroundTarget();
+    if (!id) return;
+    setBackground(id, null);
+    toast('Bakgrunnur hreinsaður');
   }
   function bgGallerySection() {
     const swatch = (g, i, big) =>
@@ -2392,8 +2426,7 @@
       '</button>';
     const rest = BG_GALLERY.length - BG_PEEK;
     const body = showAllBg
-      ? '<div class="pe-presets">' + BG_GALLERY.map((g, i) => swatch(g, i, true)).join('') +
-          '<button class="pe-chip" id="pe-bgg-clear" title="Hreinsa bakgrunn">✕ Hreinsa</button></div>' +
+      ? '<div class="pe-presets">' + BG_GALLERY.map((g, i) => swatch(g, i, true)).join('') + '</div>' +
         '<button class="pe-btn" id="pe-bg-less" style="margin-top:8px">− Sýna færri</button>'
       : '<div class="pe-presets">' + BG_GALLERY.slice(0, BG_PEEK).map((g, i) => swatch(g, i, false)).join('') +
           (rest > 0 ? '<button class="pe-chip" id="pe-bg-more" style="min-width:46px;height:52px;border-style:dashed;color:#64748b">+' + rest + '</button>' : '') +
@@ -3319,7 +3352,21 @@
       renderPanel();
     };
     const up = q('#pe-unpick'); if (up) up.onclick = () => { target = null; targetSel = null; targetVid = null; extraTargets = []; hideHighlight(); renderPanel(); };
+    const workspace = q('#pe-workspace');
+    if (workspace) workspace.onclick = () => {
+      const view = activeViewEl();
+      if (!view) { toast('Opnaðu síðuna sem á að breyta.'); return; }
+      target = view;
+      rememberTarget(view);
+      extraTargets = [];
+      multiPick = false;
+      setPicking(false);
+      highlight(view);
+      setTimeout(hideHighlight, 700);
+    };
     const bg = q('#pe-bg'); if (bg) bg.onclick = pickBackground;
+    const bgColor = q('#pe-bg-color');
+    if (bgColor) bgColor.onchange = () => setGalleryBackground('Bakgrunnslitur', bgColor.value);
     qa('[data-zoom]').forEach(b => b.onclick = () => setZoom(+b.dataset.zoom));
     const rs = q('#pe-reset'); if (rs) rs.onclick = resetMenu;
     const un = q('#pe-undo'); if (un) un.onclick = undo;
@@ -3402,28 +3449,33 @@
   }
 
   function pickBackground() {
-    const backgroundScope = scope;
-    const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*';
-    inp.onchange = async () => {
-      const f = inp.files && inp.files[0]; if (!f) return;
-      const where = backgroundScope === 'all' ? '2' : '1';
-      const cur = activeViewEl();
-      const id = cur && cur.id;
-      if (where === '1' && !id) { toast('Opnaðu síðuna fyrst'); return; }
-
+    const id = backgroundTarget();
+    if (!id) return;
+    const draft = workingLook;
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = async () => {
+      const file = input.files[0];
+      if (!file) return;
+      const canApply = () => draft === workingLook && (!draft || (draft.showing && !draft.publishing));
+      if (!canApply()) return;
       toast('Hleð upp bakgrunni…');
-      let url = await uploadBg(f);
+      let url = await uploadBg(file);
       if (!url) {
-        url = await new Promise(res => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = () => res(null); fr.readAsDataURL(f); });
-        if (!url) { toast('Tókst ekki að lesa myndina.'); return; }
-        toast('Storage svaraði ekki — myndin geymist í stillingum í bili.');
+        url = await new Promise(resolve => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => resolve(null);
+          reader.readAsDataURL(file);
+        });
       }
-      snapshot();
-      if (where === '2') state.bg.all = url;
-      else { state.bg.pages = state.bg.pages || {}; state.bg.pages[id] = url; }
-      persist();
+      if (!canApply()) return;
+      if (!url) { toast('Tókst ekki að lesa myndina.'); return; }
+      setBackground(id, url);
+      toast(draft ? 'Bakgrunnsmynd sett í vinnudrög.' : 'Bakgrunnsmynd sett á vinnusvæðið.');
     };
-    inp.click();
+    input.click();
   }
 
   // ── element picking ─────────────────────────────────────────────────────────
