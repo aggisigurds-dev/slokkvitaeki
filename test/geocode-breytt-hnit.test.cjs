@@ -139,3 +139,12 @@ test('vörn gegn endurtekinni gömlu hegðun: staðbundið vinnur ekki lengur fy
   assert.ok(gc['Stigahlíð 10, 105 Reykjavík'], 'gamli heimilisfangslykillinn er ekki snertur (hann bar annað heimilisfang)');
   assert.equal(gc['__co__:424'].lat, NYTT.lat);
 });
+
+test('magnupphleðsla staðbundinna hnita (syncLocalToShared) má aldrei yfirskrifa töfluna — annars dreifist gamall pinni á allar vélar', () => {
+  const m = /async function syncLocalToShared\(\) \{[\s\S]*?\n  \}\n/.exec(SRC);
+  assert.ok(m, 'syncLocalToShared fannst ekki');
+  const kod = m[0].replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+  assert.match(kod, /Prefer: 'resolution=ignore-duplicates'/);
+  assert.equal(/merge-duplicates/.test(kod), false);
+});
+

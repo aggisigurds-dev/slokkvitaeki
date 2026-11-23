@@ -317,7 +317,9 @@
           apikey: window.SUPABASE_KEY,
           Authorization: 'Bearer ' + window.SUPABASE_KEY,
           'Content-Type': 'application/json',
-          Prefer: 'resolution=merge-duplicates',
+          /* 23.11.2026: ignore-duplicates, EKKI merge-duplicates. Fyrir daginn í dag var verst að þessi umferð (vafri án _slokk_gc_synced_v1 — ný vél, kort á sjálfvirkum ham) yfirskrifaði töfluna með
+           * gömlum staðbundnum hnitum; nú hækkar það updated_at og gamli pinninn dreifist á ALLAR vélar (saekjaBreytt). Tilgangur þessarar umferðar er að FYLLA UPP í eyður — aldrei að endurskrifa. */
+          Prefer: 'resolution=ignore-duplicates',
         },
         body: JSON.stringify(rows),
       });
