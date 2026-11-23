@@ -123,6 +123,8 @@ leiðrétt þær: breyti hann skrefi, uppfærðu regluna og settu orð hans í `
 skrá tengilið/netfang 4 af 4 samþykkt · tækjaafrit 5 af 6 · ósend krafa 11 af 13 · órukkað verk 3 samþykkt og 6 hafnað ·
 afsláttarleiðrétting eftir á 0 af 4 · tvítak 4 af 5 · skrá í þjónustu 3 af 5 · Payday „XML hafnað“ lokað 24 af 26.
 
+**Regla 50 (23.11.2026, orð Agnars): sameining / ný kt félags á sendum reikningi** → `sala-reikningar`, kafli H í `sala-reikningar.md`: Kröfuyfirlit — FYRST afturkalla, SÍÐAN bakfæra, kennitala færð, ný sala + ný skýrsla, leiðrétt ósend í Kröfuyfirliti, nýju skjölin sem viðhengi á svarið. `leggja_til`; gengur framar reglu 31 í þessu tilviki. Fyrsta tilvik: mál #1744.
+
 Svaraðu honum alltaf stutt: hvað þú afgreiddir sjálfur (fjöldi og ein lína hvert), hvað bíður hans (mest tvö, hvert
 með já/nei-línu), og hvaða reglu þú leggur til.
 

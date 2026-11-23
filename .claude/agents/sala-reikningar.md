@@ -70,7 +70,7 @@ og hvað er SANNAÐ eða ÓSANNAÐ eru í „Handbók: fjögur daglegu reikninga
 
 ### E. Færa á aðra kennitölu (handbók 3)
 1. Skref 0 fyrir nýja greiðandann.
-2. Ósend sala: B (kt beint í ritli + `customer_base_id`). Send sala: Kröfu-vinnugluggi `faera_kt` (369). ALDREI kredit + endurútgáfa til að færa kt.
+2. Ósend sala: B (kt beint í ritli + `customer_base_id`). Send sala: Kröfu-vinnugluggi `faera_kt` (369). ALDREI kredit + endurútgáfa til að færa kt Í VENJULEGUM MISTÖKUM (rangt kt á sölu). **Sé ástæðan sameining eða ný kennitala félagsins: H** (orð Agnars 23.11.2026 ganga framar).
 3. Skýrslan: annar greiðandi á sama stað (rekstrarfélag) heldur skýrslu staðarins. Skipti staðurinn sjálfur um kt OG nafn:
    „Búa til úttektarskýrslu“.
 4. Reiknings-PDF-ið þarf að bera nýju kt. Annars gerir appið nýtt (517), eða lokaathugunin fellur.
@@ -86,6 +86,35 @@ og hvað er SANNAÐ eða ÓSANNAÐ eru í „Handbók: fjögur daglegu reikninga
 1. Skref 0.
 2. `greitt_med='reikningur'`, ógreidd, sendimerkin þrjú tóm, ekki void. `customer_base_id` sett, annars 422 við sendingu.
 3. **L.** Krafan stendur ÓSEND. Agnar sendir.
+
+### H. Sameining / ný kennitala félags á SENDUM reikningi (Agnar 23.11.2026 — Óðins regla 50)
+
+Orð Agnars (orðrétt, mál #1744, Stigahlíð 10 → Stigahlíð 6-12, R-001340): „Matt reyna þjálfa upp automatic verkferli i svona málum.
+Bakfæra, breyta kennitolu félags, gera nýjan reikning og nýja skyrslu, svo byrtist leidrett i krofuyfirlit, og nyju blodin i
+vudhengi tolvupostsins. I krofuyfirlit, þa finna krofuna, fyrst afturkalla, sidan bakfæra.“
+
+Tilefni: umsýsluaðili (t.d. Eignarekstur) skrifar að húsfélag hafi verið sameinað/skipt um kt og biður um kredit og nýjan reikning.
+Þetta er ANNAÐ verk en „rangt kt á sölu“ (E): hér á ný sala og ný skýrsla að verða til á nýju kt, ekki bara kt-færsla á sömu sölu.
+
+1. Skref 0 (greiðandi): ný kt staðfest hjá Skattinum (`/api/kt-lookup?kt=<kt>`), vartala, nafn. **Sameiningin sjálf er óstaðfest nema bréf liggi
+   fyrir** — segðu það berum orðum. Stofnaðu nýja greiðandann í `customers_base` (kt-vörn) ÁÐUR en nokkuð er afturkallað.
+2. Forathugun: salan `final`, ógreidd, ekki kreditfærð, Payday SENT eða DRAFT. Skráðu R-nr, Payday-nr, upphæð og allar línur með verðum
+   (afrit í málið) — nýja salan fær sömu línur.
+3. **Kröfuyfirlit: finndu kröfuna → FYRST ⊘ Afturkalla** (fellir bankakröfu og reikning í Payday, losar söluna). Lestu til baka að `dk_invoice_id`,
+   `invoiced_at`, `krafa_sent_at` séu tóm. **SÍÐAN ↩ Bakfæra** (kreditreikningur; fullt kredit á ógreidda söluna). Lestu til baka.
+4. Breyttu kennitölu félagsins: greiðandi staðarins færður á nýju kt (`customers_base` + `customer_base_id` BEINT — ritillinn vistar það ekki).
+   Breyting á kennitölu er staðfest af Agnari áður en hún er skrifuð; engin sameining félaga í kerfinu án hans.
+5. Ný sala á nýja greiðandann með SÖMU línum og verðum (Leiðrétta / Klára heimsókn með ástæðu). „Klára sölu“ sendir ekkert; 517 gerir nýtt reiknings-PDF.
+6. Ný úttektarskýrsla: „Búa til úttektarskýrslu“ — fær nýju kt og nafn, handskrifaði textinn óskertur, sú gamla merkt leyst af hólmi, engu eytt.
+7. Leiðrétta krafan birtist ÓSEND í Kröfuyfirliti (sendiskjárinn ✓ stemmir). Gamla salan er kreditfærð.
+8. **L** á nýja R-númerinu (og `<gamla R> --send`). Taflan fylgir skilum til Agnars.
+9. Svarið: `postur` semur drög í málinu; nýi reikningurinn og nýja skýrslan sem viðhengi á málinu (`thjonustubeidni_files`), ekki merkt
+   `undirbuid` fyrr en bæði skjölin eru þar (448). Póstur í `Brunaholf@` sést ekki í Tölvupóstum og er sendur úr Gmail Agnars.
+10. **Agnar samþykkir og sendir.** Þrep 3–4 snerta Payday og kredit: þau hefjast þegar hann ýtir á „Tilbúið í vinnslu“ í Kröfu-vinnuglugganum
+    (krofu_verkferli, tegund `annad` með þrepin í lýsingunni — `faera_kt`-þrepin keyra EKKI færa kt á sömu sölu hér). Kröfuna og svarið sendir hann sjálfur.
+
+Fyrsta tilvikið: mál #1744 / krofu_verkferli #9 (R-001340, 39.340 kr., Payday nr. 494), regla 50 í `odin_reglur`. **Dómur Agnars eftir fyrstu
+keyrslu er kennslan:** rétt/rangt á úrskurð (`odin_urskurdir`), og breyti hann þrepi uppfærist regla 50 og þessi kafli.
 
 ### L — LOKAATHUGUN (skylda áður en nokkuð er sagt tilbúið)
 Keyrðu í repórótinni:
