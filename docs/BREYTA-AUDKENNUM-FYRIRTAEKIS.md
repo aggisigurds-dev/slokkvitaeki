@@ -23,13 +23,26 @@ Kveikjur á `fyrirtaeki` (SQL: `sql/2026-11-23_kt_breyting_faerist.sql` og `sql/
 |---|---|---|
 | **Kennitala** | greiðandi (finnur eða stofnar `customers_base`), `uttaeki`, `customer_documents`, `document_pairs`, `umsjonarpostur_tengsl`, `fyrirtaeki_virkni`, `krofu_verkferli`, `thjonustubeidni`, `crm_cache`, `uttekt_skyrsla_lines` | sölur, sendir reikningar, saga (Stólpi, Payday-spegill), deildur greiðandi |
 | **Nafn** | `customer_documents.customer_name`, `thjonustubeidni.customer_nafn`, `crm_cache.nafn`, `uttaeki.client`, nafn greiðandans (aðeins ef staðurinn er eigin greiðandi) | sölur, PDF |
-| **Heimilisfang** | heimilisfang greiðandans (aðeins ef staðurinn er eigin greiðandi og greiðandinn ber enn GAMLA heimilisfangið) | sölur, PDF |
+| **Heimilisfang** | heimilisfang greiðandans (aðeins ef staðurinn er eigin greiðandi og greiðandinn ber enn GAMLA heimilisfangið) · **geopunktur og hús** við vistun í viðmótinu (sjá 2b) | sölur, PDF |
 
 **Greiðandi er aðeins færður** þegar kt greiðandans = kt staðarins OG enginn annar staður deilir honum. Rekstrarfélög,
 deildir greiðendur og „annar greiðandi“ (t.d. verkstaður → móðurfélag) eru látin í friði — þar ákveður Agnar.
 
 **Sölur eru aldrei breyttar af grunninum.** kt-breyting í grunni sendir ekki `sale-edited`, svo reiknings-PDF og skýrsla yrðu
 úrelt (16.11.2026). Því er ósendur reikningur leiðréttur með „Leiðrétta“ og sendur reikningur með verkferli H (regla 50).
+
+## 2b. Geopunktur og hús — svo kort, Leiðsögn, Teikningar og búnaðardreifing finni nýja heimilisfangið (Agnar 23.11.2026)
+
+Heimilisfang breytt → pinninn á kortinu er enn á gamla staðnum og Teikningar finna lóðina (landnr) út frá heimilisfanginu. Við VISTUN í viðmótinu kallar viðvörun 527 á
+Uppfærsluborð (431) „Uppfæra eftir heimilisfangi“ (`Uppfaerslubord.uppfaeraHeimilisfang(id)`):
+
+- **Hús:** `hus-upplysingar` → landnr og teikningar (bannerinn og Teikningar/búnaðargreining; „6-12“ → fyrsta húsnúmer, lóðin deilist).
+- **Hnit:** `/api/geocode` (Staðfangaskrá HMS) → `__co__:<id>` (réttur pinni félagsins) + heimilisfangslykill + nafn í sameiginlegu `geocode_cache`.
+- Kassinn eftir vistun segir hvort það tókst; bregðist það: Uppfærsluborð → fyrirtæki → „Uppfæra eftir heimilisfangi“, eða „Laga staðsetningu“ á Leiðsögn.
+
+**Hvers vegna gegnum 431 en ekki eigin sókn:** Uppfærsluborð stýrir ÖLLUM sjálfvirkum sóknum (kennitala, hús, kort) og skilar tilbúnu 503 á þær nema skýr aðgerð leyfi.
+Að vista heimilisfang er skýr aðgerð notandans, svo 431 leyfir nákvæmlega eina umferð á hús og kort fyrir þetta fyrirtæki. Aldrei bæta við eigin `fetch('/api/geocode')` annars staðar.
+Handvirkt í SQL (agentar): `select query, lat, lng from geocode_cache where query in ('__co__:<id>', '<heimilisfang>')` — pinninn og heimilisfangslykillinn eiga að vera sama hnit.
 
 ## 3. Viðvörunin (guli kassinn eftir vistun)
 
@@ -100,6 +113,8 @@ Röðin er föst og hvert þrep er lesið ÚR GÖGNUNUM (ekki úr merki sem einh
 | 5 | ⚠ Kt félagsins færð á spjaldinu (Agnar staðfestir) | `fyrirtaeki.kennitala` = nýja kt; sjálfvirka keðjan færir greiðanda, skjöl, tæki, mál og sögu |
 | 6 | Ný sala á nýja greiðandann, sömu línur | sala á staðnum á nýju kt (ekki kredit/void) |
 | 7 | Ný úttektarskýrsla með réttri kt og nafni | skýrsla ársins sem ber nýju kt í slóðinni |
+| 7b | Geopunktur uppfærður á heimilisfangið (kort, Leiðsögn, Bílstjóri) | `__co__:<id>` og heimilisfangslykill í `geocode_cache` eru sama hnit (≤ 60 m) |
+| 7c | Teikningar opnast á heimilisfanginu og búnaður er tilbúinn til dreifingar | húsupplýsingar úr Uppfærsluborði (landnr + teikningar) á þessari tölvu; annars opnarðu „Teikningar“ og „Búnaðargreining“ á spjaldinu |
 | 8 | Félagið enn í þjónustu og á nýju kt | `er_i_thjonustu` + kt á spjaldinu |
 | 9 | Nýja salan situr ÓSEND í Kröfuyfirliti | engin sent-merki |
 | 10 | Agnar fer yfir og sendir kröfuna og svarar póstinum | `krafa_sent_at` á nýju sölunni |
