@@ -553,10 +553,10 @@
     var sk = sel(m, '._dyg-section .b403-skyring');
     if (sk) { var sb = allt(sk, 'b').map(txt); var ad = /(\d+)\s*skjöl/.exec(txt(sel(sk, '.dauf'))); d.skjol = { komin: +(sb[0] || 0), vinnsla: +(sb[1] || 0), vantar: +(sb[2] || 0), alls: ad ? +ad[1] : 0 }; } else d.skjol = null;
     /* kreditað að hluta (199: „kreditað að hluta −N kr“): sama frádráttur og samtalan í 199 — annars teldi spjaldið kreditaða upphæðina enn með */
-    var kreditHluti = function (e) { if (!e) return 0; var n = parseInt(txt(e).replace(/[^\d]/g, ''), 10); return n > 0 ? n : 0; };
+    var kreditHluti = function (el) { var n = 0; (el || []).forEach(function (e) { if (/hluta/i.test(txt(e))) { var v = parseInt(txt(e).replace(/[^\d]/g, ''), 10); if (v > 0) n += v; } }); return n; };
     d.hreyf = allt(m, '._dyg-section .b403-hreyf .b403-skjal-lina.hreyf').map(function (r) {
       var u = txt(sel(r, '.upph')).replace(/[^\d]/g, '');
-      return { teg: txt(sel(r, '.teg')), dags: txt(sel(r, '.dags')), nr: txt(sel(r, 'a.sk-doc.inv')), upph: u ? parseInt(u, 10) : 0, greitt: !!sel(r, '.s-greitt') || /greitt/i.test(txt(r)), kredit: !!sel(r, '.kredit'), hluti: kreditHluti(sel(r, '.s-kredit')) };
+      return { teg: txt(sel(r, '.teg')), dags: txt(sel(r, '.dags')), nr: txt(sel(r, 'a.sk-doc.inv')), upph: u ? parseInt(u, 10) : 0, greitt: !!sel(r, '.s-greitt') || /greitt/i.test(txt(r)), kredit: !!sel(r, '.kredit'), hluti: kreditHluti(allt(r, '.s-kredit')) };
     });
     d.hreyfAlls = ''; allt(m, '._dyg-section .b403-kafli .b403-hint').forEach(function (e) { var t = txt(e); if (!d.hreyfAlls && /^[\d.]+\s*kr$/.test(t)) d.hreyfAlls = t; });
     if (!d.hreyf.length) {
@@ -566,7 +566,7 @@
         allt(bl, '.sk-svc-card').forEach(function (c) {
           var nr = sel(c, 'a.sk-doc.inv'); if (!nr) return;
           var u = txt(sel(c, '.sk-svc-amt')).replace(/[^\d]/g, '');
-          d.hreyf.push({ teg: /brunakerfi/i.test(txt(sel(c, '.sk-svc-hd'))) ? 'Brunakerfi' : 'Úttekt', dags: ar || '', nr: txt(nr).replace(/[^\w-]/g, ''), upph: u ? parseInt(u, 10) : 0, greitt: !!sel(c, '.s-greitt'), kredit: !!sel(c, '.sk-doc.inv.kredit'), hluti: kreditHluti(sel(c, '.s-kredit')) });
+          d.hreyf.push({ teg: /brunakerfi/i.test(txt(sel(c, '.sk-svc-hd'))) ? 'Brunakerfi' : 'Úttekt', dags: ar || '', nr: txt(nr).replace(/[^\w-]/g, ''), upph: u ? parseInt(u, 10) : 0, greitt: !!sel(c, '.s-greitt'), kredit: !!sel(c, '.sk-doc.inv.kredit'), hluti: kreditHluti(allt(c, '.s-kredit')) });
         });
       });
     }

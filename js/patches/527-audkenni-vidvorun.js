@@ -71,7 +71,8 @@
   let sidastiHint = null;
   const IDS_14 = { nafn: 'nf-nafn', kt: 'nf-kt', heimilisfang: 'nf-heimilisfang' };
   const snap = (co) => ({ nafn: (co || {}).nafn, kennitala: (co || {}).kennitala, heimilisfang: (co || {}).heimilisfang, customer_base_id: (co || {}).customer_base_id });
-  const modalOpinn = (m) => !!m && !!m.classList && m.classList.contains('open') && !(m.style && m.style.display === 'none');
+  // Aðeins class „open“ (Modal.open/close): fixcompanysave.js setur style.display='none' við nýtt fyrirtæki og skilar því aldrei, en .modal.open{display:flex !important} sýnir gluggann samt.
+  const modalOpinn = (m) => !!m && !!m.classList && m.classList.contains('open');
   const erBreytaGluggi = () => {
     const m = document.getElementById('modal-nyfyrirtaeki');
     const h = m && m.querySelector && m.querySelector('h2');
@@ -109,7 +110,8 @@
     const m = document.getElementById('modal-nyfyrirtaeki');
     if (!m) return;
     gluggaVakt = true;
-    new MutationObserver(() => { if (!modalOpinn(m)) haetta(); }).observe(m, { attributes: true, attributeFilter: ['class', 'style'] });
+    // Hreinsar AÐEINS samhengi þessa glugga (14) — aðrir gluggar (00-legacy) lifa sjálfstæðu lífi og eru ekki snertir þótt Modal.close sé kallað.
+    new MutationObserver(() => { if (!modalOpinn(m) && samhengi && samhengi.ids === IDS_14) haetta(); }).observe(m, { attributes: true, attributeFilter: ['class'] });
   }
 
   // o: { sb, id, co, lesaForm, ids?: {nafn, kt, heimilisfang}, virkur?: () => boolean, eftir?: Element }  — sjálfgefið eyðublað 14 (nf-*).

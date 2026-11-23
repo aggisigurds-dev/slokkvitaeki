@@ -46,8 +46,8 @@ test('ókreditfærðar raðir telja eins og áður (brunakerfi sér, slökkvitæ
 });
 
 test('hreyfingalínan ber .kredit + .s-kredit (borðaleið) og símaleiðin .sk-doc.inv.kredit (span, ekki a — rýni 23.11)', () => {
-  assert.match(SRC, /kredit: !!sel\(r, '\.kredit'\), hluti: kreditHluti\(sel\(r, '\.s-kredit'\)\)/);
-  assert.match(SRC, /kredit: !!sel\(c, '\.sk-doc\.inv\.kredit'\), hluti: kreditHluti\(sel\(c, '\.s-kredit'\)\)/);
+  assert.match(SRC, /kredit: !!sel\(r, '\.kredit'\), hluti: kreditHluti\(allt\(r, '\.s-kredit'\)\)/);
+  assert.match(SRC, /kredit: !!sel\(c, '\.sk-doc\.inv\.kredit'\), hluti: kreditHluti\(allt\(c, '\.s-kredit'\)\)/);
   assert.equal(/a\.sk-doc\.inv\.kredit/.test(SRC), false, 'a.sk-doc.inv.kredit gat aldrei passað — merkið er á span');
 });
 
@@ -61,12 +61,13 @@ test('kreditað að hluta dregst frá (−N kr), aldrei undir 0, og „Síðasta
   assert.equal(u.fyrra, 5000);
 });
 
-test('kreditHluti les tölu úr „kreditað að hluta −N kr“ (punktar sem þúsundaskil)', () => {
-  const m = /var kreditHluti = function \(e\) \{[^\n]*\};/.exec(SRC);
+test('kreditHluti les „kreditað að hluta −N kr“ (punktar sem þúsundaskil) og sleppir Stólpa-flísinni sem líka ber s-kredit', () => {
+  const m = /var kreditHluti = function \(el\) \{[^\n]*\};/.exec(SRC);
   assert.ok(m, 'kreditHluti fannst ekki');
-  const ctx = { txt: (e) => e.t, parseInt, Math };
+  const ctx = { txt: (e) => e.t, parseInt };
   vm.runInNewContext(m[0] + '\nthis.f = kreditHluti;', ctx);
-  assert.equal(ctx.f({ t: 'kreditað að hluta −39.340 kr' }), 39340);
+  assert.equal(ctx.f([{ t: 'kreditað að hluta −39.340 kr' }]), 39340);
+  assert.equal(ctx.f([{ t: 'Stólpi · kredit' }, { t: 'kreditað að hluta −4.000 kr' }]), 4000, 'Stólpa-flísin (án „hluta“) villir ekki');
+  assert.equal(ctx.f([]), 0);
   assert.equal(ctx.f(null), 0);
-  assert.equal(ctx.f({ t: 'ekkert' }), 0);
 });

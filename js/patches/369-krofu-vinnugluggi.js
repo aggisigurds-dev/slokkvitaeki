@@ -581,9 +581,9 @@
         markkt.length === 10 ? c.from('fyrirtaeki').select('id,nafn,kennitala,heimilisfang,customer_base_id').or('kennitala.eq.' + ktBirt(markkt) + ',kennitala.eq.' + markkt).is('deleted_at', null).limit(10) : tomt,
         (m.tegund === 'gleymt' && fid) ? c.from('solur').select('id,num,samtals,created_at,krafa_sent_at,invoiced_at,dk_invoice_id,status').eq('customer_id', fid).gte('created_at', AR() + '-01-01').neq('status', 'void').order('created_at', { ascending: false }).limit(3) : tomt,
         (m.tegund === 'gleymt' && fid) ? c.from('v_gleymt_ad_rukka_uttekt').select('fyrirtaeki_id').eq('fyrirtaeki_id', fid).limit(1) : tomt,
-        s ? c.from('solur').select('id,num').eq('is_credit', true).eq('credit_of', s.id).limit(3) : tomt,
+        s ? c.from('solur').select('id,num,samtals').eq('is_credit', true).eq('credit_of', s.id).limit(10) : tomt,
         // ny_kt: salan sem kom í STAÐINN (sama staður, eftir upphaflegu söluna, ekki kredit/void) og skýrsla ársins (endurgerð skýrsla heldur skjalaröðinni — því engin tímasía, aðeins kt í slóðinni)
-        nyKt ? c.from('solur').select('id,num,customer_kt,customer_nafn,customer_base_id,samtals,status,is_credit,krafa_sent_at,invoiced_at,dk_invoice_id,created_at').eq('customer_id', fid).gte('created_at', s.created_at).neq('id', s.id).order('created_at', { ascending: false }).limit(8) : tomt,
+        nyKt ? c.from('solur').select('id,num,customer_kt,customer_nafn,customer_base_id,samtals,status,is_credit,krafa_sent_at,invoiced_at,dk_invoice_id,created_at').eq('customer_id', fid).gte('created_at', s.created_at).neq('id', s.id).order('created_at', { ascending: false }).limit(30) : tomt,
         nyKt ? c.from('customer_documents').select('id,doc_type,year,customer_name,file_name,storage_path,created_at').eq('fyrirtaeki_id', fid).eq('doc_type', 'uttektarskyrsla').eq('year', AR()).order('created_at', { ascending: false }).limit(6) : tomt
       ]);
       x.s = s;
@@ -598,6 +598,8 @@
       x.nySala = (rny.data || [])[0] || null;
       x.iSyn = m.tegund === 'gleymt' ? !!((rsyn.data || [])[0]) : undefined;
       x.kreditfaert = !!(s && (s.is_credit || (rkr.data || []).length));
+      // FULLT kredit (ny_kt): summa kreditsalna dekkir söluna — hlutakredit er ekki „bakfært“ (reikningurinn stendur að mestu enn).
+      x.kreditFullt = !!(s && !s.is_credit && !rkr.error && (rkr.data || []).reduce((n, z) => n + Math.abs(+z.samtals || 0), 0) >= Math.abs(+s.samtals || 0) - 1 && (rkr.data || []).length);
       // ny_kt: nýja salan = á nýju kt, ekki kredit, ekki void. Nýja skýrslan = skjal sem ber nýju kt í heiti/slóð (eða sama kt á staðnum).
       x.nySalaKt = nyKt && markkt.length === 10 ? ((rnk.data || []).find(z => !z.is_credit && z.status !== 'void' && tolur(z.customer_kt) === markkt) || null) : undefined;
       x.nySkyrsla = nyKt && markkt.length === 10 ? ((rsk.data || []).find(z => String(z.storage_path || z.file_name || '').indexOf(ktBirt(markkt)) >= 0) || null) : undefined;
@@ -755,21 +757,22 @@
         kerfi('markkt', 'Kennitala nýs greiðanda gild', mk ? ktGild(mk) : false, mk ? 'kt. ' + ktBirt(mk) + (g.marknafn ? ' · ' + g.marknafn : '') : 'Skráðu kennitölu nýs greiðanda hér til hliðar.');
         // Forathugun helst græn eftir bakfærsluna: kreditfærð sala er þegar á leiðinni, ekki „stenst ekki“.
         kerfi('forathugun', 'Forathugun: ógreitt og final — Payday SENT eða DRAFT (eða þegar afturkallað/bakfært)',
-          x.kreditfaert ? true : og(ogreitt, s ? s.status === 'final' : null, s ? (sent && !afturkallad ? (p ? (p.status === 'SENT' || p.status === 'DRAFT') : false) : true) : null),
-          [s ? 'Staða ' + s.status : '', x.kreditfaert ? 'þegar kreditfærð' : '', p ? 'Payday nr. ' + (p.number || '—') + ' · ' + p.status : (s && !sent ? 'krafan þegar afturkölluð' : 'enginn Payday-reikningur')].filter(Boolean).join(' · '));
-        kerfi('markfelag', til === false ? 'Nýi greiðandinn er EKKI til í kúnnaskrá' : 'Nýi greiðandinn er til í kúnnaskrá', til,
-          x.markBase ? x.markBase.nafn + ' · #' + x.markBase.id : til === false ? 'Sjálfvirka kt-keðjan stofnar greiðandann þegar kt félagsins er færð (þrep 5); nýja kt má einnig stofna fyrst.' : '');
+          x.kreditFullt ? true : og(ogreitt, s ? s.status === 'final' : null, s ? (sent && !afturkallad ? (p ? (p.status === 'SENT' || p.status === 'DRAFT') : false) : true) : null),
+          [s ? 'Staða ' + s.status : '', x.kreditFullt ? 'þegar kreditfærð' : (x.kreditfaert ? 'kreditað að hluta — ekki bakfært' : ''), p ? 'Payday nr. ' + (p.number || '—') + ' · ' + p.status : (s && !sent ? 'krafan þegar afturkölluð' : 'enginn Payday-reikningur')].filter(Boolean).join(' · '));
+        // Hlutlaust (ekki ✗) meðan nýi greiðandinn er ekki til: sjálfvirka keðjan stofnar hann þegar kt félagsins er færð.
+        kerfi('markfelag', til === false ? 'Nýi greiðandinn er ekki enn til í kúnnaskrá' : 'Nýi greiðandinn er til í kúnnaskrá', til === false ? null : til,
+          x.markBase ? x.markBase.nafn + ' · #' + x.markBase.id : til === false ? 'Eðlilegt: sjálfvirka kt-keðjan stofnar greiðandann þegar kt félagsins er færð (þrep 5).' : '');
         vinnsla('afturkalla', '⚠ 1) Afturkalla kröfu og reikning í Payday (⊘ í Kröfuyfirliti) og lesa til baka',
-          'FYRST afturkalla. Payday býr sjálft til kreditskjal (CANCELLED + CREDIT) — ekki afturkalla aftur. dk_invoice_id, invoiced_at og krafa_sent_at eiga að vera tóm.', afturkallad || null, { vardur: true });
+          'FYRST afturkalla. Payday býr sjálft til kreditskjal (CANCELLED + CREDIT) — ekki afturkalla aftur. dk_invoice_id, invoiced_at og krafa_sent_at eiga að vera tóm.', s ? afturkallad : null, { vardur: true });   // gögnin ráða: „gert“-merki yfirskrifar aldrei false
         vinnsla('bakfaera', '⚠ 2) Bakfæra (↩ kreditreikningur í Kröfuyfirliti, allar línur) og lesa til baka',
-          'SÍÐAN bakfæra, aðeins eftir afturköllun. Lesið: til er kreditsala (is_credit, credit_of = þessi sala).', x.kreditfaert ? true : null, { vardur: true });
+          'SÍÐAN bakfæra, aðeins eftir afturköllun. Lesið: kreditsölur (is_credit, credit_of = þessi sala) dekka alla upphæðina — hlutakredit telst ekki.', s ? x.kreditFullt : null, { vardur: true });
         vinnsla('breyta_kt', '⚠ 3) Færa kennitölu félagsins á nýju kt (spjaldið → Breyta) — sjálfvirka keðjan færir restina',
-          'Greiðandi, skjöl, pör, tæki, mál og saga færast með customer id (óbreytt) — kt_breyting_faera. Agnar staðfestir kennitölubreytinguna. Lesið: kt á spjaldinu = nýja kt.', ktFaerd ? true : null, { vardur: true });
+          'Greiðandi, skjöl, pör, tæki, mál og saga færast með customer id (óbreytt) — kt_breyting_faera. Agnar staðfestir kennitölubreytinguna. Lesið: kt á spjaldinu = nýja kt.', ktFaerd, { vardur: true });
         vinnsla('ny_sala', '4) Ný sala á nýja greiðandann með SÖMU línum og verðum (Leiðrétta / Klára heimsókn)',
-          'Klára sölu sendir ekkert. Lesið: til er ný sala á staðnum á nýju kt (ekki kredit/void).', nyS ? true : null);
+          'Klára sölu sendir ekkert. Lesið: til er ný sala á staðnum á nýju kt (ekki kredit/void).', nyS === undefined ? null : !!nyS);
         vinnsla('ny_skyrsla', '5) Ný úttektarskýrsla með réttri kt og nafni (handskrifaði textinn óskertur)',
-          '„Búa til úttektarskýrslu“ á nýju sölunni; sú gamla er merkt leyst af hólmi, engu eytt. Lesið: skýrsla sem ber nýju kt.', nySk ? true : null);
-        kerfi('i_thjonustu', 'Félagið er enn í þjónustu og skráð á nýju kt', x.stadur ? !!x.stadur.er_i_thjonustu : null,
+          '„Búa til úttektarskýrslu“ á nýju sölunni; sú gamla er merkt leyst af hólmi, engu eytt. Lesið: skýrsla sem ber nýju kt.', nySk === undefined ? null : !!nySk);
+        kerfi('i_thjonustu', 'Félagið er enn í þjónustu og skráð á nýju kt', !x.stadur ? null : (ktFaerd ? !!x.stadur.er_i_thjonustu : null),
           x.stadur ? x.stadur.nafn + ' · kt. ' + ktBirt(x.stadur.kennitala || '') : '');
         markmid('osend', 'kerfi', 'Nýja salan situr ÓSEND í Kröfuyfirliti', nyS ? !merktSend(nyS) : null, 'Þá bíður hún yfirferðar þinnar.');
         markmid('senda', 'agnar', 'Fara yfir skýrslu og reikning og senda á nýja greiðandann (og svara póstinum)', nyS ? merktSend(nyS) : null, 'Lokasending er alltaf þín. slokkvitaeki@ hefur enga sendileið — svarið sendir þú úr póstforritinu.');

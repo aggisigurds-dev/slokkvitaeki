@@ -41,7 +41,7 @@ const SENT = { id: 1, num: 'R-1', status: 'final', customer_kt: '520391-1859', d
 const afturkallad = { ...SENT, dk_invoice_id: null, invoiced_at: null, krafa_sent_at: null };
 const P = { status: 'SENT', number: '494', paid_date: null };
 const NYSALA = { id: 3, num: 'R-3', customer_kt: '470815-0270', status: 'final', is_credit: false, krafa_sent_at: null, invoiced_at: null, dk_invoice_id: null };
-const x0 = (o) => ({ idag: '2026-11-23', s: SENT, p: P, kreditfaert: false, markBase: { id: 1295, nafn: 'Stigahlíð 6-12, húsfélag' },
+const x0 = (o) => ({ idag: '2026-11-23', s: SENT, p: P, kreditfaert: false, kreditFullt: false, markBase: { id: 1295, nafn: 'Stigahlíð 6-12, húsfélag' },
   stadur: { nafn: 'Stigahlíð 10, húsfélag', kennitala: '520391-1859', er_i_thjonustu: true }, nySalaKt: null, nySkyrsla: null, ...(o || {}) });
 const stada = (L, id) => { const t = L.find((z) => z.id === id); assert.ok(t, 'þrep vantar: ' + id); return t.ath; };
 
@@ -70,26 +70,26 @@ test('hvert þrep kviknar aðeins þegar gögnin sýna það', () => {
   assert.equal(stada(L, 'afturkalla'), true);
   assert.notEqual(stada(L, 'bakfaera'), true);
   // 2) bakfært: kreditsala til
-  L = threp(M, x0({ s: afturkallad, p: { ...P, status: 'CANCELLED' }, kreditfaert: true }), null);
+  L = threp(M, x0({ s: afturkallad, p: { ...P, status: 'CANCELLED' }, kreditfaert: true, kreditFullt: true }), null);
   assert.equal(stada(L, 'bakfaera'), true);
   assert.equal(stada(L, 'forathugun'), true, 'forathugun helst græn eftir bakfærsluna (kreditfærð sala á leiðinni)');
   assert.notEqual(stada(L, 'breyta_kt'), true);
   // 3) kt félagsins færð
   const stNy = { nafn: 'Stigahlíð 6-12, húsfélag', kennitala: '470815-0270', er_i_thjonustu: true };
-  L = threp(M, x0({ s: afturkallad, kreditfaert: true, stadur: stNy }), null);
+  L = threp(M, x0({ s: afturkallad, kreditfaert: true, kreditFullt: true, stadur: stNy }), null);
   assert.equal(stada(L, 'breyta_kt'), true);
   assert.notEqual(stada(L, 'ny_sala'), true);
   // 4) ný sala á nýju kt (ósend)
-  L = threp(M, x0({ s: afturkallad, kreditfaert: true, stadur: stNy, nySalaKt: NYSALA }), null);
+  L = threp(M, x0({ s: afturkallad, kreditfaert: true, kreditFullt: true, stadur: stNy, nySalaKt: NYSALA }), null);
   assert.equal(stada(L, 'ny_sala'), true);
   assert.equal(stada(L, 'osend'), true);
   assert.notEqual(stada(L, 'ny_skyrsla'), true);
   assert.notEqual(stada(L, 'senda'), true);
   // 5) ný skýrsla
-  L = threp(M, x0({ s: afturkallad, kreditfaert: true, stadur: stNy, nySalaKt: NYSALA, nySkyrsla: { id: 9 } }), null);
+  L = threp(M, x0({ s: afturkallad, kreditfaert: true, kreditFullt: true, stadur: stNy, nySalaKt: NYSALA, nySkyrsla: { id: 9 } }), null);
   assert.equal(stada(L, 'ny_skyrsla'), true);
   // 6) Agnar sendi nýju kröfuna
-  L = threp(M, x0({ s: afturkallad, kreditfaert: true, stadur: stNy, nySalaKt: { ...NYSALA, krafa_sent_at: '2026-11-24', dk_invoice_id: 'PD-2' }, nySkyrsla: { id: 9 } }), null);
+  L = threp(M, x0({ s: afturkallad, kreditfaert: true, kreditFullt: true, stadur: stNy, nySalaKt: { ...NYSALA, krafa_sent_at: '2026-11-24', dk_invoice_id: 'PD-2' }, nySkyrsla: { id: 9 } }), null);
   assert.equal(stada(L, 'senda'), true);
   assert.equal(stada(L, 'osend'), false, 'send sala situr ekki lengur ósend');
 });
@@ -128,4 +128,45 @@ test('ny_kt sækir aðeins aukagögnin þegar málið er af þeirri gerð og tek
   assert.match(SRC, /nyKt \? c\.from\('solur'\)[^\n]+\.neq\('id', s\.id\)/);
   assert.match(SRC, /nyKt \? c\.from\('customer_documents'\)[^\n]+\.eq\('doc_type', 'uttektarskyrsla'\)\.eq\('year', AR\(\)\)/);
   assert.equal(/eq\('doc_type', 'uttektarskyrsla'\)\.gte\('created_at'/.test(SRC), false, 'endurgerð skýrsla heldur skjalaröðinni — engin tímasía');
+});
+
+test('gögnin hafa síðasta orðið: „gert“-merki gerir aldrei þrep búið þegar gögnin segja nei', () => {
+  const vf = { skref: { afturkalla: { gert: true }, bakfaera: { gert: true }, breyta_kt: { gert: true }, ny_sala: { gert: true }, ny_skyrsla: { gert: true } }, gogn: M.gognNy };
+  // Sent, ekkert gert í raun — samt merkt af „agent“: ekkert þrep má sýnast búið
+  const L = threp(M, x0({ nySalaKt: null, nySkyrsla: null }), vf);
+  ['afturkalla', 'bakfaera', 'breyta_kt', 'ny_sala', 'ny_skyrsla'].forEach((id) => assert.equal(stada(L, id), false, id + ': gögnin segja nei, merkið ræður ekki'));
+  // Gögn sem vantar (undefined) mega enn nota merkið sem varaleið
+  const L2 = threp(M, x0({ s: afturkallad, stadur: undefined, nySalaKt: undefined, nySkyrsla: undefined }), vf);
+  assert.equal(stada(L2, 'ny_sala'), true);
+  assert.equal(stada(L2, 'ny_skyrsla'), true);
+});
+
+test('bakfærsla = FULLT kredit: hlutakredit er ekki „bakfært“ og forathugun grænkar ekki af því', () => {
+  const greidd = { ...afturkallad, paid_at: '2026-11-23' };
+  const L = threp(M, x0({ s: greidd, p: { ...P, status: 'CANCELLED' }, kreditfaert: true, kreditFullt: false }), null);
+  assert.notEqual(stada(L, 'bakfaera'), true, 'hlutakredit er ekki bakfærsla');
+  assert.notEqual(stada(L, 'forathugun'), true, 'forathugun grænkar ekki af hlutakredit (greidd sala stenst ekki forathugun)');
+  const L2 = threp(M, x0({ s: afturkallad, p: { ...P, status: 'CANCELLED' }, kreditfaert: true, kreditFullt: true }), null);
+  assert.equal(stada(L2, 'bakfaera'), true);
+  assert.match(SRC, /x\.kreditFullt = !!\(s && !s\.is_credit && !rkr\.error && \(rkr\.data \|\| \[\]\)\.reduce\(/);
+  assert.match(SRC, /select\('id,num,samtals'\)\.eq\('is_credit', true\)\.eq\('credit_of', s\.id\)/);
+});
+
+test('„í þjónustu á nýju kt“ er hlutlaust þar til kt er færð; „nýi greiðandinn“ er aldrei ✗ í eðlilegri stöðu', () => {
+  let L = threp(M, x0(), null);                                   // kt enn gamla
+  assert.equal(stada(L, 'i_thjonustu'), null);
+  assert.equal(stada(L, 'markfelag'), true);
+  L = threp(M, x0({ markBase: null }), null);                     // nýi greiðandinn ekki til enn (keðjan stofnar hann)
+  assert.equal(stada(L, 'markfelag'), null, 'ekki ✗ — eðlilegt þar til kt er færð');
+  const stNy = { nafn: 'F', kennitala: '470815-0270', er_i_thjonustu: true };
+  L = threp(M, x0({ stadur: stNy }), null);
+  assert.equal(stada(L, 'i_thjonustu'), true);
+  L = threp(M, x0({ stadur: { ...stNy, er_i_thjonustu: false } }), null);
+  assert.equal(stada(L, 'i_thjonustu'), false, 'kt færð en félagið ekki í þjónustu = raunveruleg villa');
+});
+
+test('SQL: tegundarskorðan leyfir ny_kt (annars „Málið stofnaðist ekki“)', () => {
+  const sql = fs.readFileSync(path.join(__dirname, '..', 'sql/2026-11-23_krofu_verkferli_ny_kt.sql'), 'utf8');
+  assert.match(sql, /'faera_kt','ny_kt','gleymt'/);
+  assert.match(sql, /drop constraint if exists krofu_verkferli_tegund_check/);
 });

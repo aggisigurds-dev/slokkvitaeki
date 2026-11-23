@@ -265,7 +265,7 @@ test('eyðublað: glugginn lokast með því að smella á bakgrunn (Modal.close
   A.festaVidForm({ sb, id: 1, co: FA, lesaForm: lesaFrom(d) });
   assert.equal(vaktir.length, 1, 'aðeins EINN hnútur vaktaður (glugginn), ekkert body-vítt');
   assert.equal(vaktir[0].el.id, 'modal-nyfyrirtaeki');
-  assert.deepEqual(Array.from(vaktir[0].o.attributeFilter), ['class', 'style']);
+  assert.deepEqual(Array.from(vaktir[0].o.attributeFilter), ['class'], 'aðeins class — style er ekki treyst (fixcompanysave setur display:none og skilar því aldrei)');
   setForm(d, { ...FA, nafn: 'Breytt' });
   await d.reitir['nf-nafn'].fire('change');
   assert.equal(kall.length, 1);
@@ -335,4 +335,30 @@ test('SQL: gamli greiðandinn óþekktur → ekkert giskað (oviss), rofinn sés
   assert.match(SQL, /s\.status <> 'void' and coalesce\(s\.hidden, false\) = false/);
   assert.match(SQL, /revoke all on function public\.kt_breyting_faera\(bigint, bigint, text, text, boolean\) from public, anon, authenticated;/);
   assert.match(SQL, /create or replace function public\.kt_breyting_virkt\(\) returns boolean\nlanguage sql stable security definer set search_path to 'public'/);
+});
+
+test('vaktin hreinsar ekki 00-legacy-samhengið þótt Modal.close á sameiginlega glugganum keyri (rýni A2)', async () => {
+  const { A, d, sb, kall, vaktir } = hladaForm();
+  A.festaVidForm({ sb, id: 1, co: FA, lesaForm: lesaFrom(d) });          // 14 skráð (vaktin sett)
+  const box = d.doc.createElement('div'); d.doc.body.appendChild(box);
+  const mk = (id) => { const i = d.doc.createElement('input'); i.id = id; box.appendChild(i); return i; };
+  const n = mk('_ed_nafn'), k = mk('_ed_kt'), h = mk('_ed_addr');
+  Object.assign(n, { value: 'X' }); Object.assign(k, { value: FA.kennitala }); Object.assign(h, { value: 'Y' });
+  A.festaVidForm({ sb, id: 9, co: { nafn: 'X', kennitala: FA.kennitala, heimilisfang: 'Y' }, lesaForm: () => ({ nafn: n.value, kennitala: k.value, heimilisfang: h.value }),
+    ids: { nafn: '_ed_nafn', kt: '_ed_kt', heimilisfang: '_ed_addr' }, eftir: h, virkur: () => true });
+  d.modal.opinn = false; vaktir[0].cb();                                   // Modal.close('modal-nyfyrirtaeki') annars staðar frá
+  assert.notEqual(A._samhengi(), null, 'legacy-samhengið lifir');
+  n.value = 'Breytt';
+  await n.fire('change');
+  assert.equal(kall.length, 1);
+  assert.equal(kall[0].p_id, 9);
+});
+
+test('modalOpinn horfir aðeins á class „open“ — display:none frá fixcompanysave drepur ekki forskoðunina (rýni A1)', async () => {
+  const { A, d, sb, kall } = hladaForm();
+  d.modal.style.display = 'none';                                          // eftir að nýtt fyrirtæki var stofnað í lotunni
+  A.festaVidForm({ sb, id: 1, co: FA, lesaForm: lesaFrom(d) });
+  setForm(d, { ...FA, nafn: 'Breytt' });
+  await d.reitir['nf-nafn'].fire('change');
+  assert.equal(kall.length, 1);
 });
