@@ -425,7 +425,7 @@
           Fyrir hönd <strong>Slökkvitæki ehf</strong>
         </div>
         <div style="margin-top:6px;width:300px;max-width:100%;border-bottom:1px solid #0f172a;height:72px;display:flex;align-items:flex-end;padding-left:8px;box-sizing:border-box">
-          ${ctx.undirskrift ? `<img src="${ctx.undirskrift}" alt="Undirskrift" style="display:block;height:68px;width:auto;margin-bottom:-2px">` : ''}
+          ${ctx.undirskrift ? `<img src="${ctx.undirskrift}" alt="Undirskrift" style="display:block;height:68px;width:auto;margin-bottom:-12px">` : ''}
         </div>
         <div style="margin-top:4px;font-size:13px;color:#0f172a">${ctx.undirritun ? esc(ctx.undirritun) : '&nbsp;'}</div>
         <div style="margin-top:10px;font-size:12px;color:#334155">
