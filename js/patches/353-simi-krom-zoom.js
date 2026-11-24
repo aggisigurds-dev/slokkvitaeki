@@ -200,13 +200,54 @@
     if (app) {
       const hr = rect(document.getElementById('_app-hdr'));
       const nr = body.classList.contains('appmode-nonav') ? null : rect(document.getElementById('_app-nav'));
+      const stika = body.getAttribute('data-stika') || 'botn';
+      // 528 færir stikuna. Fyllingin fylgir mældri stöðu, ekki „alltaf neðst“.
+      if (nr && stika === 'efst') {
+        const topE = Math.round(nr.bottom + 6);
+        window.__appHdrPad = Math.round(topE / Z()) + 'px';
+        views().forEach(v => {
+          stamp(v, 'padding-top', window.__appHdrPad);
+          stamp(v, 'padding-bottom', '12px');
+          stamp(v, 'padding-left', '0px');
+          stamp(v, 'padding-right', '0px');
+        });
+        const f = document.getElementById('_app-frame');
+        if (f) stamp(f, 'top', Math.round(nr.bottom / elZoom(f)) + 'px');
+        return;
+      }
+      if (nr && (stika === 'vinstri' || stika === 'haegri')) {
+        const topS = hr ? Math.round(hr.bottom + 4) : 52;
+        window.__appHdrPad = Math.round(topS / Z()) + 'px';
+        const side = Math.round((nr.width + 8) / Z()) + 'px';
+        views().forEach(v => {
+          stamp(v, 'padding-top', window.__appHdrPad);
+          stamp(v, 'padding-bottom', '12px');
+          stamp(v, 'padding-left', stika === 'vinstri' ? side : '0px');
+          stamp(v, 'padding-right', stika === 'haegri' ? side : '0px');
+        });
+        const f = document.getElementById('_app-frame');
+        if (f) {
+          stamp(f, 'top', Math.round((hr ? hr.bottom : 48) / elZoom(f)) + 'px');
+          if (stika === 'vinstri') stamp(f, 'left', Math.round(nr.width / elZoom(f)) + 'px');
+          else stamp(f, 'right', Math.round(nr.width / elZoom(f)) + 'px');
+        }
+        return;
+      }
       const top = hr ? Math.round(hr.bottom + 4) : 52;
       const bot = nr ? Math.round(nr.height + 8) : 24;
       window.__appHdrPad = Math.round(top / Z()) + 'px';        // 314 pinPad les þetta
       const padBot = Math.round(bot / Z()) + 'px';
-      views().forEach(v => { stamp(v, 'padding-top', window.__appHdrPad); stamp(v, 'padding-bottom', padBot); });
+      views().forEach(v => {
+        stamp(v, 'padding-top', window.__appHdrPad);
+        stamp(v, 'padding-bottom', padBot);
+        stamp(v, 'padding-left', '0px');
+        stamp(v, 'padding-right', '0px');
+      });
       const f = document.getElementById('_app-frame');
-      if (f) stamp(f, 'top', Math.round((hr ? hr.bottom : 48) / elZoom(f)) + 'px');   // bottom: 261 syncFrameBottom
+      if (f) {
+        stamp(f, 'top', Math.round((hr ? hr.bottom : 48) / elZoom(f)) + 'px');   // bottom: 261 syncFrameBottom
+        stamp(f, 'left', '0px');
+      }
       // zoom-stikan situr ofan við botnstikuna (í eigin zoom-hnitum: raunhæð ÷ C)
       const zb = Math.round(((nr ? nr.height : 0) / C) + 12) + 'px';
       if (document.documentElement.style.getPropertyValue('--app-zoom-bottom') !== zb) document.documentElement.style.setProperty('--app-zoom-bottom', zb);

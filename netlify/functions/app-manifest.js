@@ -52,7 +52,9 @@ export default async (req) => {
     // Aðeins Bílstjóri (manifest-bilstjori.json) læsir í landscape — hann er spjaldtölvuapp í bílnum.
     orientation: 'any',
     background_color: dark,
-    theme_color: color,
+    // Kerfisrammi (stöðustika og Android-hnappar) er svartur. Haus appsins
+    // notar áfram sinn lit; theme_color má ekki leka appelsínugulum rammanum.
+    theme_color: '#000000',
     lang: 'is',
     icons: ikonar(app),
   };
@@ -77,7 +79,7 @@ async function builtin(req, key) {
   const name = clean(o.name, 45);
   if (name) { m.name = name; m.short_name = name.split(' · ')[0].slice(0, 12); }
   if (clean(o.blurb, 120)) m.description = clean(o.blurb, 120);
-  if (hex(o.color)) m.theme_color = hex(o.color);
+  m.theme_color = '#000000';
   if (hex(o.dark)) m.background_color = hex(o.dark);
   const ik = ikonSett(o.ikon);
   if (ik) m.icons = ik;

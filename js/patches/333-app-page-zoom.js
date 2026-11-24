@@ -505,6 +505,7 @@
         + '<div class="sz-for">' + FORSTILLT.map(v => '<button type="button" data-sz-for="' + v + '">' + Math.round(v * 100) + '</button>').join('') + '</div>'
         + '<div class="sz-st"></div>'
         + '<label class="sz-festa"><input type="checkbox" data-sz-festa> Festa þessa stærð sem sjálfgefna fyrir þessa síðu — klípa út breytir henni ekki</label>'
+        + '<div id="_sz-stika"></div>'
         + '<div class="sz-ak"><button type="button" data-sz="upphafl">Upprunaleg</button>'
         + (window.PageEditor && PageEditor.toggle ? '<button type="button" class="sz-dokk" data-sz="utlit">Litir og letur…</button>' : '') + '</div>'
         + '<details class="sz-listi"></details>'
@@ -575,7 +576,7 @@
   document.addEventListener('pointerdown', e => {
     if (!opid) return;
     const t = e.target;
-    if (t.closest && (t.closest('#' + PNL_ID) || t.closest('#' + AA_ID) || t.closest('#_app-style'))) return;
+    if (t.closest && (t.closest('#' + PNL_ID) || t.closest('#' + AA_ID) || t.closest('#_app-style') || t.closest('#_sz-step'))) return;
     loka();
   }, true);
   document.addEventListener('keydown', e => { if (opid && e.key === 'Escape') loka(); });

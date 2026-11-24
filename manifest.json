@@ -3,12 +3,13 @@
   "name": "Slökkvitæki ehf — Brunakerfi",
   "short_name": "Slökkvitæki",
   "description": "Vinnukerfi fyrir slökkvitækjaþjónustu — afgreiðsla, verkstæði, þjónustutæki, sala, bókhald.",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "/pwa/",
+  "scope": "/pwa/",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#0a0a0c",
-  "theme_color": "#C93C1D",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "handle_links": "not-preferred",
   "lang": "is",
   "icons": [
     {
@@ -96,6 +97,26 @@
       "platform": "webapp",
       "url": "https://slokkvitaeki.netlify.app/manifest-boss.json",
       "id": "/app/boss/"
+    },
+    {
+      "platform": "webapp",
+      "url": "https://slokkvitaeki.netlify.app/manifest-jarvis.json",
+      "id": "/app/jarvis/"
+    },
+    {
+      "platform": "webapp",
+      "url": "https://slokkvitaeki.netlify.app/manifest-verkstjorar.json",
+      "id": "/app/verkstjorar/"
+    },
+    {
+      "platform": "webapp",
+      "url": "https://slokkvitaeki.netlify.app/manifest-skyrslustod.json",
+      "id": "/app/skyrslustod/"
+    },
+    {
+      "platform": "webapp",
+      "url": "https://slokkvitaeki.netlify.app/manifest-threedwork.json",
+      "id": "/app/threedwork/"
     }
   ],
   "prefer_related_applications": false

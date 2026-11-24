@@ -104,10 +104,13 @@
 
   function lyfta() {
     staflaKanban();
-    if (window.innerWidth > 768) { hreinsa(); return; }
+    var app = document.body && document.body.classList.contains('appmode');
+    // Tölvusíðu-hamur á S26 er ~980 px — þar má bólan samt ekki liggja á stikunni.
+    if (window.innerWidth > 768 && !app) { hreinsa(); return; }
     var h = stikaHaed();
     var grunn = h + 12;
-    var haegri = ['#qr-fab', '#_ad-fab'];
+    // Spjallið til vinstri í appi svo það hylji ekki upphæðir og hægri flipa.
+    var haegri = app ? ['#qr-fab'] : ['#qr-fab', '#_ad-fab'];
     var b = grunn;
     haegri.forEach(function (sel) {
       var el = document.querySelector(sel);
@@ -120,6 +123,19 @@
       el.style.setProperty('bottom', b + 'px', 'important');
       b += (el.offsetHeight || 52) + 8;
     });
+    if (app) {
+      var spjall = document.getElementById('_ad-fab');
+      var sa0 = document.querySelector('.sa494');
+      var yfir = grunn + (synilegt(sa0) ? (sa0.offsetHeight || 36) + 10 : 0);
+      if (synilegt(spjall)) {
+        snerta(spjall);
+        spjall.style.setProperty('position', 'fixed', 'important');
+        spjall.style.setProperty('left', '12px', 'important');
+        spjall.style.setProperty('right', 'auto', 'important');
+        spjall.style.setProperty('top', 'auto', 'important');
+        spjall.style.setProperty('bottom', yfir + 'px', 'important');
+      }
+    }
     var en = document.getElementById('_slokk_langbtn');
     var vinstri = grunn;
     if (synilegt(en)) {

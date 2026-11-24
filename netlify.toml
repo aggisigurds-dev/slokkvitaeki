@@ -151,8 +151,21 @@
   to = "/#opp"
   status = 302
 
+# Aðalappið á scope /pwa/ — EKKI "/" — svo /app/<key>/ falli ekki innan þess.
+# Annars grípur uppsetta Slökkvitæki-appið alla undirslóðina og Android setur
+# hin öppin upp sem flýtileið, ekki sem eigið WebAPK.
+[[redirects]]
+  from = "/pwa"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/pwa/*"
+  to = "/index.html"
+  status = 200
+
 # Installable mini-apps get their OWN path + PWA scope (/app/<key>/) so no app
-# claims the whole origin ("/") and they can be installed side-by-side without
+# claims the whole origin and they can be installed side-by-side without
 # Chrome collapsing them into one ("open in Fjármál" everywhere). Each path
 # serves the same SPA; the app boots into the right profile from the pathname.
 [[redirects]]
@@ -192,6 +205,22 @@
 # The mini-app paths serve index.html via rewrite — revalidate them too.
 [[headers]]
   for = "/app/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+    X-Content-Type-Options = "nosniff"
+    Content-Security-Policy = "frame-ancestors 'self' https://brunaholf.netlify.app"
+    Referrer-Policy = "no-referrer"
+
+[[headers]]
+  for = "/pwa"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+    X-Content-Type-Options = "nosniff"
+    Content-Security-Policy = "frame-ancestors 'self' https://brunaholf.netlify.app"
+    Referrer-Policy = "no-referrer"
+
+[[headers]]
+  for = "/pwa/*"
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
     X-Content-Type-Options = "nosniff"
