@@ -124,3 +124,5 @@ Próf sem þarf: audit-all · vidmotsprof · <sérpróf>
 - **17.11.2026** — 17.11.2026: kyrrstöðulistinn yfir öpp-villur (04.11) stóðst í keyrslu í 4 af 9 tilvikum (8, 9, 10 + 15 að hluta) — 17 og 18 mældust ekki lengur (stika eins í öllum öppum; hamarinn hittir 1–3 % takka). Mæla í vafra áður en lagað er eftir kyrrstöðulista. AppPageZoom apply() kostar ~1 ms í kyrrstöðu en ~700 ms beint eftir að #_app-frame birtist (þvingaður útlitsreikningur sem annars greiðist í næsta ramma) — ekki mistúlka sem hægagang í apply.
 
 - **17.11.2026** — 17.11.2026: kyrrstöðulistinn yfir öpp-villur (04.11) stóðst í keyrslu í 4 af 9 tilvikum — 17 og 18 mældust ekki lengur. Mæla í vafra áður en lagað er eftir kyrrstöðulista. AppPageZoom apply() kostar ~1 ms í kyrrstöðu en ~700 ms beint eftir að #_app-frame birtist (þvingaður útlitsreikningur sem annars greiðist í næsta ramma).
+
+- **24.11.2026** — goPage í 261 setur #f-<lykill> með replaceState fyrir iframe-síðu; 277 ýtir bakk-færslunni. meta viewport á einn ritara, 336 SlokkViewportUnlock.sync. Fókuslásinn í switchView er ósnertur.
