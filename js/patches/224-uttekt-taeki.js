@@ -238,6 +238,11 @@
         (col?'':'<div class="ut-grp-body">'+arr.map(function(u){return rowHtml(coId,u);}).join('')+'</div>')+
       '</div>';
     });
+    // 24.11.2026: tómt félag fær sama Úttekt-spjald (svo 404 geti sett „+ Bæta við tæki"
+    // í hausinn) — skýringin hér í stað gamla empty-state úr features.js.
+    if (!units.length) {
+      body = '<div class="ut-empty">Engin tæki skráð fyrir þetta fyrirtæki — ýttu á „+ Bæta við tæki" til að byrja.</div>';
+    }
     var locked = isUtLocked(coId);
     var lock = '<button class="ut-listlock'+(locked?' on':'')+'" data-co="'+coId+'" type="button">'+(locked?'🔒 Listi staðfestur — smelltu til að opna':'✅ Staðfesta lista')+'</button>';
     return bulk + head + body + lock;
@@ -891,6 +896,7 @@
       'html[data-thm-dark="1"] #view-verkbord .vb-empty,'+
       'html[data-thm-dark="1"] #view-verkbord .vb-hint{color:#cbd5e1!important}',
       '.ut-list{background:var(--surface);border:1px solid var(--brd);border-radius:12px;overflow:hidden;margin-bottom:14px}',
+      '.ut-empty{padding:28px 18px;text-align:center;font-size:14px;font-weight:600;color:var(--ink2,#475569);border:1px dashed var(--brd,#cbd5e1);border-radius:10px;margin:8px 12px 12px;background:var(--surface2,#f8fafc)}',
       /* two-column layout: tæki left, cost calculator right.
          Hægri spjaldið var 560px — 7-dálka REIKNINGUR (Per stk input + Samtals)
          kramdist og „59.880 kr" klipptist. 780px rúmar línuna; min-width á

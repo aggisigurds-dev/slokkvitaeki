@@ -393,12 +393,16 @@ var Companies = {
     html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">' +
       '<span style="font-size:14px;font-weight:600">Sl\u00f6kkvit\u00e6ki (' + units.length + ')</span>' +
       '</div>';
-    if (!units.length) {
-      html += '<div class="empty-state" style="padding:24px"><div class="es-sub">Engin t\u00e6ki skr\u00e1\u00f0 fyrir \u00feetta fyrirt\u00e6ki</div></div>';
-    } else if (window.UttektTaeki && UttektTaeki.buildHtml) {
+    if (window.UttektTaeki && UttektTaeki.buildHtml) {
       // v6 design (patch 224): grouped two-column rows, wired to the same
       // UnitServicePicker billing choices the cost panel reads.
+      // 24.11.2026: alltaf teikna .ut-list — líka með 0 tæki. Annars birtist aðeins
+      // „Engin tæki skráð…" og „+ Bæta við tæki" hverfur: 404 setur umboðstakkann í
+      // Úttekt-hausinn, en upprunalega takkaröðin (features.js data-co-id) er flokkuð
+      // undir „Aðrar þjónustur" í prófílnum (500) þegar félagið á kennitölu.
       html += UttektTaeki.buildHtml(c.id, units);
+    } else if (!units.length) {
+      html += '<div class="empty-state" style="padding:24px"><div class="es-sub">Engin t\u00e6ki skr\u00e1\u00f0 fyrir \u00feetta fyrirt\u00e6ki</div></div>';
     } else {
       html += '<div class="tcard"><table class="dtbl"><thead><tr>' +
         '<th>Ra\u00f0n\u00famer</th><th>Tegund</th><th>Sta\u00f0setning</th><th>N\u00e6sta sko\u00f0un</th><th>Sta\u00f0a</th><th></th>' +

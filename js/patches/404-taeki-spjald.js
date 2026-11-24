@@ -190,6 +190,11 @@
       g.style.setProperty('contain-intrinsic-size', 'auto ' + (48 + radir.length * 54) + 'px');   // mælt: röð 54 px með bili
       stal.appendChild(g);
     });
+    // 24.11.2026: tómt félag — 224 teiknar .ut-empty; án flutnings hingað fær það
+    // b404-gamalt og hverfur. Sama texta ef 224 er eldri útgáfa.
+    var tom = list.querySelector(':scope > .ut-empty');
+    if (tom) { tom.classList.add('b404-tomskyring'); stal.appendChild(tom); }
+    else if (!grps.length) { stal.appendChild(el('div', 'b404-tomskyring', 'Engin tæki skráð fyrir þetta fyrirtæki — ýttu á „+ Bæta við tæki" til að byrja.')); }
     var lock = list.querySelector(':scope > .ut-listlock'); if (lock) { lock.textContent = stripEmoji(txt(lock)); lock.classList.add('b404-lock'); stal.appendChild(lock); }
     root.appendChild(stal);
     // leifar (óþekkt gagnvirkt) → sýnilegar neðst
@@ -351,6 +356,7 @@
       r('.b404-btn-malmur', 'all:unset;cursor:pointer;height:36px;padding:0 14px 0 12px;border-radius:9px;border:1px solid #000;background:' + METAL_BTN + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 2px 6px rgba(0,0,0,.45);color:#eef1f4;font-family:' + SANS + ';font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:7px;box-sizing:border-box;margin:0!important'),
       // stálplata
       r('.b404-stal', 'padding:10px 10px 16px;display:flex;flex-direction:column;gap:6px'),
+      r('.b404-tomskyring,.ut-empty.b404-tomskyring', 'padding:28px 18px;text-align:center;font-family:' + SANS + ';font-size:14px;font-weight:600;color:#3b4453;background:rgba(255,255,255,.72);border:1px dashed rgba(20,24,34,.22);border-radius:10px;margin:4px 0 8px'),
       // valstika
       r('.b404-valstika', 'display:flex!important;align-items:center;gap:6px;flex-wrap:wrap;background:' + TABLE_HEAD + '!important;border:1px solid #000;border-radius:8px;padding:8px 10px!important;color:#eef1f4;box-shadow:inset 0 1px 0 rgba(255,255,255,.1);margin-bottom:4px'),
       r('.b404-valstika .ut-bulk-cnt', 'font-family:' + MONO + ';font-size:12px;font-weight:700;color:#fff;margin:0 6px 0 2px'),
