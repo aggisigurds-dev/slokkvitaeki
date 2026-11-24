@@ -105,6 +105,9 @@
   function lyfta() {
     staflaKanban();
     var app = document.body && document.body.classList.contains('appmode');
+    var h = document.documentElement;
+    // 528 á dokkina á síma (venjulegur flipi og app). Ekki slíta takkana út aftur.
+    if (!app && (h.classList.contains('slokk-phone-dev') || h.getAttribute('data-viewmode') === 'mobile' || (window.innerWidth || 0) <= 900)) return;
     // Tölvusíðu-hamur á S26 er ~980 px — þar má bólan samt ekki liggja á stikunni.
     if (window.innerWidth > 768 && !app) { hreinsa(); return; }
     var h = stikaHaed();

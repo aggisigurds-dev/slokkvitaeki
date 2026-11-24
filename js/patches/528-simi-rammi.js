@@ -76,17 +76,32 @@
 
   var CSS = [
     /* Appelsínugul rönd / glóð undir borðanum — ramminn á síma er svartur.
-       background-image vinnur á móti background-shorthand, svo bæði eru núllstillt. */
-    '@media (pointer: coarse), (max-width: 900px){',
-    'html #bstal-banner .bb-face::before,html #bstal-banner .bb-face::after{',
-    'background:#000!important;background-image:none!important;box-shadow:none!important;}',
-    '}',
+       Tölvusíðu-hamur er >900 px og pointer:fine, svo miðillinn dugar ekki.
+       slokk-phone-dev er vélbúnaðurinn (166) og gildir líka í Skjár/Tafla. */
+    'html.slokk-phone-dev #bstal-banner .bb-face::before,html.slokk-phone-dev #bstal-banner .bb-face::after,',
+    'html[data-viewmode="mobile"] #bstal-banner .bb-face::before,html[data-viewmode="mobile"] #bstal-banner .bb-face::after,',
+    'body.appmode #bstal-banner .bb-face::before,body.appmode #bstal-banner .bb-face::after{',
+    'content:none!important;background:#000!important;background-image:none!important;box-shadow:none!important;height:0!important;}',
 
-    /* − / + stærð í hausnum */
-    '#_sz-step{display:none;align-items:center;gap:4px;z-index:2147483000}',
-    'html[data-viewmode="mobile"] #_sz-step,body.appmode #_sz-step,#_sz-step.syn{display:flex}',
-    'html.app-krom-zoomed body:not(.appmode) #_sz-step{zoom:var(--app-krom-zoom,1)!important}',
-    'body:not(.appmode) #_sz-step{position:fixed;top:10px;right:96px}',
+    /* Sími, líka í Skjár á 980 px: hliðarstikan má ekki éta ~23% og sýnin ekki
+       vera 100vw OFAN Á margin. Eitt lag, full breidd. Stikan er skúffa. */
+    'html.slokk-phone-dev{--sidebar-w:0px!important}',
+    'html.slokk-phone-dev body .topbar{position:fixed!important;left:0!important;top:0!important;bottom:0!important;width:260px!important;z-index:9000!important;transform:translateX(-110%)!important}',
+    'html.slokk-phone-dev body.mobile-nav-open .topbar{transform:translateX(0)!important}',
+    'html.slokk-phone-dev #bstal-banner{left:0!important;right:0!important;width:auto!important}',
+    'html.slokk-phone-dev body:not(.appmode) .view,html.slokk-phone-dev body:not(.appmode) .view.active,',
+    'html.slokk-phone-dev body:not(.appmode) #view-arsskodun#view-arsskodun:not(#_p528a):not(#_p528b):not(#_p528c):not(#_p528d):not(#_p528e):not(#_p528f):not(#_p528g){',
+    'margin-left:0!important;width:100%!important;max-width:100%!important;box-sizing:border-box!important;',
+    'max-height:calc(100dvh - 76px)!important;overflow-y:auto!important;padding-bottom:12px!important}',
+    'html.slokk-phone-dev body:not(.appmode) .view.active,html[data-viewmode="mobile"] body:not(.appmode) .view.active{max-height:calc(100dvh - 76px)!important;overflow-y:auto!important;padding-bottom:12px!important}',
+    'html.slokk-phone-dev #view-arsskodun .b414-scope,html.slokk-phone-dev #view-arsskodun #ars-main,html.slokk-phone-dev #view-arsskodun .b414-k{max-width:100%!important;min-width:0!important}',
+    'html.slokk-phone-dev #view-arsskodun .b414-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;width:100%!important}',
+    'html.slokk-phone-dev #view-arsskodun .b414-k.gull,html.slokk-phone-dev #view-arsskodun .b414-k.stal{grid-column:1 / -1!important}',
+
+    /* − / + aðeins inni í app-haus. Á aðalsíðunni er Passa-röðin (331) eina stærðarstýringin
+       og má ekki liggja ofan á 📱 ▦ 🖥 / Aa. */
+    '#_sz-step{display:none;align-items:center;gap:4px;z-index:30}',
+    'body.appmode #_sz-step{display:flex}',
     'body.appmode #_sz-step{position:static;margin-left:2px}',
     '#_sz-step button{width:30px!important;height:30px!important;min-width:30px!important;min-height:30px!important;max-width:30px!important;padding:0!important;border-radius:7px;',
     'border:1px solid #000;background:#1c1e23;color:#f4efe2;font:700 16px/1 system-ui,sans-serif;cursor:pointer}',
@@ -130,7 +145,14 @@
     '#_sz-stika .rod{display:flex;flex-direction:column;gap:4px;margin-top:8px}',
     '#_sz-stika .rod div{display:flex;align-items:center;gap:6px}',
     '#_sz-stika .rod span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}',
-    '#_sz-stika .rod button{width:32px;flex:none}'
+    '#_sz-stika .rod button{width:32px;flex:none}',
+
+    /* Fljótandi takkar í einni röð undir efninu, ekki ofan á spjöldunum. */
+    '#_simi-dock{display:none}',
+    'html.slokk-phone-dev #_simi-dock,html[data-viewmode="mobile"] #_simi-dock,body.appmode #_simi-dock{',
+    'display:flex;position:fixed;left:0;right:0;bottom:0;z-index:2147481500;height:64px;box-sizing:border-box;',
+    'padding:6px 10px;align-items:center;justify-content:flex-end;gap:8px;background:#0c0d10;border-top:1px solid #000}',
+    '#_simi-dock > *{position:relative!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;transform:none!important;margin:0!important;flex:none}'
   ].join('');
 
   var st = document.createElement('style');
@@ -171,10 +193,10 @@
     } else if (box.parentNode !== document.body) {
       document.body.appendChild(box);
     }
-    var simi = document.body.classList.contains('appmode')
-      || document.documentElement.getAttribute('data-viewmode') === 'mobile'
-      || (window.matchMedia && matchMedia('(pointer: coarse)').matches);
-    box.classList.toggle('syn', !!simi);
+    var iAppi = document.body.classList.contains('appmode');
+    box.classList.toggle('syn', iAppi);
+    if (!iAppi) box.style.setProperty('display', 'none', 'important');
+    else box.style.removeProperty('display');
     synaPct();
   }
 
@@ -283,7 +305,46 @@
     }
   }
 
+  function simiSkjar() {
+    var h = document.documentElement;
+    if (document.body && document.body.classList.contains('appmode')) return false;
+    return h.classList.contains('slokk-phone-dev')
+      || h.getAttribute('data-viewmode') === 'mobile'
+      || (window.innerWidth || 0) <= 900;
+  }
+
   function lyftaBolu() {
+    var dock = document.getElementById('_simi-dock');
+    if (simiSkjar()) {
+      if (!dock) {
+        dock = document.createElement('div');
+        dock.id = '_simi-dock';
+        document.body.appendChild(dock);
+      }
+      dock.style.setProperty('display', 'flex', 'important');
+      dock.style.setProperty('bottom', '0px', 'important');
+      var en = document.getElementById('_slokk_langbtn');
+      var sa = document.querySelector('.sa494');
+      var spjall = document.getElementById('_ad-fab');
+      var qr = document.getElementById('qr-fab');
+      [en, sa, spjall, qr].forEach(function (el) {
+        if (!el) return;
+        if (getComputedStyle(el).display === 'none' && el.parentNode !== dock) return;
+        if (el.parentNode !== dock) dock.appendChild(el);
+        el.style.setProperty('position', 'relative', 'important');
+        el.style.setProperty('left', 'auto', 'important');
+        el.style.setProperty('right', 'auto', 'important');
+        el.style.setProperty('top', 'auto', 'important');
+        el.style.setProperty('bottom', 'auto', 'important');
+        el.style.setProperty('transform', 'none', 'important');
+      });
+      var btn = document.getElementById('_mnav_btn');
+      if (btn && document.documentElement.classList.contains('slokk-phone-dev')) {
+        btn.style.setProperty('display', 'flex', 'important');
+      }
+      return;
+    }
+    if (dock && dock.style.display !== 'none') dock.style.setProperty('display', 'none', 'important');
     if (!document.body || !document.body.classList.contains('appmode')) return;
     var nav = document.getElementById('_app-nav');
     var s = stadur();
