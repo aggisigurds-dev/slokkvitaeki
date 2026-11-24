@@ -83,6 +83,39 @@
     'body.appmode #bstal-banner .bb-face::before,body.appmode #bstal-banner .bb-face::after{',
     'content:none!important;background:#000!important;background-image:none!important;box-shadow:none!important;height:0!important;}',
 
+    /* Glóðin er EKKI aðeins ::after. kopar-mjott málar appelsínugulan sporbaug
+       INN Í background á .bb-face (406), og glóð-þemað er 34px ::before.
+       Miðillinn nær líka Tölvusíðu (980 px) og þegar slokk-phone-dev kviknar ekki. */
+    '@media (max-width:1100px){',
+    'html[data-bordi] #bstal-banner#bstal-banner .bb-face{background:#0c0d10!important;background-image:none!important;box-shadow:none!important}',
+    'html[data-bordi] #bstal-banner#bstal-banner .bb-face::before,html[data-bordi] #bstal-banner#bstal-banner .bb-face::after{content:none!important;display:none!important;background:none!important;background-image:none!important;box-shadow:none!important;height:0!important}',
+    'html #bstal-ember{display:none!important}',
+    'html[data-bstal-banner="on"] #bstal-banner#bstal-banner{left:0!important;right:0!important;width:100%!important;max-width:100%!important;box-sizing:border-box!important;border-bottom:0!important;overflow:hidden!important}',
+    'html[data-bstal-banner="on"] #bstal-banner .bb-word{display:none!important}',
+    'html[data-bstal-banner="on"] #bstal-banner .bb-logo{flex:0 1 96px!important;min-width:0!important;max-width:96px!important;overflow:hidden!important}',
+    'html[data-bstal-banner="on"] #bstal-banner .bb-logo img{height:26px!important;max-width:96px!important;width:auto!important;object-fit:contain!important}',
+    'html[data-bstal-banner="on"] #bstal-banner .bb-face{display:flex!important;align-items:center!important;gap:6px!important;padding:4px 8px 4px 54px!important;overflow:hidden!important;box-sizing:border-box!important;max-width:100%!important}',
+    'html[data-viewmode][data-bstal-banner="on"] #bstal-banner#bstal-banner #_ky-vm-toggle{margin-left:auto!important;flex:none!important}',
+    'html[data-viewmode][data-bstal-banner="on"] #bstal-banner#bstal-banner #_sz-aa{position:static!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;top:auto!important;right:auto!important;left:auto!important;flex:none!important;width:40px!important;height:40px!important;margin:0!important;z-index:2!important}',
+    'html[data-viewmode] #bstal-banner#bstal-banner #_pe-btn:not(#_p528z){position:static!important;top:auto!important;right:auto!important;left:auto!important;transform:none!important;flex:none!important;width:40px!important;height:40px!important;min-width:40px!important;min-height:40px!important;margin:0!important}',
+    'html[data-bstal-banner="on"] #bstal-banner .ky-vm{opacity:1!important;margin:0!important;flex:none!important}',
+    'html[data-bstal-banner="on"] #bstal-banner .ky-vm-seg{padding:4px 6px!important;min-height:36px!important;min-width:32px!important}',
+    'html body #view-krofu-yfirlit#view-krofu-yfirlit .kym-head{flex-direction:column!important;align-items:stretch!important;gap:8px!important;padding:8px 10px!important;margin:0 0 8px!important}',
+    'html body #view-krofu-yfirlit#view-krofu-yfirlit .kym-title{font-size:22px!important;line-height:1.15!important}',
+    'html body #view-krofu-yfirlit#view-krofu-yfirlit .kym-sub,html body #view-krofu-yfirlit#view-krofu-yfirlit .kym-kicker{display:none!important}',
+    'html body #view-krofu-yfirlit#view-krofu-yfirlit .kym-head-tools{width:100%!important;flex-wrap:wrap!important;gap:8px!important}',
+    'html body #view-krofu-yfirlit#view-krofu-yfirlit .page-title{gap:8px!important;margin:0 0 8px!important}',
+    'html body #view-krofu-yfirlit#view-krofu-yfirlit .page-title p{display:none!important}',
+    'html{--sidebar-w:0px!important}',
+    'body:not(.appmode) .view.active{margin-left:0!important;width:100%!important;max-width:100%!important;flex:1 1 auto!important}',
+    'html body #view-turbopaint#view-turbopaint.view.active{position:relative!important;width:100%!important;max-width:100%!important;margin-left:0!important;min-height:calc(100dvh - 80px)!important}',
+    '.tp-frame-wrap{left:0!important;right:0!important;width:100%!important;max-width:100%!important;box-sizing:border-box!important}',
+    '#_teikn-bru{display:flex!important;flex-wrap:wrap!important;width:100%!important;max-width:100%!important;box-sizing:border-box!important;gap:8px!important}',
+    '#_teikn-bru input{flex:1 1 100%!important;min-width:0!important;max-width:100%!important;width:100%!important;box-sizing:border-box!important}',
+    'html,body{overflow-x:hidden!important}',
+    'body:not(.appmode) .view.active{max-width:100%!important;overflow-x:clip!important}',
+    '}',
+
     /* Sími, líka í Skjár á 980 px: hliðarstikan má ekki éta ~23% og sýnin ekki
        vera 100vw OFAN Á margin. Eitt lag, full breidd. Stikan er skúffa. */
     'html.slokk-phone-dev{--sidebar-w:0px!important}',
@@ -383,8 +416,21 @@
     }
   }
 
+  function radaHaus() {
+    if ((window.innerWidth || 0) > 1100) return;
+    var face = document.querySelector('#bstal-banner .bb-face');
+    if (!face) return;
+    var aa = document.getElementById('_sz-aa');
+    var pe = document.getElementById('_pe-btn');
+    if (aa && aa.parentNode !== face) {
+      if (pe && pe.parentNode === face) face.insertBefore(aa, pe);
+      else face.appendChild(aa);
+    }
+  }
+
   function beita() {
     if (!document.body) return;
+    radaHaus();
     var s = document.body.classList.contains('appmode') ? stadur() : 'botn';
     if (document.body.getAttribute('data-stika') !== s) document.body.setAttribute('data-stika', s);
     radaNav();
