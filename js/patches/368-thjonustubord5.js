@@ -5722,9 +5722,9 @@
   /* 21.11.2026 — „ANNAÐ Á BORÐINU". Agnar, með skjáskoti þar sem hann hafði litað borðið: rautt má fara, grænt stendur,
    * blátt „færa neðst í collapsed" — „þori ekki að henda neinu út strax, frekar færðu það niður allt … neðst á síðuna".
    * Hingað fara því VIP-vakt (513), Pósthólf (522), Verkferlis-yfirlit (499 festir sig sjálft í raufina .nedst-yf),
-   * Sannreyna og einingar sem eru færðar neðst (Checklisti 2, sjá nedstEiningar í render). Ekkert er hent og ekkert
-   * verk breytist — aðeins staðurinn. VIP-vaktin er samanbrotin sjálfgefið, en haus hennar („1 ósvarað · 1 yfir tíma")
-   * stendur alltaf, svo áríðandi póstur týnist ekki. Opið/lokað er geymt með Vidmot: eins á öllum vélum. */
+   * Sannreyna og einingar sem eru færðar neðst (NEDST_EIN í render — tómt síðan 24.11.2026; Checklisti 2 er aftur í
+   * ristinni). Ekkert er hent og ekkert verk breytist — aðeins staðurinn. VIP-vaktin er samanbrotin sjálfgefið, en haus
+   * hennar („1 ósvarað · 1 yfir tíma") stendur alltaf, svo áríðandi póstur týnist ekki. Opið/lokað er geymt með Vidmot. */
   const NEDST_LYKILL = k => 'bord.nedst.' + k;
   const nedstOpid = k => vmLesa(NEDST_LYKILL(k), false) === true;
   // 21.11.2026: ⅓-dálkurinn við Dagskrána. Fastar hér svo bæði render og smellir noti þær.
@@ -6086,10 +6086,9 @@
     const ristHtml = rod => '<div class="modgrid' + (radar ? ' radar' : '') + '">' + rod.map(frumaHtml).join('') + '</div>';
     // 19.11.2026: Dagskráin fremst í einingahamnum fær eigin röð yfir alla breiddina — sjá `efst` við .layout hér að neðan.
     const dskLyft = eininga && !radar && synRod[0] === 'dagskra';
-    // 21.11.2026 (Agnar: „þori ekki að henda neinu út strax … færðu það niður … neðst á síðuna collapse"): þegar allar
-    // einingar sjást („Allt") fer Checklisti 2 í „Annað á borðinu" neðst í stað ristarinnar. Flipinn hans stendur
-    // áfram: sé hann valinn einn og sér birtist einingin í ristinni eins og áður. Í raðham eru allar í ristinni.
-    const NEDST_EIN = ['checklisti2'];
+    // 24.11.2026 (Agnar: „Checklisti 2 … birtist aldrei"): hann fór áður í „Annað á borðinu" við „Allt" (21.11) og
+    // var auk þess sjálfgefið samanbrotinn — aðeins hausinn sást. Nú stendur hann í ristinni með hinum; flipi opnar hann.
+    const NEDST_EIN = [];
     const nedstEiningar = eininga && !radar && !flipiSyn.length && einingaRod.length > 1 ? einingaRod.filter(k => NEDST_EIN.indexOf(k) >= 0) : [];
     // 21.11.2026: ⅓-dálkurinn við Dagskrána (sjá `efst`) — Checklisti + VIP-mál, aðeins á borði eigandans.
     const hlidDalkur = dskLyft && stjornStika;
@@ -7231,11 +7230,13 @@
         return;
       }
       // 18.11.2026: skipt um flipa í einingaham. Valið er viðmótsval og fer á þjóninn — eins á öllum vélum.
+      // 24.11.2026: checklisti/2/3 + stjörnumerkt opnast með flipanum — annars sést aðeins samanbrotinn haus („birtist aldrei").
       case 'flipi': {
         const c0 = cfg();
         c0.flipi = Object.assign({}, c0.flipi || {}, { [c0.mode]: m });
-        render();
         vistaCfg({ flipi: { [c0.mode]: m } });
+        if (m && m !== '*' && SERVER_OPID.indexOf(m) >= 0 && !chkOpid(m)) chkOpidVista(m, true);
+        else render();
         return;
       }
       /* 18.11.2026 — ＋ og ✕ á flipa: tveir saman. Vistaða gildið er "a+b"; röðin er einingaröð hamsins, ekki
@@ -7247,8 +7248,9 @@
         const rodun = (M(c0.mode) && M(c0.mode).first) || [];
         const par = nuna.concat([m]).sort((a, b) => rodun.indexOf(a) - rodun.indexOf(b)).join('+');
         c0.flipi = Object.assign({}, c0.flipi || {}, { [c0.mode]: par });
-        render();
         vistaCfg({ flipi: { [c0.mode]: par } });
+        if (SERVER_OPID.indexOf(m) >= 0 && !chkOpid(m)) chkOpidVista(m, true);
+        else render();
         return;
       }
       case 'flipi-minus': {
