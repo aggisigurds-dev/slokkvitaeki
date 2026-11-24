@@ -873,3 +873,5 @@ verk, með þessum mun:
 - **23.11.2026** — 218 og 88: hreint slug-hash (#markmid, #vorur) er djúptengill. Ræsing má ekki kalla switchView('sala') yfir það, og 218 má ekki skrifa hashið yfir þegar view-ið er þegar til. 514 sækir /api/bh-toki aðeins þegar /api/hub-adgangar segir authed.
 
 - **24.11.2026** — App-lyklar koma úr AppProfiles (261 APPS), ekki föstum lista. Iframe-síða fær #f-<lykill> með replaceState svo bakk (277) stoppi á henni. data-app-vaktin í 316 horfir aðeins á class á body. .view padding í appham er mæld í 353.
+
+- **24.11.2026** — Aðalappið á scope /pwa/ svo /app/<lykill>/ rekist ekki á það. Setja upp inni í uppsettu appi opnar Chrome (intent, ekki target=_blank). Botnstika færist (data-stika botn/efst/vinstri/haegri) og 353 mælir fyllingu eftir stöðunni. −/%/+ í hausnum kallar AppPageZoom.setS. theme_color er #000000. (js/patches/261-app-profiles.js, js/patches/333-app-page-zoom.js, js/patches/353-simi-krom-zoom.js, js/patches/354-opp-styribord.js, js/patches/528-simi-rammi.js, netlify/functions/app-manifest.js)
