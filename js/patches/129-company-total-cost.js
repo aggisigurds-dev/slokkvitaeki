@@ -862,10 +862,20 @@
     // á extra-hlutnum sjálfum (disc_pct). Per-stk verðið sýnist ÓBREYTT; línu-
     // samtalan = fjöldi × round(verð × (1−afsl%)) — sama stærðfræði og reikningurinn
     // (165 scrapeCostRows/buildLinur) notar svo tölurnar stemma alls staðar.
+    //
+    // 24.11.2026 (Nesdekk 126.071 vs 126.068): verðlistinn geymir aura-float
+    // (t.d. Léttvatn 6 kg = 11677.42). PER STK-reiturinn sýnir Math.round → 11677,
+    // en útreikningurinn hér notaði floatið beint → round(11677.42×0,85)=9926 á meðan
+    // reikningsleiðin (165) las 11677 úr reitnum → 9925. 2 stk = 2 kr + VSK = 3 kr
+    // MISRÆMI. ISK eru heiltölur — námundum einingarverð ÁÐUR en afsláttur er reiknaður,
+    // sama tala og notandinn sér í reitnum.
     const lineDisc = (tripState.line_disc && typeof tripState.line_disc === 'object') ? tripState.line_disc : {};
     const clampPct = v => Math.max(0, Math.min(100, parseFloat(String(v == null ? '' : v).replace(',', '.')) || 0));
     const discFor = key => clampPct(lineDisc[key]);
-    const discUnitOf = (unitPrice, d) => Math.round(unitPrice * (1 - d / 100));
+    const discUnitOf = (unitPrice, d) => {
+      const u = Math.round(Number(unitPrice) || 0);
+      return d > 0 ? Math.round(u * (1 - d / 100)) : u;
+    };
     // Afsl.-reitur í línu (autt = enginn afsláttur).
     const discCell = (key, d) =>
       '<td style="padding:7px 6px;text-align:center;white-space:nowrap">' +
@@ -883,7 +893,8 @@
     const linePrice = (tripState.line_price && typeof tripState.line_price === 'object') ? tripState.line_price : {};
     const priceFor = (key, def) => {
       const v = linePrice[key];
-      return (v != null && v !== '' && isFinite(+v)) ? Math.max(0, +v) : def;
+      const raw = (v != null && v !== '' && isFinite(+v)) ? Math.max(0, +v) : def;
+      return Math.round(Number(raw) || 0);
     };
     // Ritanlegur PER STK-reitur (forfylltur búðar-/yfir-verði). 💰 = fyrirtækja-yfirverð
     // var sjálfgefna gildið (uppruna-merki; hverfur ekki þótt notandinn breyti tölunni).
@@ -1273,7 +1284,11 @@
     const discountEx = discBaseEx * (discountPct / 100);
     const netSubEx   = totalSubEx - discountEx;
     const netVsk     = totalVsk - discBaseVsk * (discountPct / 100);
-    const totalInc   = netSubEx + netVsk;
+    // Námunda SAMTALS — sama og fmtKr sýnir og 165 ber saman við (table_total).
+    // Án námundunar sat 101670×1,24 = 126070,8 í computed.total; Math.round við
+    // birtingu/samanburð gaf 126071, en reikningur með heiltölu-línusummu gat
+    // lent á annarri krónu.
+    const totalInc   = Math.round(netSubEx + netVsk);
     const activeUnits = units.length - groups.reduce((s, g) => s + g.skip, 0);
     // 2026-07-29 (ósk Agnars): geyma útreiknuðu samtöluna í trip-state svo
     // rekstrarfélags-yfirlitið (175) geti sýnt RAUNVERULEGA „Samtals m. vsk"
