@@ -104,7 +104,7 @@
  *                          hægra megin með allri lýsingunni (tillagan og „ef já" standa í samantekt málsins).
  *     Master og mitt borð  Master · Mitt borð · Valið mál — engar einingar og engin samþykkismál. KPI og „Bara mitt borð" hér.
  *     Samskipti            Póstsvörun.
- *     Kröfur               Forgangslisti krafna · Kröfur · Gleymst að rukka? · Bakfærslur · Staðan í afgreiðslu.
+ *     Kröfur               Forgangslisti krafna · Kröfur · Gleymst að rukka? · Bakfærslur · Staðan í afgreiðslu · Checklisti.
  *     Vinnublöð            vinnusvæði, óbreytt.
  *     Skýrslur             Í vinnslu — er það búið? (vinnublöð aðeins samþykkt; blöð sem bíða eru í Vinnublöðum).
  *     Akstur og skipulag   Dagskrá · Aksturslistar · Brunakerfi · Skipulagsborð · Forgangur · Frestir · Ný mál · Starfsmenn.
@@ -258,7 +258,9 @@
     erindi: { l: 'Erindi', board: false, rymi: 'erindi', first: [], filter: 'allt', flokkar: [], merki: [] },
     thjonusta: { l: 'Master og mitt borð', board: true, first: [], filter: 'allt', flokkar: [], merki: [] },
     samskipti: { l: 'Samskipti', board: false, first: ['postsvor'], filter: 'allt', flokkar: ['samskipti'], merki: ['senda_tolvupost', 'hringja'] },
-    krofur:    { l: 'Kröfur', board: false, first: ['krofumal', 'krofur', 'gleymt', 'bakfaersla', 'afgreidsla'], filter: 'allt', flokkar: ['rukkun'], merki: ['eftir_ad_rukka', 'bokhald'] },
+    // 24.11.2026 (Agnar, skjáskot á Kröfur + ör í fliparöðina við „Allt"): Checklisti (23) í Kröfum líka —
+    // sami listi og á mitt vinnuborði (skipulagsbord…checklisti), flipi við hlið hinna eininga.
+    krofur:    { l: 'Kröfur', board: false, first: ['krofumal', 'krofur', 'gleymt', 'bakfaersla', 'afgreidsla', 'checklisti'], filter: 'allt', flokkar: ['rukkun'], merki: ['eftir_ad_rukka', 'bokhald'] },
     // 368y: vinnusvæði — mál merkt ham:vinnublod, yfirferð eins blaðs í einu með skannmynd í fullri breidd.
     vinnublod: { l: 'Vinnublöð', board: false, rymi: 'vinnublod', first: [], filter: 'allt', flokkar: [], merki: [] },
     skyrslur:  { l: 'Skýrslur', board: false, first: ['ivinnslu'], filter: 'allt', flokkar: [], merki: ['senda_skyrslur'] },

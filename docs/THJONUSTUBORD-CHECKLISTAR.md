@@ -8,6 +8,7 @@ Allt í `js/patches/368-thjonustubord5.js` (einingakerfið), nema Hunter (68 + 4
 - Kóðinn er EINN: `chkLesa(n, f)`, `chkBreyta(n, f, fn)`, `chkVista`, `skrifaChk`, `chkDragNidur` — `f` = svæði = lykill einingarinnar.
 - `SERVER_OPID` (= checklistar + `stjornumerkt`) segir hvaða einingar geyma samanbrot á þjóni í stað `S.open`.
 - Titilreiturinn (`data-chktitill`) er í render-biðlistanum (línan með `ae.dataset.chk`) — annars rifnar hann í miðri ritun.
+- **Hamur Kröfur** (24.11.2026): eining 23 er í `MODES.krofur.first` — flipi „23 Checklisti" við hlið Forgangslista o.fl.; sami listi og á mitt vinnuborði.
 
 ## Breidd og skiptilínur
 - Breidd einingar: þrep 1–5 (⅓ ⅖ ½ ⅗ 1/1) EÐA spönn 10–60 dálkar (`erSponn`). Vistað í `mitt.breidd` (Mitt vinnuborð) eða `hamir[].breidd` (sérsniðinn hamur).
