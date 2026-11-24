@@ -649,7 +649,11 @@
       e.stopPropagation();                                      // opnar ekki/lokar spjaldinu
       if (e.ctrlKey || e.metaKey || e.shiftKey) return;         // nýr flipi: vafrinn sér um #company/<id>
       e.preventDefault();
-      try { if (window.App && App.switchView) App.switchView('companies'); if (window.Companies && Companies.openDetail) Companies.openDetail(+a.getAttribute('data-fyr')); }
+      try {
+        var fyr = +a.getAttribute('data-fyr');
+        if (typeof window._openCompanySafe === 'function' && window.App && window.Companies) window._openCompanySafe(fyr);
+        else if (window.App && App.switchView) { App.switchView('companies'); if (window.Companies && Companies.openDetail) Companies.openDetail(fyr); }
+      }
       catch (_) { location.hash = '#company/' + a.getAttribute('data-fyr'); }
     }));
     host.querySelectorAll('[data-act="reply"]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); const g = byBase(b); if (g) openReply(g); }));

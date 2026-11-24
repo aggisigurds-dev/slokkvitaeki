@@ -1084,6 +1084,9 @@
   }
   function openCompany(fid) {
     try {
+      // Öpp-villa 4: í appi án 'companies' hafnar fókuslásinn switchView og
+      // prófíllinn blikkar. _openCompanySafe opnar án þess að lásinn slái til baka.
+      if (typeof window._openCompanySafe === 'function' && window.App && window.Companies) { window._openCompanySafe(+fid); return; }
       if (window.App && App.switchView) App.switchView('companies');
       if (window.Companies && Companies.openDetail) Companies.openDetail(+fid);
     } catch (_) { toast('Fyrirtækjaspjaldið opnaðist ekki.', true); }
