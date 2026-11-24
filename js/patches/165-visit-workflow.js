@@ -763,14 +763,20 @@
     // 10.11.2026 (Agnar): hver skrifar undir „Fyrir hönd Slökkvitæki ehf" á skýrslunni. Nafnið skrifað þar til undirskriftarmynd
     // er komin (app_settings.undirskriftir[nafn]); þá kemur myndin sjálfkrafa. Vistast í trip.undirritun (samstillist milli véla).
     const _coU = getCompanyId();
-    const _listU = (window.UttektUndirritun && UttektUndirritun.listi) || ['Agnar Sigurðsson', 'Bjarndís', 'Brynjar'];
+    const _listU = (window.UttektUndirritun && UttektUndirritun.listi) || ['Agnar Sigurðsson', 'Bjarndís Helenudóttir', 'Brynjar'];
+    const _canonU = (window.UttektUndirritun && UttektUndirritun.canon) || ((n) => (n === 'Bjarndís' ? 'Bjarndís Helenudóttir' : n));
     const _tripU0 = _coU ? loadTrip(_coU) : {};
-    let _curU = (_tripU0.undirritun || '').trim();
+    let _curU = _canonU((_tripU0.undirritun || '').trim());
     // 19.11.2026 (Agnar: „má ekki senda skýrslurnar út án þess að sé merkt við,
     // þá eru skýrslurnar ógildar"): sjálfgefið á fyrsta nafn listans (Agnar
     // Sigurðsson) um leið og heimsókn hefst, svo reiturinn standi aldrei auður
     // óvart. Skrifað strax í trip-state (ekki bara birt), svo 168 (skýrslan)
     // sjái sama gildi þótt notandinn snerti aldrei þetta val.
+    // 24.11.2026: gamla „Bjarndís" → „Bjarndís Helenudóttir" svo valið standi rétt.
+    if (_curU && _curU !== (_tripU0.undirritun || '').trim() && _coU) {
+      _tripU0.undirritun = _curU;
+      saveTrip(_coU, _tripU0);
+    }
     if (!_curU && _coU) {
       _curU = _listU[0] || 'Agnar Sigurðsson';
       _tripU0.undirritun = _curU;
