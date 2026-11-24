@@ -9,6 +9,7 @@ Allt í `js/patches/368-thjonustubord5.js` (einingakerfið), nema Hunter (68 + 4
 - `SERVER_OPID` (= checklistar + `stjornumerkt`) segir hvaða einingar geyma samanbrot á þjóni í stað `S.open`.
 - Titilreiturinn (`data-chktitill`) er í render-biðlistanum (línan með `ae.dataset.chk`) — annars rifnar hann í miðri ritun.
 - **Hamur Kröfur** (24.11.2026): eining 35 (`checklisti3`) er í `MODES.krofur.first` — eigin listi, ekki sami og Checklisti 1 á mitt vinnuborði.
+- **Checklisti 2 birting** (24.11.2026): stendur í ristinni (ekki lengur í „Annað á borðinu"). Flipi á checklista / Stjörnumerkt opnar samanbrotið spjald svo innihaldið sjáist.
 
 ## Breidd og skiptilínur
 - Breidd einingar: þrep 1–5 (⅓ ⅖ ½ ⅗ 1/1) EÐA spönn 10–60 dálkar (`erSponn`). Vistað í `mitt.breidd` (Mitt vinnuborð) eða `hamir[].breidd` (sérsniðinn hamur).
