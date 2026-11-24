@@ -312,9 +312,12 @@
       // 2026-07-08: afsláttur (%) á hvern lið — lesinn úr Afsl.-reitnum (patch 129).
       // Reikningslínan fær AFSLÁTTAÐ einingaverð (round(verð×(1−d%)) — sama
       // stærðfræði og taflan) og „ · −X% afsl." í lýsinguna svo hann sjáist.
+      // 24.11.2026: unitPrice er þegar heiltala úr reitnum; námundum samt svo
+      // sama fall og 129 discUnitOf (round áður en ×(1−d%)) gildi líka hér.
       const discInp = tr.querySelector('._ctc-line-disc');
       const discPct = discInp ? Math.max(0, Math.min(100, parseFloat(String(discInp.value).replace(',', '.')) || 0)) : 0;
-      const billedUnit = discPct > 0 ? Math.round(unitPrice * (1 - discPct / 100)) : unitPrice;
+      const unitKr = Math.round(Number(unitPrice) || 0);
+      const billedUnit = discPct > 0 ? Math.round(unitKr * (1 - discPct / 100)) : unitKr;
       const desc = (kindLabel ? kindLabel + ' · ' : '') + (productName || headLine) +
         (discPct > 0 ? ' · −' + discPct + '% afsl.' : '');
       out.push({ desc, qty, unit_price_ex_vat: billedUnit, vsk_pct: vskPct });
@@ -344,8 +347,10 @@
         if (q === 0) return;
         // 2026-07-08: afsláttur (%) á extra-línu (disc_pct úr patch 129) — sama
         // meðferð og þjónustulínur: afsláttað einingaverð + merking í lýsingu.
+        // 24.11.2026: extras geta borið aura-float úr verðlista (Skilti 1362.9);
+        // námunda í krónur fyrst — sama og 129 discUnitOf / PER STK-reiturinn.
         const d = Math.max(0, Math.min(100, Number(e.disc_pct) || 0));
-        const unit = Math.max(0, Number(e.unit_price_ex_vat) || 0);
+        const unit = Math.round(Math.max(0, Number(e.unit_price_ex_vat) || 0));
         linur.push({
           desc: String(e.name || 'Vara') + (d > 0 ? ' · −' + d + '% afsl.' : ''),
           qty: q,
@@ -763,14 +768,20 @@
     // 10.11.2026 (Agnar): hver skrifar undir „Fyrir hönd Slökkvitæki ehf" á skýrslunni. Nafnið skrifað þar til undirskriftarmynd
     // er komin (app_settings.undirskriftir[nafn]); þá kemur myndin sjálfkrafa. Vistast í trip.undirritun (samstillist milli véla).
     const _coU = getCompanyId();
-    const _listU = (window.UttektUndirritun && UttektUndirritun.listi) || ['Agnar Sigurðsson', 'Bjarndís', 'Brynjar'];
+    const _listU = (window.UttektUndirritun && UttektUndirritun.listi) || ['Agnar Sigurðsson', 'Bjarndís Helenudóttir', 'Brynjar'];
+    const _canonU = (window.UttektUndirritun && UttektUndirritun.canon) || ((n) => (n === 'Bjarndís' ? 'Bjarndís Helenudóttir' : n));
     const _tripU0 = _coU ? loadTrip(_coU) : {};
-    let _curU = (_tripU0.undirritun || '').trim();
+    let _curU = _canonU((_tripU0.undirritun || '').trim());
     // 19.11.2026 (Agnar: „má ekki senda skýrslurnar út án þess að sé merkt við,
     // þá eru skýrslurnar ógildar"): sjálfgefið á fyrsta nafn listans (Agnar
     // Sigurðsson) um leið og heimsókn hefst, svo reiturinn standi aldrei auður
     // óvart. Skrifað strax í trip-state (ekki bara birt), svo 168 (skýrslan)
     // sjái sama gildi þótt notandinn snerti aldrei þetta val.
+    // 24.11.2026: gamla „Bjarndís" → „Bjarndís Helenudóttir" svo valið standi rétt.
+    if (_curU && _curU !== (_tripU0.undirritun || '').trim() && _coU) {
+      _tripU0.undirritun = _curU;
+      saveTrip(_coU, _tripU0);
+    }
     if (!_curU && _coU) {
       _curU = _listU[0] || 'Agnar Sigurðsson';
       _tripU0.undirritun = _curU;

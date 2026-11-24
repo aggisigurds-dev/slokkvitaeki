@@ -62,11 +62,10 @@
   }
   function vordur() {
     if (!simi()) return;
-    // viewport-meta
+    // viewport-meta: 336 skrifar. Hér aðeins beðið um sync þegar gildið er læst.
     try {
       let vp = document.querySelector('meta[name="viewport"]');
-      if (!vp) { vp = document.createElement('meta'); vp.name = 'viewport'; document.head.appendChild(vp); }
-      if (vpLaest(vp.getAttribute('content'))) vp.setAttribute('content', OPEN);
+      if (vp && OPEN && vpLaest(vp.getAttribute('content')) && window.SlokkViewportUnlock && SlokkViewportUnlock.sync) SlokkViewportUnlock.sync();
     } catch (_) {}
     // touch-action á rótinni og sýninni
     try {

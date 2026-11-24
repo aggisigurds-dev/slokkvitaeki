@@ -140,7 +140,7 @@
    app from the path /app/<key>/ (new) or ?app=<key> / ?driver (legacy links). */
 (function(){
   try{
-    var MAN={fjarmal:'/manifest-fjarmal.json',verkefni:'/manifest-verkefni.json',bilstjori:'/manifest-bilstjori.json',brunaholf:'/manifest-brunaholf.json',brunakerfi:'/manifest-brunakerfi.json',boss:'/manifest-boss.json',jarvis:'/manifest-jarvis.json'};
+    var MAN={fjarmal:'/manifest-fjarmal.json',verkefni:'/manifest-verkefni.json',bilstjori:'/manifest-bilstjori.json',brunaholf:'/manifest-brunaholf.json',brunakerfi:'/manifest-brunakerfi.json',boss:'/manifest-boss.json',jarvis:'/manifest-jarvis.json',verkstjorar:'/manifest-verkstjorar.json',skyrslustod:'/manifest-skyrslustod.json',threedwork:'/manifest-threedwork.json'};
     var pm=(location.pathname||'').match(/^\/app\/([a-z]+)\/?/);
     var key=pm?pm[1]:'';
     if(!key){ var sp=new URLSearchParams(location.search); key=sp.get('app')||''; if(!key&&sp.has('driver')) key='bilstjori'; }
@@ -158,7 +158,7 @@
       if(l) l.setAttribute('href','/api/app-manifest?key='+key);
       var tc=document.querySelector('meta[name="theme-color"]');
       if(tc&&key==='bilstjori') tc.setAttribute('content','#0a0b0d');
-      var TITLES={fjarmal:'Fjármál',verkefni:'Þjónustuborð',bilstjori:'Bílstjóri',brunaholf:'Brunahólf',brunakerfi:'Brunakerfi',boss:'The Big Boss',jarvis:'J.A.R.V.I.S.'};
+      var TITLES={fjarmal:'Fjármál',verkefni:'Þjónustuborð',bilstjori:'Bílstjóri',brunaholf:'Brunahólf',brunakerfi:'Brunakerfi',boss:'The Big Boss',jarvis:'J.A.R.V.I.S.',verkstjorar:'Verkstjórar',skyrslustod:'Skýrslu-stöð',threedwork:'3dwork'};
       var at=document.querySelector('meta[name="apple-mobile-web-app-title"]');
       if(at) at.setAttribute('content', TITLES[key]||key);
       try{ document.title=(TITLES[key]||key)+' — Slökkvitæki'; }catch(_){}
@@ -166,14 +166,8 @@
       var APPLE={fjarmal:'/img/app-fjarmal-apple.png',verkefni:'/img/app-verkefni-apple.png',bilstjori:'/img/app-bilstjori-apple.png',brunaholf:'/img/app-brunaholf-apple.png',brunakerfi:'/img/app-brunakerfi-apple.png',boss:'/img/app-boss-apple.png'};
       if(APPLE[key]) document.querySelectorAll('link[rel="apple-touch-icon"],link[rel="apple-touch-icon-precomposed"]').forEach(function(a){a.setAttribute('href',APPLE[key]+'?v=1');});
     }
-    // 03.11.2026 (útlitsúttekt): verkstjorar / skyrslustod / threedwork eru ekki í MAN (manifestið kemur úr 261 á keyrslutíma og er óbreytt hér) —
-    // þau fengu því almennan titil „Slökkvitæki ehf". Aðeins titillinn er settur; engin iOS-tákn-skrá er til fyrir þau (img/app-*-apple.png) svo APPLE er óbreytt.
-    var TITLES2={verkstjorar:'Verkstjórar',skyrslustod:'Skýrslu-stöð',threedwork:'3dwork'};
-    if(!MAN[key]&&Object.prototype.hasOwnProperty.call(TITLES2,key)){
-      var at2=document.querySelector('meta[name="apple-mobile-web-app-title"]');
-      if(at2) at2.setAttribute('content', TITLES2[key]);
-      try{ document.title=TITLES2[key]+' — Slökkvitæki'; }catch(_){}
-    }
+    // verkstjorar / skyrslustod / threedwork eru í MAN (24.11.2026). Engin iOS-tákn-skrá
+    // er til fyrir þau (img/app-*-apple.png) svo APPLE er óbreytt.
   }catch(e){}
 })();
 </script>
@@ -774,7 +768,7 @@ html[data-bh="1"],html[data-bh="1"] body{overflow-x:hidden}
 <script defer src="/js/patches/126-show-settings-tab.js?v=20261119snz"></script>
 <script defer src="/js/patches/127-companies-edit-guard.js?v=20261119snz"></script>
 <script defer src="/js/patches/128-bulk-add-pricing.js?v=20261119snz"></script>
-<script defer src="/js/patches/129-company-total-cost.js?v=20261117u3"></script>
+<script defer src="/js/patches/129-company-total-cost.js?v=20261124nam"></script>
 <script defer src="/js/patches/130-companies-refresh-btn.js?v=20260511g"></script>
 <script defer src="/js/patches/131-unit-service-picker.js?v=20260912duft"></script>
 <script defer src="/js/patches/132-unit-size-column.js?v=20260924b"></script>
@@ -782,7 +776,7 @@ html[data-bh="1"],html[data-bh="1"] body{overflow-x:hidden}
 <script defer src="/js/patches/134-job-notes-display.js?v=20261001a"></script>
 <script defer src="/js/patches/136-companies-back-fix.js?v=20260607a"></script>
 <script defer src="/js/patches/137-verk-actions.js?v=20261119snz"></script>
-<script src="/js/features.js?v=20261029a"></script>
+<script src="/js/features.js?v=20261124tom"></script>
 <!-- jsQR er nú hlaðið EFTIR-PÖNTUN (lazy) þegar myndavélar-skanninn opnar — sjá js/scanner.js
      (._loadJsQR) og js/qrscan.js. Áður var þetta render-blocking <script> á HVERRI síðuhleðslu
      (~257 KB) þó það þurfi bara í QR-skönnun. -->
@@ -1278,12 +1272,12 @@ var Lanstaeki = {
 <script defer src="/js/patches/162-retire-thjonustutaeki-nav.js?v=20260519b"></script>
 <script defer src="/js/patches/163-hook-chain-fix.js?v=20260519a"></script>
 <script defer src="/js/patches/164-companies-open-loading-fix.js?v=20260705a"></script>
-<script defer src="/js/patches/165-visit-workflow.js?v=20261119und"></script>
+<script defer src="/js/patches/165-visit-workflow.js?v=20261124nam"></script>
 <script defer src="/js/patches/372-payday-spegill.js?v=20260911a"></script>
 <script defer src="/js/patches/373-leidsogn-uttektarplan.js?v=20260925afk"></script>
-<script defer src="/js/patches/166-krofu-yfirlit.js?v=20261123a"></script>
+<script defer src="/js/patches/166-krofu-yfirlit.js?v=20261124b"></script>
 <script defer src="/js/patches/167-hreyfingarlisti.js?v=20261119snz"></script>
-<script defer src="/js/patches/168-company-inspection-report.js?v=20261122skm"></script>
+<script defer src="/js/patches/168-company-inspection-report.js?v=20261124bjh"></script>
 <script defer src="/js/patches/176-company-report-email.js?v=20261120a"></script>
 <!-- DJÚPDVALI 13.10.2026 (docs/DJUPDVALI.md): <script defer src="/js/patches/178-beidnir.js?v=20261119snz"></script> -->
 <!-- DJÚPDVALI 13.10.2026 (docs/DJUPDVALI.md): <script defer src="/js/patches/179-mottaka-arrival.js?v=20261119snz"></script> -->
@@ -1320,12 +1314,12 @@ var Lanstaeki = {
 <script defer src="/js/patches/216-theme-sidebar-dashboard.js?v=20261119snz"></script>
 <script defer src="/js/patches/217-theme-arsskodun-tidy.js?v=20260817off"></script>
 <script defer src="/js/patches/218-url-routing.js?v=20261123a"></script>
-<script defer src="/js/patches/219-bilstjori.js?v=20261117utlit"></script>
+<script defer src="/js/patches/219-bilstjori.js?v=20261124b"></script>
 <script defer src="/js/patches/220-theme-system.js?v=20261119snz"></script>
 <script defer src="/js/patches/221-kerfi-registry.js?v=20261119snz"></script>
 <script defer src="/js/patches/222-grunsamlegt-flag.js?v=20261019grun"></script>
 <script defer src="/js/patches/223-uttekt-design.js?v=20260619a"></script>
-<script defer src="/js/patches/224-uttekt-taeki.js?v=20261117a"></script>
+<script defer src="/js/patches/224-uttekt-taeki.js?v=20261124tom"></script>
 <script defer src="/js/patches/226-uttekt-reader.js?v=20261119snz"></script>
 <script defer src="/js/patches/227-trip-cloud-sync.js?v=20261014b"></script>
 <script defer src="/js/patches/228-saved-report-box.js?v=20261119snz"></script>
@@ -1352,7 +1346,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/254-receipt-sender.js?v=20261120a"></script>
 <script defer src="/js/patches/255-auto-discount.js?v=20261119snz"></script>
 <!-- hibernated 2026-07-09 (rangur dökkur titil-bar úr #260, ekki í comps): 260-global-titlebar.js -->
-<script defer src="/js/patches/261-app-profiles.js?v=20261124a"></script>
+<script defer src="/js/patches/261-app-profiles.js?v=20261124b"></script>
 <script defer src="/js/patches/262-sidebar-polish.js?v=20260705c"></script>
 <script defer src="/js/patches/262-page-editor.js?v=20261123a"></script>
 <script defer src="/js/patches/319-column-drag.js?v=20261119snz"></script>
@@ -1374,17 +1368,17 @@ var Lanstaeki = {
 <!-- hibernated 2026-08-23: TEMPORARY event-logging debug patch, no longer needed → _attic/patches/145-companies-diagnose.js -->
 <!-- <script defer src="/js/patches/145-companies-diagnose.js?v=20261119snz"></script> -->
 <script defer src="/js/patches/263-mobile-baseline.js?v=20260919a"></script>
-<script defer src="/js/patches/314-simi-compact-layer.js?v=20261119snz"></script>
-<script defer src="/js/patches/315-fjarmal-app-compact.js?v=20260830m2"></script>
-<script defer src="/js/patches/316-simi-boards.js?v=20261119snz"></script>
+<script defer src="/js/patches/314-simi-compact-layer.js?v=20261124b"></script>
+<script defer src="/js/patches/315-fjarmal-app-compact.js?v=20261124b"></script>
+<script defer src="/js/patches/316-simi-boards.js?v=20261124b"></script>
 <script defer src="/js/patches/317-arsskodun-bilstjori.js?v=20261022a"></script>
 <script defer src="/js/patches/318-honnunarhamur.js?v=20261119snz"></script>
 <script defer src="/js/patches/332-honnunarhamur-ritill.js?v=20260906c"></script>
-<script defer src="/js/patches/330-ars-simi-fullwidth.js?v=20260829mrg"></script>
-<script defer src="/js/patches/331-ars-phone-skjar.js?v=20261119snz"></script>
-<script defer src="/js/patches/333-app-page-zoom.js?v=20261117tilb"></script>
+<script defer src="/js/patches/330-ars-simi-fullwidth.js?v=20261124b"></script>
+<script defer src="/js/patches/331-ars-phone-skjar.js?v=20261124b"></script>
+<script defer src="/js/patches/333-app-page-zoom.js?v=20261124b"></script>
 <script defer src="/js/patches/334-simi-skjar-zoom-compact.js?v=20260830b"></script>
-<script defer src="/js/patches/336-viewport-brunaholf-zoom.js?v=20261005breidd"></script>
+<script defer src="/js/patches/336-viewport-brunaholf-zoom.js?v=20261124b"></script>
 <script defer src="/js/patches/340-krofu-acts-zoom-scroll.js?v=20260830m2"></script>
 <script defer src="/js/patches/335-krofu-brunaholf-layout.js?v=20261119snz"></script>
 <script defer src="/js/patches/337-fleiri-yfirlit-compact.js?v=20261001b48"></script>
@@ -1430,7 +1424,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/498-sala-samstilling.js?v=20261105a"></script>
 <!-- 07.11.2026: Verkferlis-yfirlit á Þjónustuborðinu — ein keyrsla sem mælir kröfur, póst, upplýsingareiti, skoðanir, verkefnalista, samþykktir og tengingar úr /api/combo-yfirlit -->
 <script defer src="/js/patches/499-combo-yfirlit.js?v=20261121nedst"></script>
-<script defer src="/js/patches/500-profill-i.js?v=20261123b"></script>
+<script defer src="/js/patches/500-profill-i.js?v=20261124ur"></script>
 <script defer src="/js/patches/300-stillingasaga.js?v=20260805c"></script>
 <script defer src="/js/patches/301-stillingar-kerfi.js?v=20261119snz"></script>
 <script defer src="/js/patches/302-minar-sidur.js?v=20261029a"></script>
@@ -1462,7 +1456,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/348-view-hash-sync.js?v=20261014b"></script>
 <!-- 349 tvöfaldar botnstikuna í Boss-appinu OG hækkar botnfyllinguna
      sem heldur efninu frá henni. Verður að hlaðast eftir 315/316/330/338. -->
-<script defer src="/js/patches/349-boss-nav-stor.js?v=20260901bn1"></script>
+<script defer src="/js/patches/349-boss-nav-stor.js?v=20261124b"></script>
 <!-- Bord per starfsmann: veljari vid hlidina a Vidskiptavinavefjum.
      ATH hledsluroðin skiptir EKKI mali: 231/303/305 hladast a undan thessari
      skra og skra sig i window.__bordStarfsmadurAskrift, sem #350 tæmir. Beint
@@ -1471,7 +1465,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/351-vidsk-a-stadnum.js?v=20261119snz"></script>
 <script defer src="/js/patches/352-karfa-ur-drogstod.js?v=20261119snz"></script>
 <script defer src="/js/patches/353-simi-krom-zoom.js?v=20261119snz"></script>
-<script defer src="/js/patches/354-opp-styribord.js?v=20261119snz"></script>
+<script defer src="/js/patches/354-opp-styribord.js?v=20261124b"></script>
 <script defer src="/js/patches/355-kost-vidvorun.js?v=20261119snz"></script>
 <script defer src="/js/patches/356-arsgrind-simi.js?v=20261005yf"></script>
 <script defer src="/js/patches/357-fyrirtaeki-djuptenging.js?v=20261001endur"></script>
@@ -1489,7 +1483,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/507-bord-thema-bh2.js?v=20261123c"></script>
 <!-- 523 á undan 368: borðið les css() randarinnar einu sinni þegar skugga-rótin verður til -->
 <script defer src="/js/patches/523-yfirsyn-rond.js?v=20261122samtals2"></script>
-<script defer src="/js/patches/368-thjonustubord5.js?v=20261124a"></script>
+<script defer src="/js/patches/368-thjonustubord5.js?v=20261124c"></script>
 <script defer src="/js/patches/370-hreyfingaryfirlit-takki.js?v=20261012stod"></script>
 <script defer src="/js/patches/464-brunaaaetlun-takki.js?v=20261014r"></script>
 <script defer src="/js/patches/467-hledsluspa-spjald.js?v=20261123m"></script>
@@ -1532,7 +1526,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/403-skjol-spjald.js?v=20261123m"></script>
 <script defer src="/js/patches/470-brunakerfi-manudur-profill.js?v=20261015a"></script>
 <script defer src="/js/patches/471-bord-vinnusvaedi.js?v=20261015a"></script>
-<script defer src="/js/patches/404-taeki-spjald.js?v=20261123m"></script>
+<script defer src="/js/patches/404-taeki-spjald.js?v=20261124tom"></script>
 <script defer src="/js/patches/405-efsta-rod.js?v=20261119snz"></script>
 <script defer src="/js/patches/405-bordi-hnappar.js?v=20260923e"></script>
 <script defer src="/js/patches/411-thett-spjald.js?v=20261119snz"></script>
@@ -1540,7 +1534,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/413-afslaettir-c.js?v=20261123m"></script>
 <script defer src="/js/patches/408-brunakerfi-skyrsla-inni.js?v=20261123m"></script>
 <script defer src="/js/patches/409-samraeming-sidna.js?v=20261119snz"></script>
-<script defer src="/js/patches/410-simi-yfirferd.js?v=20261005breidd"></script>
+<script defer src="/js/patches/410-simi-yfirferd.js?v=20261124b"></script>
 <script defer src="/js/patches/406-bordi-utlit.js?v=20261123koparsveigja"></script>
 <script defer src="/js/patches/407-hledslutakki.js?v=20261012hita2"></script>
 <script defer src="/js/patches/410-thjonustu-tengingar.js?v=20261123m"></script>
@@ -1662,7 +1656,7 @@ var Lanstaeki = {
 <script src="/js/qrbulkprint.js?v=20261023b"></script>
 <script src="/js/vidskiptavinir.js?v=20261123a"></script>
 <script src="/js/settigeymslu.js?v=20261119snz"></script>
-<script src="/js/mobilenav.js?v=20261117utlit"></script>
+<script src="/js/mobilenav.js?v=20261124b"></script>
 <script src="/js/printphonefix.js?v=20261119snz"></script>
 <script src="/js/qrtag.js?v=20260925afk"></script>
 <script src="/js/posprint.js?v=20261119snz"></script>

@@ -330,7 +330,10 @@
   function pinPad() {
     const app = !!(document.body && document.body.classList.contains('appmode'));
     const mobile = document.documentElement.getAttribute('data-viewmode') === 'mobile';
-    if (!app && !mobile) return;
+    // Appham: 353 er eini ritarinn á padding-top/bottom (mæld haushæð). Annars slær
+    // þessi 48/86 px og mælingin til skiptis.
+    if (app) return;
+    if (!mobile) return;
     // 86px = 66px slim banner + 12px loft. Stílstjórinn (323) getur mjókkað eða
     // falið bannerinn — þá verður þessi tala að fylgja, annars situr gat eftir
     // (eða efnið fer undir bannerinn). `__peBannerPad` er sett þar; ósett = 86px.

@@ -104,7 +104,7 @@
  *                          hægra megin með allri lýsingunni (tillagan og „ef já" standa í samantekt málsins).
  *     Master og mitt borð  Master · Mitt borð · Valið mál — engar einingar og engin samþykkismál. KPI og „Bara mitt borð" hér.
  *     Samskipti            Póstsvörun.
- *     Kröfur               Forgangslisti krafna · Kröfur · Gleymst að rukka? · Bakfærslur · Staðan í afgreiðslu.
+ *     Kröfur               Forgangslisti krafna · Kröfur · Gleymst að rukka? · Bakfærslur · Staðan í afgreiðslu · Checklisti.
  *     Vinnublöð            vinnusvæði, óbreytt.
  *     Skýrslur             Í vinnslu — er það búið? (vinnublöð aðeins samþykkt; blöð sem bíða eru í Vinnublöðum).
  *     Akstur og skipulag   Dagskrá · Aksturslistar · Brunakerfi · Skipulagsborð · Forgangur · Frestir · Ný mál · Starfsmenn.
@@ -192,6 +192,8 @@
     checklisti: { n: '23', t: 'Checklisti', d: 'Einfaldur listi: skrifa atriði, haka við þegar það er klárað. Bara þinn.' },
     // 09.11.2026 (Agnar: „tvo ólíka checklista … hvor um sig samanbrjótanlegur“): seinni listinn, sami kóði — gagnasvæðið er `checklisti2`.
     checklisti2: { n: '26', t: 'Checklisti 2', d: 'Annar einfaldur listi með eigin titli. Titill og samanbrot vistast á þjóni.' },
+    // 24.11.2026 (Agnar: „Mér vantar nýjan checklista, ekki þann sama … eins og checklista nr 2“): þriðji listinn fyrir Kröfur — eigin gagnasvæði `checklisti3`.
+    checklisti3: { n: '35', t: 'Checklisti 3', d: 'Þriðji einfaldur listi með eigin titli — sér fyrir Kröfur. Titill og samanbrot vistast á þjóni.' },
     // 10.11.2026 (Agnar): allt stjörnumerkt á einum stað — lesið beint úr upprunanum (engin afrit); stjarnan tekur merkið af þar.
     stjornumerkt: { n: '27', t: 'Stjörnumerkt', d: 'Allt sem er stjörnumerkt: checklistar, spjöld merkt á þig og áríðandi mál. Smelltu til að opna í sínum ham; stjarnan tekur merkið af.' },
     // 11.11.2026 (Agnar: „top priority niðurstöður … sem Forgangsmál inn á þjónustuborðið mitt … auk ný skilaboð, sem eru
@@ -258,7 +260,8 @@
     erindi: { l: 'Erindi', board: false, rymi: 'erindi', first: [], filter: 'allt', flokkar: [], merki: [] },
     thjonusta: { l: 'Master og mitt borð', board: true, first: [], filter: 'allt', flokkar: [], merki: [] },
     samskipti: { l: 'Samskipti', board: false, first: ['postsvor'], filter: 'allt', flokkar: ['samskipti'], merki: ['senda_tolvupost', 'hringja'] },
-    krofur:    { l: 'Kröfur', board: false, first: ['krofumal', 'krofur', 'gleymt', 'bakfaersla', 'afgreidsla'], filter: 'allt', flokkar: ['rukkun'], merki: ['eftir_ad_rukka', 'bokhald'] },
+    // 24.11.2026 (Agnar: „nýjan checklista, ekki þann sama"): Checklisti 3 (35) í Kröfum — eigin listi (`checklisti3`), ekki sami og á mitt vinnuborði.
+    krofur:    { l: 'Kröfur', board: false, first: ['krofumal', 'krofur', 'gleymt', 'bakfaersla', 'afgreidsla', 'checklisti3'], filter: 'allt', flokkar: ['rukkun'], merki: ['eftir_ad_rukka', 'bokhald'] },
     // 368y: vinnusvæði — mál merkt ham:vinnublod, yfirferð eins blaðs í einu með skannmynd í fullri breidd.
     vinnublod: { l: 'Vinnublöð', board: false, rymi: 'vinnublod', first: [], filter: 'allt', flokkar: [], merki: [] },
     skyrslur:  { l: 'Skýrslur', board: false, first: ['ivinnslu'], filter: 'allt', flokkar: [], merki: ['senda_skyrslur'] },
@@ -289,7 +292,7 @@
   const SPONN_MIN = 16;
   const spannAf = b => erSponn(b) ? b : (SPN[b] || 60);
   const naestaThrep = b => BREIDD_ROD.reduce((best, x) => Math.abs(SPN[x] - spannAf(b)) < Math.abs(SPN[best] - spannAf(b)) ? x : best, 3);
-  const sjalfgefinBreidd = k => ((k === 'checklisti' || k === 'checklisti2') ? 4 : k === 'skipulag2' ? 5 : BREIDAR.indexOf(k) >= 0 ? 3 : 1);
+  const sjalfgefinBreidd = k => ((k === 'checklisti' || k === 'checklisti2' || k === 'checklisti3') ? 4 : k === 'skipulag2' ? 5 : BREIDAR.indexOf(k) >= 0 ? 3 : 1);
   function breiddAf(mode, k) {
     if (gildBreidd(S.breiddBid[k])) return S.breiddBid[k];   // skiptilína dregin, vistun á leiðinni
     const b = mode && mode.breidd && mode.breidd[k];
@@ -372,7 +375,7 @@
   // [kveikt, sjálfgefið opið] — flest samanbrotið. Forstillt eftir starfsmanni; hver og einn breytir í ⚙.
   // 18.11.2026: 'idag' (31) er hér af því að hún stendur í öllum hömum — eining sem vantar í SJALFGEFID á sér engan
   // `mods`-reit og isOpen féll á henni um leið og hún birtist utan hams sem taldi hana í `first`. [sýnd, opin]
-  const SJALFGEFID = { idag: [1, 1], dagskra: [1, 0], skipulag: [0, 0], vinnublod: [0, 0], postsvor: [0, 0], akstur: [0, 0], krofur: [0, 0], krofumal: [0, 0], frestir: [1, 0], nyjast: [0, 0], saga: [1, 1], breyta: [1, 0], forgangur: [0, 0], nymal: [0, 0], brunakerfi: [0, 0], starfsmenn: [0, 0], ivinnslu: [0, 0], gleymt: [0, 0], bakfaersla: [0, 0], afgreidsla: [0, 0], aridandi: [0, 0], checklisti: [0, 0], checklisti2: [0, 0], stjornumerkt: [0, 0], forgangsmal: [0, 0], skipulag2: [0, 0], markmid: [1, 0], einkaritari: [1, 0], tilbuin: [0, 0] };
+  const SJALFGEFID = { idag: [1, 1], dagskra: [1, 0], skipulag: [0, 0], vinnublod: [0, 0], postsvor: [0, 0], akstur: [0, 0], krofur: [0, 0], krofumal: [0, 0], frestir: [1, 0], nyjast: [0, 0], saga: [1, 1], breyta: [1, 0], forgangur: [0, 0], nymal: [0, 0], brunakerfi: [0, 0], starfsmenn: [0, 0], ivinnslu: [0, 0], gleymt: [0, 0], bakfaersla: [0, 0], afgreidsla: [0, 0], aridandi: [0, 0], checklisti: [0, 0], checklisti2: [0, 0], checklisti3: [0, 0], stjornumerkt: [0, 0], forgangsmal: [0, 0], skipulag2: [0, 0], markmid: [1, 0], einkaritari: [1, 0], tilbuin: [0, 0] };
   const FYRIR = {
     'Agnar': { skipulag: [1, 1], vinnublod: [1, 0], krofur: [1, 0] },
     'Bjarndís': { vinnublod: [1, 1], postsvor: [1, 0] },
@@ -3559,8 +3562,8 @@
    * S.chkCache[nafn] heldur nýjustu útgáfunni á meðan skrifið er á leiðinni svo viðmótið
    * svari strax; hún hverfur þegar þjónninn hefur staðfest.
    * ────────────────────────────────────────────────────────────────────── */
-  // 09.11.2026: tveir listar — f er svæðið (= lykill einingarinnar): 'checklisti' | 'checklisti2'.
-  const CHK_FELT = ['checklisti', 'checklisti2'];
+  // 09.11.2026: listarnir — f er svæðið (= lykill einingarinnar): 'checklisti' | 'checklisti2' | 'checklisti3'.
+  const CHK_FELT = ['checklisti', 'checklisti2', 'checklisti3'];
   const SERVER_OPID = CHK_FELT.concat(['stjornumerkt']);
   const chkCk = (n, f) => n + '|' + f;
   function chkLesa(n, f) {
@@ -3586,8 +3589,8 @@
     })();
   }
   function chkBreyta(n, f, fn) { return chkVista(n, f, fn(chkLesa(n, f).map(x => Object.assign({}, x)))); }
-  // Titill hvors lista (by_staff.<nafn>.<f>_titill) og samanbrot (by_staff.<nafn>.chk_opid.<f>) — bæði á þjóni, eins á öllum vélum.
-  const CHK_TITILL_SJALFG = { checklisti: 'Checklisti', checklisti2: 'Checklisti 2' };
+  // Titill hvers lista (by_staff.<nafn>.<f>_titill) og samanbrot (by_staff.<nafn>.chk_opid.<f>) — bæði á þjóni, eins á öllum vélum.
+  const CHK_TITILL_SJALFG = { checklisti: 'Checklisti', checklisti2: 'Checklisti 2', checklisti3: 'Checklisti 3' };
   function chkTitill(f) {
     const v = P('skipulagsbord.by_staff.' + nu() + '.' + f + '_titill');
     return (typeof v === 'string' && v.trim()) ? v : CHK_TITILL_SJALFG[f];
@@ -3703,7 +3706,7 @@
     grip.addEventListener('pointermove', fara); grip.addEventListener('pointerup', sleppa); grip.addEventListener('pointercancel', sleppa);
   }
   /* ── STJÖRNUMERKT (eining 27, 10.11.2026) — EIN heimild: lesið úr upprunanum í hvert sinn, ekkert afritað.
-   * Heimildir: checklisti 1 og 2 (star > 0, ókláruð) · spjöld á Skipulagsborðum annarra merkt á mig · áríðandi mál á mínu borði.
+   * Heimildir: checklisti 1–3 (star > 0, ókláruð) · spjöld á Skipulagsborðum annarra merkt á mig · áríðandi mál á mínu borði.
    * Smellur á línu opnar atriðið í hamnum þar sem það býr; stjarnan/✓ tekur merkið af ÞAR (sömu aðgerðir og upprunans). */
   function stjornuAtridi(n) {
     const out = [];
@@ -5722,9 +5725,9 @@
   /* 21.11.2026 — „ANNAÐ Á BORÐINU". Agnar, með skjáskoti þar sem hann hafði litað borðið: rautt má fara, grænt stendur,
    * blátt „færa neðst í collapsed" — „þori ekki að henda neinu út strax, frekar færðu það niður allt … neðst á síðuna".
    * Hingað fara því VIP-vakt (513), Pósthólf (522), Verkferlis-yfirlit (499 festir sig sjálft í raufina .nedst-yf),
-   * Sannreyna og einingar sem eru færðar neðst (Checklisti 2, sjá nedstEiningar í render). Ekkert er hent og ekkert
-   * verk breytist — aðeins staðurinn. VIP-vaktin er samanbrotin sjálfgefið, en haus hennar („1 ósvarað · 1 yfir tíma")
-   * stendur alltaf, svo áríðandi póstur týnist ekki. Opið/lokað er geymt með Vidmot: eins á öllum vélum. */
+   * Sannreyna og einingar sem eru færðar neðst (NEDST_EIN í render — tómt síðan 24.11.2026; Checklisti 2 er aftur í
+   * ristinni). Ekkert er hent og ekkert verk breytist — aðeins staðurinn. VIP-vaktin er samanbrotin sjálfgefið, en haus
+   * hennar („1 ósvarað · 1 yfir tíma") stendur alltaf, svo áríðandi póstur týnist ekki. Opið/lokað er geymt með Vidmot. */
   const NEDST_LYKILL = k => 'bord.nedst.' + k;
   const nedstOpid = k => vmLesa(NEDST_LYKILL(k), false) === true;
   // 21.11.2026: ⅓-dálkurinn við Dagskrána. Fastar hér svo bæði render og smellir noti þær.
@@ -6065,7 +6068,7 @@
     function frumaHtml(k, i, rod) {
       let sp = radar ? hfBreidd(k) : breiddAf(mode, k);
       // Báðir checklistar og litla skipulagsborðið í sömu röð án vistaðrar breiddar: skipta röðinni (18+18+24) — annars sprytti þriðja einingin í nýja röð.
-      const TRIO = { checklisti: 18, checklisti2: 18, skipulag2: 24 };
+      const TRIO = { checklisti: 18, checklisti2: 18, checklisti3: 18, skipulag2: 24 };
       if (!radar && TRIO[k] && Object.keys(TRIO).every(x => rod.indexOf(x) >= 0) && !gildBreidd(mode && mode.breidd && mode.breidd[k]) && !gildBreidd(S.breiddBid[k])) sp = TRIO[k];
       const bar = !radar ? '' : '<div class="mbar">' +
         '<span class="mgrip" aria-hidden="true">⠿</span><span>' + esc(MODS[k] ? MODS[k].t : k) + '</span><span class="grow"></span>' +
@@ -6086,10 +6089,9 @@
     const ristHtml = rod => '<div class="modgrid' + (radar ? ' radar' : '') + '">' + rod.map(frumaHtml).join('') + '</div>';
     // 19.11.2026: Dagskráin fremst í einingahamnum fær eigin röð yfir alla breiddina — sjá `efst` við .layout hér að neðan.
     const dskLyft = eininga && !radar && synRod[0] === 'dagskra';
-    // 21.11.2026 (Agnar: „þori ekki að henda neinu út strax … færðu það niður … neðst á síðuna collapse"): þegar allar
-    // einingar sjást („Allt") fer Checklisti 2 í „Annað á borðinu" neðst í stað ristarinnar. Flipinn hans stendur
-    // áfram: sé hann valinn einn og sér birtist einingin í ristinni eins og áður. Í raðham eru allar í ristinni.
-    const NEDST_EIN = ['checklisti2'];
+    // 24.11.2026 (Agnar: „Checklisti 2 … birtist aldrei"): hann fór áður í „Annað á borðinu" við „Allt" (21.11) og
+    // var auk þess sjálfgefið samanbrotinn — aðeins hausinn sást. Nú stendur hann í ristinni með hinum; flipi opnar hann.
+    const NEDST_EIN = [];
     const nedstEiningar = eininga && !radar && !flipiSyn.length && einingaRod.length > 1 ? einingaRod.filter(k => NEDST_EIN.indexOf(k) >= 0) : [];
     // 21.11.2026: ⅓-dálkurinn við Dagskrána (sjá `efst`) — Checklisti + VIP-mál, aðeins á borði eigandans.
     const hlidDalkur = dskLyft && stjornStika;
@@ -7231,11 +7233,13 @@
         return;
       }
       // 18.11.2026: skipt um flipa í einingaham. Valið er viðmótsval og fer á þjóninn — eins á öllum vélum.
+      // 24.11.2026: checklisti/2/3 + stjörnumerkt opnast með flipanum — annars sést aðeins samanbrotinn haus („birtist aldrei").
       case 'flipi': {
         const c0 = cfg();
         c0.flipi = Object.assign({}, c0.flipi || {}, { [c0.mode]: m });
-        render();
         vistaCfg({ flipi: { [c0.mode]: m } });
+        if (m && m !== '*' && SERVER_OPID.indexOf(m) >= 0 && !chkOpid(m)) chkOpidVista(m, true);
+        else render();
         return;
       }
       /* 18.11.2026 — ＋ og ✕ á flipa: tveir saman. Vistaða gildið er "a+b"; röðin er einingaröð hamsins, ekki
@@ -7247,8 +7251,9 @@
         const rodun = (M(c0.mode) && M(c0.mode).first) || [];
         const par = nuna.concat([m]).sort((a, b) => rodun.indexOf(a) - rodun.indexOf(b)).join('+');
         c0.flipi = Object.assign({}, c0.flipi || {}, { [c0.mode]: par });
-        render();
         vistaCfg({ flipi: { [c0.mode]: par } });
+        if (SERVER_OPID.indexOf(m) >= 0 && !chkOpid(m)) chkOpidVista(m, true);
+        else render();
         return;
       }
       case 'flipi-minus': {

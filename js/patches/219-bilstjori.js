@@ -71,12 +71,9 @@
       // 19.09.2026: sama slóð og <head>-veljarinn og 261 nota — fallið skilar manifest-bilstjori.json með tákni/lit
       // úr „🎨 Tákn · litur" ofan á (sama id/scope). Áður setti þessi lína kyrrstæðu skrána aftur og yfirskriftin hvarf.
       link.setAttribute('href', '/api/app-manifest?key=bilstjori');
-      // Same open viewport as Brunahólf Fjármála-yfirlit / hub pages.
-      // maximum-scale=1 + user-scalable=no froze Android pinch on the driver
-      // PWA; layout fill is CSS (max-width:100%), not a scale lock.
-      let vp = document.querySelector('meta[name="viewport"]');
-      if (!vp) { vp = document.createElement('meta'); vp.setAttribute('name', 'viewport'); document.head.appendChild(vp); }
-      vp.setAttribute('content', 'width=device-width, initial-scale=1, user-scalable=yes, viewport-fit=cover');
+      // Viewport: 336 (SlokkViewportUnlock). Bílstjóri setur ekki __HUB_VP, svo sync
+      // skilar device-width — sama opna gildi og áður, án annars ritara.
+      try { if (window.SlokkViewportUnlock && SlokkViewportUnlock.sync) SlokkViewportUnlock.sync(); } catch (_) {}
       const tc = document.querySelector('meta[name="theme-color"]');
       if (tc) tc.setAttribute('content', '#0a0b0d');
       // Driver app = full-width phone app. The base .bt.screen caps at 440px

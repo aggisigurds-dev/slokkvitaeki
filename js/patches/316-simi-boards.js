@@ -56,20 +56,14 @@
     A + '#_app-hdr #_app-style,' + A + '#_app-hdr #_app-exit' +
       '{width:44px;min-width:44px;max-width:44px;padding:0;font-size:18px;line-height:44px;' +
        'overflow:hidden;white-space:nowrap;text-align:center}',
-    A + '.view.active{padding-top:52px!important}',
-    'html[data-bstal-banner="on"][data-thm-preset="brunastal"] body.appmode .view.active:not(#view-field):not(#view-counter):not(#view-workshop)' +
-      '{padding-top:52px!important}',
+    // .view padding-top/bottom: 353 mælir (Öpp-villa 19). Ekki festa 52/94 px hér.
 
     // ── Öpp bottom nav: 261 still paints min-height:120px ──────────────────
     // 13.10.2026 (Agnar: „botn bannerinn er allt of lítill“): 52 → 74 px hnappar, 18 → 28 px tákn, 12 → 14 px texti.
     A + '#_app-nav{padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px))!important;gap:6px}',
     A + '#_app-nav button{flex:1 0 84px;min-width:84px;min-height:74px!important;padding:6px 4px!important;font-size:14px!important;gap:4px!important;border-radius:12px;line-height:1.15!important}',
     A + '#_app-nav button .e{font-size:28px!important}',
-    A + '.view.active{padding-bottom:calc(94px + env(safe-area-inset-bottom,0px))!important}',
-    'html[data-bstal-banner="on"][data-thm-preset="brunastal"] body.appmode .view.active:not(#view-field):not(#view-counter):not(#view-workshop)' +
-      '{padding-bottom:calc(94px + env(safe-area-inset-bottom,0px))!important}',
     A + '#_app-frame{top:48px!important;bottom:88px!important}',
-    'body.appmode.appmode-nonav .view.active{padding-bottom:24px!important}',
 
     // Fljótandi chrome sem EKKI er hluti af appinu — mælt ofan á Kröfur:
     // #pat-launch 139×39 @ y=787 sat OFAN Á #_app-nav (y=783). 📐 er lyft
@@ -150,12 +144,16 @@
   mountCss();
 
   // ?app=<key> (legacy) and /app/<key>/ (PWA) — same ACTIVE as patch 261.
-  const APP_KEYS = { fjarmal: 1, verkefni: 1, brunaholf: 1, brunakerfi: 1, boss: 1, bilstjori: 1, jarvis: 1 };
+  // Lyklar koma úr AppProfiles (261 APPS), ekki föstum lista. /app/<key>/ gildir
+  // líka fyrir ný innbyggð öpp og notenda-búin áður en listinn er til.
   function activeAppKey() {
     try {
       const pm = (location.pathname || '').match(/^\/app\/([a-z]+)\/?/);
       const v = pm ? pm[1] : new URLSearchParams(location.search).get('app');
-      return (v && APP_KEYS[v]) ? v : null;
+      if (!v) return null;
+      if (pm) return v;
+      if (window.AppProfiles && typeof AppProfiles.isApp === 'function' && AppProfiles.isApp(v)) return v;
+      return null;
     } catch (_) { return null; }
   }
   function markAppMode() {
@@ -177,7 +175,14 @@
       if (key && document.body.getAttribute('data-app') !== key) document.body.setAttribute('data-app', key);
     }
   });
-  try { mo.observe(document.documentElement, { subtree: true, attributes: true, attributeFilter: ['class'] }); } catch (_) {}
+  // Aðeins class á <body> (appmode). subtree á documentElement hljóp við hverja klasabreytingu í skjalinu.
+  try {
+    const watchBody = function () {
+      if (document.body) mo.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    };
+    if (document.body) watchBody();
+    else document.addEventListener('DOMContentLoaded', watchBody, { once: true });
+  } catch (_) {}
   document.addEventListener('slokk-viewmode', mountCss);
 
   // #opp: 261 creates #view-opp lazily in viewEl(). 218 applyHash bails when

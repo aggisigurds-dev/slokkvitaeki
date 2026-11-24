@@ -684,6 +684,36 @@
   let _rendering = false;
   let _lastRender = 0;
 
+  // 24.11.2026 (Agnar: AFSL.-reitur blikkar 7–10 s við innslátt): change+blur á
+  // ._ctc-line-disc kölluðu render() sem rifur ALLA töfluna með innerHTML. Á meðan
+  // Tab/smellur færist fókus á NÆSTA afsláttarreit — gamla vörnin náði aðeins yfir
+  // nótu-/skoðunarreiti — svo teikningin drap reitinn undan bendlinum, Stodugt
+  // endurheimti fókus, og púls/_lastKey='' endurteiknaði aftur. Sama mynstur og
+  // 153 erAdSkrifa / teiknaEftirInnslatt: bíða með endurteikningu þar til fókus
+  // er kominn ÚT úr kostnaðarreitunum; input-hlustarar vista áfram í trip-state.
+  const KOSTNAD_REITIR = '._ctc-line-disc,._ctc-extra-disc,._ctc-line-price,._ctc-extra-qty,._ctc-extra-price,#_ctc-discount,#_ctc-drive,#_ctc-drive-qty,#_ctc-skyrslu,#_ctc-notes-ta,#_ctc-athskyrsla,#_ctc-skodun,#_ctc-manudur,#_ctc-dags,#_ctc-invtext';
+  function erAdSkrifaKostnad() {
+    const ae = document.activeElement;
+    if (!ae || !ae.closest) return false;
+    if (!ae.closest('#_ctc-section, #_ctc-notes')) return false;
+    try { return !!(ae.matches && ae.matches(KOSTNAD_REITIR)); } catch (_) { return false; }
+  }
+  let _eftirInnslatt = false;
+  function teiknaEftirInnslatt() {
+    if (_eftirInnslatt) return;
+    _eftirInnslatt = true;
+    const kveikt = () => {
+      if (erAdSkrifaKostnad()) return; // fór í annan kostnaðarreit — bíða áfram
+      document.removeEventListener('focusout', seinna, true);
+      _eftirInnslatt = false;
+      _lastKey = '';
+      render();
+    };
+    const seinna = () => setTimeout(kveikt, 60); // focusout kemur ÁÐUR en nýi reiturinn fær fókus
+    document.addEventListener('focusout', seinna, true);
+    setTimeout(kveikt, 60); // blur á síðasta reit: enginn næsti focusout innan section
+  }
+
   // 24.09 kvöld (Agnar: „klikkað hopp og margar útgáfur að loadast á sama tíma … koma örugglega
   // 5 mismunandi layout á 1-2 sekúndum" — akstur 1 → 2). Mælt: ein breyting kveikti render() TVISVAR
   // (change OG blur á sama reit), hvert kall sótti tækin úr Supabase og skipti töflunni út með
@@ -711,11 +741,11 @@
   async function renderImpl() {
     const main = document.getElementById('companies-main');
     if (!main) return;
-    // Don't re-render while the user is typing in a green trip-note field — a
-    // rebuild would wipe in-progress text ("dettur út"). The field's own input
-    // listener keeps tripState current; render runs again once they blur.
-    const _ae = document.activeElement;
-    if (_ae && /^_ctc-(notes-ta|athskyrsla|skodun|manudur|dags|invtext)$/.test(_ae.id || '')) return;
+    // Don't re-render while the user is typing in a cost / trip field — a
+    // rebuild would wipe in-progress text and flash the AFSL./PER STK cells.
+    // The field's own input listener keeps tripState current; render runs
+    // again once they leave the cost fields (teiknaEftirInnslatt).
+    if (erAdSkrifaKostnad()) { teiknaEftirInnslatt(); return; }
     const coId = getCompanyId();
     const coNafn = getCompanyName();
     if (!coId || !coNafn) return;
@@ -832,10 +862,20 @@
     // á extra-hlutnum sjálfum (disc_pct). Per-stk verðið sýnist ÓBREYTT; línu-
     // samtalan = fjöldi × round(verð × (1−afsl%)) — sama stærðfræði og reikningurinn
     // (165 scrapeCostRows/buildLinur) notar svo tölurnar stemma alls staðar.
+    //
+    // 24.11.2026 (Nesdekk 126.071 vs 126.068): verðlistinn geymir aura-float
+    // (t.d. Léttvatn 6 kg = 11677.42). PER STK-reiturinn sýnir Math.round → 11677,
+    // en útreikningurinn hér notaði floatið beint → round(11677.42×0,85)=9926 á meðan
+    // reikningsleiðin (165) las 11677 úr reitnum → 9925. 2 stk = 2 kr + VSK = 3 kr
+    // MISRÆMI. ISK eru heiltölur — námundum einingarverð ÁÐUR en afsláttur er reiknaður,
+    // sama tala og notandinn sér í reitnum.
     const lineDisc = (tripState.line_disc && typeof tripState.line_disc === 'object') ? tripState.line_disc : {};
     const clampPct = v => Math.max(0, Math.min(100, parseFloat(String(v == null ? '' : v).replace(',', '.')) || 0));
     const discFor = key => clampPct(lineDisc[key]);
-    const discUnitOf = (unitPrice, d) => Math.round(unitPrice * (1 - d / 100));
+    const discUnitOf = (unitPrice, d) => {
+      const u = Math.round(Number(unitPrice) || 0);
+      return d > 0 ? Math.round(u * (1 - d / 100)) : u;
+    };
     // Afsl.-reitur í línu (autt = enginn afsláttur).
     const discCell = (key, d) =>
       '<td style="padding:7px 6px;text-align:center;white-space:nowrap">' +
@@ -853,7 +893,8 @@
     const linePrice = (tripState.line_price && typeof tripState.line_price === 'object') ? tripState.line_price : {};
     const priceFor = (key, def) => {
       const v = linePrice[key];
-      return (v != null && v !== '' && isFinite(+v)) ? Math.max(0, +v) : def;
+      const raw = (v != null && v !== '' && isFinite(+v)) ? Math.max(0, +v) : def;
+      return Math.round(Number(raw) || 0);
     };
     // Ritanlegur PER STK-reitur (forfylltur búðar-/yfir-verði). 💰 = fyrirtækja-yfirverð
     // var sjálfgefna gildið (uppruna-merki; hverfur ekki þótt notandinn breyti tölunni).
@@ -1243,7 +1284,11 @@
     const discountEx = discBaseEx * (discountPct / 100);
     const netSubEx   = totalSubEx - discountEx;
     const netVsk     = totalVsk - discBaseVsk * (discountPct / 100);
-    const totalInc   = netSubEx + netVsk;
+    // Námunda SAMTALS — sama og fmtKr sýnir og 165 ber saman við (table_total).
+    // Án námundunar sat 101670×1,24 = 126070,8 í computed.total; Math.round við
+    // birtingu/samanburð gaf 126071, en reikningur með heiltölu-línusummu gat
+    // lent á annarri krónu.
+    const totalInc   = Math.round(netSubEx + netVsk);
     const activeUnits = units.length - groups.reduce((s, g) => s + g.skip, 0);
     // 2026-07-29 (ósk Agnars): geyma útreiknuðu samtöluna í trip-state svo
     // rekstrarfélags-yfirlitið (175) geti sýnt RAUNVERULEGA „Samtals m. vsk"
@@ -1707,37 +1752,33 @@
       });
     }
     // Wire per-extra qty / price / remove controls.
+    // 24.11.2026: input/change vista aðeins; EIN endurteikning eftir að fókus
+    // fer út úr kostnaðarreitunum (teiknaEftirInnslatt) — annars blikkar taflan.
     section.querySelectorAll('._ctc-extra-qty').forEach(inp => {
-      const onChange = () => {
+      const persist = () => {
         const i = +inp.dataset.i;
-        const v = Math.max(0, parseInt(inp.value, 10) || 0);
         const st = loadTripState(coId);
         if (Array.isArray(st.extras) && st.extras[i]) {
-          st.extras[i].qty = v;
+          st.extras[i].qty = Math.max(0, parseInt(inp.value, 10) || 0);
           saveTripState(coId, st);
         }
-        _lastKey = '';
-        render();
       };
-      inp.addEventListener('change', onChange);
-      inp.addEventListener('blur', onChange);
-      inp.addEventListener('input', () => { const i = +inp.dataset.i; const st = loadTripState(coId); if (Array.isArray(st.extras) && st.extras[i]) { st.extras[i].qty = Math.max(0, parseInt(inp.value, 10) || 0); saveTripState(coId, st); } });
+      inp.addEventListener('input', persist);
+      inp.addEventListener('change', persist);
+      inp.addEventListener('blur', () => { persist(); teiknaEftirInnslatt(); });
     });
     section.querySelectorAll('._ctc-extra-price').forEach(inp => {
-      const onChange = () => {
+      const persist = () => {
         const i = +inp.dataset.i;
-        const v = Math.max(0, parseFloat(inp.value) || 0);
         const st = loadTripState(coId);
         if (Array.isArray(st.extras) && st.extras[i]) {
-          st.extras[i].unit_price_ex_vat = v;
+          st.extras[i].unit_price_ex_vat = Math.max(0, parseFloat(inp.value) || 0);
           saveTripState(coId, st);
         }
-        _lastKey = '';
-        render();
       };
-      inp.addEventListener('change', onChange);
-      inp.addEventListener('blur', onChange);
-      inp.addEventListener('input', () => { const i = +inp.dataset.i; const st = loadTripState(coId); if (Array.isArray(st.extras) && st.extras[i]) { st.extras[i].unit_price_ex_vat = Math.max(0, parseFloat(inp.value) || 0); saveTripState(coId, st); } });
+      inp.addEventListener('input', persist);
+      inp.addEventListener('change', persist);
+      inp.addEventListener('blur', () => { persist(); teiknaEftirInnslatt(); });
     });
     section.querySelectorAll('._ctc-extra-rm').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -1766,10 +1807,9 @@
         saveTripState(coId, st);
         return v;
       };
-      const onChange = () => { persist(); _lastKey = ""; render(); };
-      inp.addEventListener("change", onChange);
-      inp.addEventListener("blur", onChange);
       inp.addEventListener("input", persist);
+      inp.addEventListener("change", persist);
+      inp.addEventListener("blur", () => { persist(); teiknaEftirInnslatt(); });
     });
     section.querySelectorAll("._ctc-extra-disc").forEach(inp => {
       const persist = () => {
@@ -1778,17 +1818,17 @@
         const st = loadTripState(coId);
         if (Array.isArray(st.extras) && st.extras[i]) { st.extras[i].disc_pct = v; saveTripState(coId, st); }
       };
-      const onChange = () => { persist(); _lastKey = ""; render(); };
-      inp.addEventListener("change", onChange);
-      inp.addEventListener("blur", onChange);
       inp.addEventListener("input", persist);
+      inp.addEventListener("change", persist);
+      inp.addEventListener("blur", () => { persist(); teiknaEftirInnslatt(); });
     });
     // 2026-07-31: ritanlegt PER STK-verð (line_price) — bara fyrir þessa ferð.
-    // input=vista (engin render → bendillinn hoppar ekki); change/blur=vista+render
-    // svo línu-samtalan + heildin uppfærist. Tómur reitur → SKRIFAR sjálfgefna
-    // verðið (data-def) í stað þess að EYÐA lyklinum — 227 deep-merge eyðir aldrei
-    // lyklum í skýinu, svo eyddur lykill léti gamalt yfirverð rísa upp aftur á hinu
-    // tækinu (sama gildra og line_disc leysir með því að skrifa 0). 0 er geymt sem 0.
+    // input/change=vista (engin render → bendillinn hoppar ekki); blur=vista +
+    // teiknaEftirInnslatt svo línu-samtalan + heildin uppfærist EINU sinni þegar
+    // fókus fer út. Tómur reitur → SKRIFAR sjálfgefna verðið (data-def) í stað
+    // þess að EYÐA lyklinum — 227 deep-merge eyðir aldrei lyklum í skýinu, svo
+    // eyddur lykill léti gamalt yfirverð rísa upp aftur á hinu tækinu (sama
+    // gildra og line_disc leysir með því að skrifa 0). 0 er geymt sem 0.
     section.querySelectorAll("._ctc-line-price").forEach(inp => {
       const persist = () => {
         const key = inp.dataset.lk;
@@ -1799,72 +1839,58 @@
         st.line_price[key] = raw === "" ? def : Math.max(0, parseFloat(raw) || 0);
         saveTripState(coId, st);
       };
-      const onChange = () => { persist(); _lastKey = ""; render(); };
-      inp.addEventListener("change", onChange);
-      inp.addEventListener("blur", onChange);
       inp.addEventListener("input", persist);
+      inp.addEventListener("change", persist);
+      inp.addEventListener("blur", () => { persist(); teiknaEftirInnslatt(); });
     });
 
     // Wire driving input (per-trip price).
     const driveInp = section.querySelector('#_ctc-drive');
     if (driveInp) {
-      const onDrive = () => {
-        const v = parseFloat(driveInp.value) || 0;
+      const persist = () => {
         const st = loadTripState(coId);
-        st.drive = v;
+        st.drive = parseFloat(driveInp.value) || 0;
         saveTripState(coId, st);
-        _lastKey = '';
-        render();
       };
-      driveInp.addEventListener('change', onDrive);
-      driveInp.addEventListener('blur', onDrive);
-      // Per-keystroke save (no render → no cursor jump); total recomputes on blur.
-      driveInp.addEventListener('input', () => { const st = loadTripState(coId); st.drive = parseFloat(driveInp.value) || 0; saveTripState(coId, st); });
+      driveInp.addEventListener('input', persist);
+      driveInp.addEventListener('change', persist);
+      driveInp.addEventListener('blur', () => { persist(); teiknaEftirInnslatt(); });
     }
     // Wire driving quantity input (number of trips).
     const driveQtyInp = section.querySelector('#_ctc-drive-qty');
     if (driveQtyInp) {
-      const onDriveQty = () => {
-        const v = Math.max(0, parseInt(driveQtyInp.value, 10) || 0);
+      const persist = () => {
         const st = loadTripState(coId);
-        st.driveQty = v;
+        st.driveQty = Math.max(0, parseInt(driveQtyInp.value, 10) || 0);
         saveTripState(coId, st);
-        _lastKey = '';
-        render();
       };
-      driveQtyInp.addEventListener('change', onDriveQty);
-      driveQtyInp.addEventListener('blur', onDriveQty);
-      driveQtyInp.addEventListener('input', () => { const st = loadTripState(coId); st.driveQty = Math.max(0, parseInt(driveQtyInp.value, 10) || 0); saveTripState(coId, st); });
+      driveQtyInp.addEventListener('input', persist);
+      driveQtyInp.addEventListener('change', persist);
+      driveQtyInp.addEventListener('blur', () => { persist(); teiknaEftirInnslatt(); });
     }
     // Wire Skýrslugerð input.
     const skyrsluInp = section.querySelector('#_ctc-skyrslu');
     if (skyrsluInp) {
-      const onSkyrslu = () => {
-        const v = parseFloat(skyrsluInp.value) || 0;
+      const persist = () => {
         const st = loadTripState(coId);
-        st.skyrslugerd = v;
+        st.skyrslugerd = parseFloat(skyrsluInp.value) || 0;
         saveTripState(coId, st);
-        _lastKey = '';
-        render();
       };
-      skyrsluInp.addEventListener('change', onSkyrslu);
-      skyrsluInp.addEventListener('blur', onSkyrslu);
-      skyrsluInp.addEventListener('input', () => { const st = loadTripState(coId); st.skyrslugerd = parseFloat(skyrsluInp.value) || 0; saveTripState(coId, st); });
+      skyrsluInp.addEventListener('input', persist);
+      skyrsluInp.addEventListener('change', persist);
+      skyrsluInp.addEventListener('blur', () => { persist(); teiknaEftirInnslatt(); });
     }
-    // Wire Afsláttur (%) input.
+    // Wire Afsláttur (%) input (heildarafsláttur neðst).
     const discInp = section.querySelector('#_ctc-discount');
     if (discInp) {
-      const onDisc = () => {
-        const v = Math.max(0, Math.min(100, Math.round(Number(discInp.value) || 0)));
+      const persist = () => {
         const st = loadTripState(coId);
-        st.discount_pct = v;
+        st.discount_pct = Math.max(0, Math.min(100, Math.round(Number(discInp.value) || 0)));
         saveTripState(coId, st);
-        _lastKey = '';
-        render();
       };
-      discInp.addEventListener('change', onDisc);
-      discInp.addEventListener('blur', onDisc);
-      discInp.addEventListener('input', () => { const st = loadTripState(coId); st.discount_pct = Math.max(0, Math.min(100, Math.round(Number(discInp.value) || 0))); saveTripState(coId, st); });
+      discInp.addEventListener('input', persist);
+      discInp.addEventListener('change', persist);
+      discInp.addEventListener('blur', () => { persist(); teiknaEftirInnslatt(); });
     }
   }
 

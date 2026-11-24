@@ -26,17 +26,24 @@
    *   • Skoðunaraðili er sá sem skoðaði (sjálfgefið Hákon) — sérstök lína á skýrslunni.
    *   • Undirritun er sá sem skrifar undir f.h. félagsins (trip.undirritun). Hafi hann undirskriftarmynd (app_settings.undirskriftir[nafn],
    *     PNG með gegnsæjum bakgrunni) fer myndin á skýrsluna með nafninu undir; annars aðeins nafnið skrifað.
-   * Myndir bætast við í app_settings.undirskriftir án kóðabreytingar; listinn hér að neðan ræður hverjir eru í valinu. */
-  const UNDIRRITENDUR = ['Agnar Sigurðsson', 'Bjarndís', 'Brynjar'];
+   * Myndir bætast við í app_settings.undirskriftir án kóðabreytingar; listinn hér að neðan ræður hverjir eru í valinu.
+   * 24.11.2026: Bjarndís → Bjarndís Helenudóttir (fullt nafn á skýrslu); gamla stutta nafnið er alias fyrir myndina. */
+  const UNDIRRITENDUR = ['Agnar Sigurðsson', 'Bjarndís Helenudóttir', 'Brynjar'];
+  const UNDIRRITUN_ALIAS = { 'Bjarndís': 'Bjarndís Helenudóttir' };
   const SKODUNARADILI_SJALFGEFINN = 'Hákon';
   function undirskriftarMynd(nafn) {
     try {
       const m = (window.AppSettings && AppSettings.path && AppSettings.path('undirskriftir')) || {};
-      const v = m[String(nafn || '')];
+      const key = String(nafn || '');
+      const v = m[key] || m[UNDIRRITUN_ALIAS[key] || ''] || (key === 'Bjarndís Helenudóttir' ? m['Bjarndís'] : '');
       return (typeof v === 'string' && /^data:image\/png;base64,/.test(v)) ? v : '';
     } catch (_) { return ''; }
   }
-  window.UttektUndirritun = { listi: UNDIRRITENDUR, skodunaradili: SKODUNARADILI_SJALFGEFINN, mynd: undirskriftarMynd };
+  function undirritunCanon(nafn) {
+    const s = String(nafn || '').trim();
+    return UNDIRRITUN_ALIAS[s] || s;
+  }
+  window.UttektUndirritun = { listi: UNDIRRITENDUR, skodunaradili: SKODUNARADILI_SJALFGEFINN, mynd: undirskriftarMynd, canon: undirritunCanon };
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
       ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -335,6 +342,7 @@
     // sjálfgefið á fyrsta nafn listans (Agnar Sigurðsson) svo skýrsla fari aldrei
     // út undirritunarlaus.
     if (!undirritun) undirritun = UNDIRRITENDUR[0] || 'Agnar Sigurðsson';
+    undirritun = undirritunCanon(undirritun);
     const undirskrift = undirritun ? undirskriftarMynd(undirritun) : '';
     // 29.10.2026: viðbótarskýrsla (488) bætir einni setningu um nýju tækin aftan við „Annað" — texti sem fyrir er stendur óbreyttur.
     const annadMed = (_vb0 && _vb0.annad && annad.indexOf(_vb0.annad) < 0) ? (annad ? annad + ' ' : '') + _vb0.annad : annad;
@@ -425,7 +433,7 @@
           Fyrir hönd <strong>Slökkvitæki ehf</strong>
         </div>
         <div style="margin-top:6px;width:300px;max-width:100%;border-bottom:1px solid #0f172a;height:72px;display:flex;align-items:flex-end;padding-left:8px;box-sizing:border-box">
-          ${ctx.undirskrift ? `<img src="${ctx.undirskrift}" alt="Undirskrift" style="display:block;height:68px;width:auto;margin-bottom:-2px">` : ''}
+          ${ctx.undirskrift ? `<img src="${ctx.undirskrift}" alt="Undirskrift" style="display:block;height:68px;width:auto;margin-bottom:-12px">` : ''}
         </div>
         <div style="margin-top:4px;font-size:13px;color:#0f172a">${ctx.undirritun ? esc(ctx.undirritun) : '&nbsp;'}</div>
         <div style="margin-top:10px;font-size:12px;color:#334155">
