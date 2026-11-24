@@ -129,8 +129,9 @@
     '#companies-main .p2-nafn{margin:0;font:800 25px/1.1 ' + SERIF + ';letter-spacing:-.005em;overflow-wrap:anywhere}' +
     '#companies-main .p2-ktlina{display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap;font:12.5px ' + MONO + ';color:#d9dee6}' +
     '#companies-main .p2-merki{font:700 11.5px ' + MONO + ';background:#eceff4;color:#11141c;border-radius:5px;padding:1px 7px;text-decoration:none}' +
+    /* 24.11.2026: Úr þjónustu (405 setur data-st="stal") var grænt því aðeins ut/af voru rautt — dark metal red eins og .p2-mono */
     '#companies-main .p2-plata{font:700 11px ' + MONO + ';letter-spacing:.1em;border-radius:5px;padding:1px 7px;color:#fff;background:linear-gradient(145deg,#06331a,#16783f);text-transform:uppercase}' +
-    '#companies-main .p2-plata[data-st="ut"],#companies-main .p2-plata[data-st="af"]{background:linear-gradient(145deg,#5b1010,#a01818)}' +
+    '#companies-main .p2-plata[data-st="ut"],#companies-main .p2-plata[data-st="af"],#companies-main .p2-plata[data-st="stal"]{background:' + R_RAUTT + '}' +
     '#companies-main .p2-skod{display:flex;align-items:center;gap:10px;border-radius:10px;padding:6px 12px;color:#fff;background:' + GRAENN + '}' +
     '#companies-main .p2-skod[data-s="am"]{background:linear-gradient(150deg,#5a3f08,#9a6a14)}' +
     '#companies-main .p2-skod[data-s="rd"]{background:linear-gradient(150deg,#5b1010,#a01818)}' +
