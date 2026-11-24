@@ -23,7 +23,7 @@ export default async (req) => {
   if (!/^[a-z]{1,24}$/.test(key)) return j(400, { error: 'key' });
 
   // 19.09.2026 (Agnar: „finn ekki lengur option að breyta tákni á eldri öppunum, og opnunarlit"): INNBYGGÐU öppin
-  // (fjarmal, verkefni, brunaholf, brunakerfi, bilstjori, boss) áttu kyrrstæð manifest-*.json, svo tákn og litir
+  // (fjarmal, verkefni, brunaholf, brunakerfi, bilstjori, boss, jarvis, verkstjorar, skyrslustod, threedwork) eiga kyrrstæð manifest-*.json, svo tákn og litir
   // sem Agnar valdi í „🎨 Tákn · litur · síður" náðu ALDREI á heimaskjáinn né opnunarskjáinn (Fjármál var stillt á
   // #0000ff í grunninum en manifestið sagði áfram #0e7a4f). Nú er kyrrstæða manifestið GRUNNUR og yfirskriftin
   // (app_profiles_overrides_json) lögð ofan á. id/start_url/scope eru ÓBREYTT — sama uppsetta appið uppfærist.
@@ -66,7 +66,7 @@ export default async (req) => {
   });
 };
 
-const BUILTIN = new Set(['fjarmal', 'verkefni', 'brunaholf', 'brunakerfi', 'bilstjori', 'boss', 'jarvis']);
+const BUILTIN = new Set(['fjarmal', 'verkefni', 'brunaholf', 'brunakerfi', 'bilstjori', 'boss', 'jarvis', 'verkstjorar', 'skyrslustod', 'threedwork']);
 async function builtin(req, key) {
   let base = null;
   try { const r = await fetch(new URL('/manifest-' + key + '.json', req.url)); if (r.ok) base = await r.json(); } catch (_) { base = null; }

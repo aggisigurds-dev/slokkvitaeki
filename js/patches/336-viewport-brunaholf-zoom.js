@@ -49,6 +49,7 @@
   }
 
   function sync() {
+    // Eini ritarinn á meta[name=viewport]. Aðrir papppar kalla sync() og skrifa ekki sjálfir.
     try {
       const vp = vpEl();
       const cur = vp.getAttribute('content') || '';

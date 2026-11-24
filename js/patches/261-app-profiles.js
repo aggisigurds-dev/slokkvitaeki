@@ -122,7 +122,8 @@
     // 19.09.2026: 'thjonustubord' (gamla mobíl-borðið, 306) tekið úr listanum — það teiknar ekkert lengur og var
     // því hak sem gaf auðan skjá. pagesFor() vísar eldri vistunum á 'bord'.
     { k: 'arsskodun',        label: 'Fyrirtæki í þjónustu',  short: 'Þjónusta',   emoji: '🏢' },
-    { k: 'thjonustuverk',    label: 'Þjónustuverk',          short: 'Þj.verk',    emoji: '🛠' },
+    // 24.11.2026 (Öpp-villa 5): 'thjonustuverk' (172) er í djúpdvala — 465 sendir smell á verkbord
+    // utan appsins. pagesFor() fellir eldri vistun. ÞjónustuVerkstæði (lifandi síða) stendur.
     { k: 'thjonustu-verkstaedi', label: 'ÞjónustuVerkstæði', short: 'Verkstæði', emoji: '🔧' },
     // 05.10.2026 (Agnar: „taka hinar tvær útfærslurnar úr umferð, fyrst gamli síminn hafi verið að pikka upp gömlu
     // útgáfuna"): 'brunayfirlit' (Brunakerfi yfirlit, 272) tekið úr listanum — 'brunaskra' (Brunakerfis skoðun, 385)
@@ -230,7 +231,7 @@
     { key: 'fjarmal', emoji: '💰', name: 'Fjármál', color: '#0b0b0d', dark: '#000000',
       manifest: '/manifest-fjarmal.json', home: 'krofu-yfirlit',
       blurb: 'Kröfur, sala, fyrirtæki + Brunahólf reikningagerð',
-      defaults: ['krofu-yfirlit', 'br-fjarmalyfirlit', 'br-krofuyfirlit', 'sala', 'vidskiptavinir', 'thjonustuverk', 'thjonustu-verkstaedi', 'rekstrarfelog', 'br-jarvis', 'br-maeting', 'br-gerdreikninga', 'br-efniskostnadur', 'kostnadur', 'br-vinnubok', 'br-krofur'] },
+      defaults: ['krofu-yfirlit', 'br-fjarmalyfirlit', 'br-krofuyfirlit', 'sala', 'vidskiptavinir', 'thjonustu-verkstaedi', 'rekstrarfelog', 'br-jarvis', 'br-maeting', 'br-gerdreikninga', 'br-efniskostnadur', 'kostnadur', 'br-vinnubok', 'br-krofur'] },
     // Agnar 12.09.2026: „setja þjónustuborð síðuna á skjáinn í símanum" — appið
     // opnast hvort eð er á #bord, svo það heitir nú Þjónustuborð (lykill, id og
     // slóð /app/verkefni/ óbreytt, svo uppsett eintök haldast sama appið).
@@ -248,8 +249,8 @@
       defaults: ['br-dagurinn', 'br-jarvis', 'br-verkkaupar', 'br-skyrslustod', 'br-driveleit', 'br-postleit', 'br-krofur', 'br-krofuyfirlit', 'br-gerdreikninga', 'br-vinnubok', 'br-maeting', 'turbopaint'] },
     // J.A.R.V.I.S. sem sitt eigið app (Agnar 04.11.2026: „gera app útgáfu af þessu og setja í Þjónustuborð öpp"). Ein síða —
     // J.A.R.V.I.S.-HUD-ið (brunaholf jarvis.html?embed=1: Agentanetið, Biðstofa Charlize, Kerfi, Fjármál) á fullum skjá, með
-    // eigið tákn (29-jarvis.svg) og manifest. Aðrar síður má haka við á kortinu. Innbyggt öpp: sami hópur og fjarmal…boss
-    // (316 APP_KEYS, 354 BUILTIN, api/app-manifest, index.html MAN) svo tákn/litir/nafn fylgja „Tákn · litur · síður".
+    // eigið tákn (29-jarvis.svg) og manifest. Aðrar síður má haka við á kortinu. Innbyggðu lyklar lesnir úr APPS
+    // (AppProfiles.isBuiltin) — 316, 354 og /api/app-manifest nota ekki lengur fastan lista sem vantaði nýju öppin.
     { key: 'jarvis', emoji: '🧠', name: 'J.A.R.V.I.S.', color: '#0b0b0d', dark: '#02070b', ikon: '29-jarvis.svg',
       manifest: '/manifest-jarvis.json', home: 'br-jarvis',
       blurb: 'Agentanetið, Biðstofa Charlize, Kerfi og Fjármál á fullum skjá í símanum',
@@ -691,6 +692,9 @@
     arr = arr.map(function (k) { return (k === 'thjonustubord' || k === 'verkbord') ? 'bord' : k; });
     // 05.10.2026: gamla 'brunayfirlit' → aðalútgáfan 'brunaskra' (sjá PAGES). De-dup að neðan fellir tvítekningu.
     arr = arr.map(function (k) { return k === 'brunayfirlit' ? 'brunaskra' : k; });
+    // 24.11.2026 (Öpp-villa 5): Þjónustuverk er í djúpdvala. Vistaðar stillingar og gömul defaults
+    // höfðu flipann; smellur sýndi toast og opnaði Þjónustuborðið utan appsins. Felldur við lestur.
+    arr = arr.filter(function (k) { return k !== 'thjonustuverk'; });
     // 08.10.2026 (Agnar: „setja hana inn í öpp Þjónustuborð“): Samþykkja-síðan (446) fer á Þjónustuborðs-appið við lestur,
     // á eftir borðinu, svo vistaðar stillingar þurfi enga handavinnu. Má taka út í síðuvalinu eins og hverja aðra.
     if (key === 'verkefni' && arr.indexOf('samthykkja') < 0 && !(c && c.__samt446)) { var bi = arr.indexOf('bord'); arr = arr.slice(0, bi + 1).concat(['samthykkja'], arr.slice(bi + 1)); }
@@ -768,7 +772,8 @@
     if (!e.manifest && a.custom) e.manifest = customManifestUrl(e);
     // 19.09.2026: innbyggðu öppin fara líka um fallið (kyrrstætt manifest + yfirskrift Agnars) — SAMA slóð og
     // <head>-veljarinn setur, svo hlekkurinn breytist ekki eftir ræsingu. Tónlist (/spotify/) er utan þessa.
-    if (!a.custom && ['fjarmal', 'verkefni', 'brunaholf', 'brunakerfi', 'bilstjori', 'boss', 'jarvis'].indexOf(a.key) !== -1) e.manifest = customManifestUrl(e);
+    // 24.11.2026 (Öpp-villa 13): allir í APPS án custom, ekki fastur listi sem vantaði skyrslustod/threedwork/verkstjorar.
+    if (!a.custom) e.manifest = customManifestUrl(e);
     return e;
   }
   function versionLine() {
@@ -839,7 +844,7 @@
         }
         insertOnce('__brky1', 'br-krofuyfirlit', 'krofu-yfirlit');
         insertOnce('__brtv1', 'br-maeting', 'vidskiptavinir');
-        insertOnce('__tvk1',  'thjonustuverk', 'arsskodun');
+        // __tvk1 (thjonustuverk) er óvirkt 24.11.2026 — síðan er í djúpdvala og pagesFor() fellir lykilinn.
         insertOnce('__vkp1',  'br-verkkaupar', 'br-dagurinn', 'brunaholf');
         // NB flögg í ANNARRI kynslóð (__rf2/__jv2) — fyrstu flöggin brunnu í
         // gallanum hér að ofan, svo þau eru ónothæf til að greina „ógert".
@@ -1117,19 +1122,11 @@
   }
   function toast(msg) { if (window.Toast && Toast.show) Toast.show(msg); else try { alert(msg); } catch (_) {} }
 
-  // Brunahólf Fjármála-yfirlit viewport: pinch + hard-zoom reflow. 166 used to
-  // write width=390 in appmode (getViewMode → mobile) which froze Android zoom.
+  // Viewport-meta á EINN ritara: 336 (SlokkViewportUnlock.sync). HUB_VP er __HUB_VP
+  // (breitt útlit). Þessi pappi skrifar ekki sjálfur — annars flöktir 980↔412.
   var HUB_VP = window.__HUB_VP || 'width=device-width, initial-scale=1, user-scalable=yes, viewport-fit=cover';  // window.__HUB_VP: breitt útlit á síma, ákveðið í <head> (index.html, 05.10.2026)
   function setHubViewport() {
-    try {
-      var vp = document.querySelector('meta[name="viewport"]');
-      if (!vp) {
-        vp = document.createElement('meta');
-        vp.setAttribute('name', 'viewport');
-        (document.head || document.documentElement).appendChild(vp);
-      }
-      if (vp.getAttribute('content') !== HUB_VP) vp.setAttribute('content', HUB_VP);
-    } catch (_) {}
+    try { if (HUB_VP && window.SlokkViewportUnlock && SlokkViewportUnlock.sync) SlokkViewportUnlock.sync(); } catch (_) {}
   }
 
   // ── styles ───────────────────────────────────────────────────────────────────
@@ -1251,7 +1248,8 @@
       'body.appmode .view,body.appmode .view.active{margin-left:0 !important;width:100vw !important;max-width:100vw !important;left:0 !important}',
       'html[data-bstal-banner="on"][data-thm-preset="brunastal"] body.appmode .view.active:not(#view-field):not(#view-counter):not(#view-workshop){margin-left:0 !important;width:100vw !important;max-width:100vw !important}',
       'body.appmode .main-panel{margin-left:0 !important;margin-right:0 !important;max-width:none !important}',
-      'body.appmode .view.active{padding-top:50px !important;padding-bottom:116px !important}',
+      // 24.11.2026 (Öpp-villa 19): .view padding-top/bottom í appham á 353 (mæld haus- og stikuhæð).
+      // Föst 50/116 px hér börðust við 48/52/86/94 í 314/316/333.
       // App-síðurnar sitja á STEEL-GRÁA bakgrunni skjáborðsþemunnar (Brunastál),
       // ekki flötu hvítu. Áður þvingaðum við hvítt (til að dökka gradientinn frá
       // 229-sala-theme-bridge blæddi ekki inn) — en það drap grámann sem síðurnar
@@ -1262,9 +1260,9 @@
       // (Ósk Agnars 2026-08-22: „settu gráa upprunalega bakgrunninn aftur á þær".)
       // Launcher (#view-opp) heldur sínum eigin dökka gradient.
       'body.appmode .view.active:not(#view-opp){background:linear-gradient(180deg,#aeb4be 0px,#9ba1ad 340px,#9ba1ad 100%) !important}',
-      // Beat patch 230's ON+':not(#id)…{padding-top:160px}` (id-level specificity) when the
-      // Brunastál banner attr is present — otherwise the content sits 160px below my header.
-      'html[data-bstal-banner="on"][data-thm-preset="brunastal"] body.appmode .view.active:not(#view-field):not(#view-counter):not(#view-workshop){padding-top:50px !important;padding-bottom:116px !important}',
+      // Beat patch 230's ON+':not(#id)…{padding-top:160px}` when the Brunastál banner attr is
+      // present. Fyllingin sjálf er mæld í 353 (inline) í sama tifi og skelin (sjá buildShell).
+      'html[data-bstal-banner="on"][data-thm-preset="brunastal"] body.appmode .view.active:not(#view-field):not(#view-counter):not(#view-workshop){padding-top:unset!important}',
       '#_app-hdr{position:fixed;top:0;left:0;right:0;height:50px;z-index:2147481001;display:flex;align-items:center;gap:8px;padding:0 10px 0 12px;color:#fff;border-bottom:1px solid #000;box-shadow:0 2px 10px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.18)}',
       '#_app-hdr .nm{font-family:' + B48_DISP + ';font-size:18px;font-weight:800;flex:1;min-width:0;display:flex;align-items:center;gap:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 1px rgba(0,0,0,.55)}',
       '#_app-hdr button{font-family:' + B48_SANS + ' !important;font-size:12.5px;font-weight:600;height:34px;padding:0 11px;border-radius:7px !important;border:1px solid #000 !important;background:' + B48_MBTN + ' !important;color:#e3e7ee !important;cursor:pointer;flex:none;display:inline-flex !important;align-items:center;justify-content:center;gap:6px;text-shadow:none !important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 1px 2px rgba(0,0,0,.5) !important}',
@@ -1285,7 +1283,6 @@
       '#_app-nav button .e{font-size:28px;line-height:1;display:inline-flex}',
       '#_app-nav button .e svg{width:1em;height:1em;stroke-width:1.8}',
       'body.appmode-nonav #_app-nav{display:none !important}',
-      'body.appmode.appmode-nonav .view.active{padding-bottom:24px !important}',
       'body.appmode-nonav #_app-frame{bottom:0 !important}',
       '#_app-nav button.on{color:#fff !important;background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.04)) !important;box-shadow:inset 0 2px 0 #c22f26 !important}',
       '#_app-nav button.on .e{color:#ff7a70}',
@@ -1665,6 +1662,11 @@
   // ── app-mode shell (bottom nav + header) ─────────────────────────────────────
   var _curPage = null;
   var _bootAt = Date.now();
+  // 24.11.2026 (Öpp-villa 6): lásinn byrjar EINU SINNI. buildShell (vaktari, AppSettings.onChange)
+  // má ekki endurstilla hann. Fyrsta snerting sleppir honum, sama mörk og 218 userTouched.
+  ['mousedown', 'keydown', 'touchstart', 'pointerdown'].forEach(function (evt) {
+    window.addEventListener(evt, function () { _bootAt = Date.now() - 13000; }, { capture: true, passive: true, once: true });
+  });
   // Síðurnar í botnstikunni, í þeirri röð sem skelin sýnir þær.
   function skelSidur(a) {
     var pages = pagesFor(a.key); if (!pages.length) pages = a.defaults.slice();
@@ -1700,7 +1702,6 @@
     });
   }
   function buildShell() {
-    _bootAt = Date.now();
     var a = effectiveApp(ACTIVE); if (!a) return;
     styles();
     setHubViewport();
@@ -1766,6 +1767,8 @@
 
     setManifest(a.manifest);   // install captures THIS app
     syncFrameBottom();
+    // 353 mælir .view padding í sama tifi og skelin, áður en málað er (Öpp-villa 19).
+    try { if (window.AppKrom && AppKrom.measure) AppKrom.measure(); } catch (_) {}
     // Endurbygging (vaktarinn) á EKKI að hoppa til baka á fyrstu síðu — nema
     // núverandi síða hafi verið tekin úr appinu (þá förum við á home/fyrstu).
     goPage((_curPage && pages.indexOf(_curPage) !== -1) ? _curPage : pages[0]);
@@ -1959,6 +1962,25 @@
     });
   }
 
+  // Iframe-síður breyttu ekki hash, svo 277 (sem ýtir bakk-færslu þegar hash breytist
+  // eftir snertingu) sá þær ekki. #f-<lykill> er ekki view-slug — 218 hunar óþekkt.
+  var _historyQuiet = false;
+  function frameHash(k) { return '#f-' + k; }
+  function frameKeyFromLocation() {
+    var h = location.hash || '';
+    return h.indexOf('#f-') === 0 ? h.slice(3) : '';
+  }
+  function rememberFrame(k) {
+    if (_historyQuiet || !ACTIVE) return;
+    var want = frameHash(k);
+    if ((location.hash || '') === want) return;
+    // Djúptengill (#company/123, #device=) helst þar til notandi snertir — sama og 218.
+    var touched = false;
+    try { touched = !!(window.UrlRouting && UrlRouting.userTouched && UrlRouting.userTouched()); } catch (_) {}
+    var h = (location.hash || '').replace(/^#/, '');
+    if (!touched && h && h.indexOf('f-') !== 0 && (h.indexOf('/') !== -1 || h.indexOf('=') !== -1)) return;
+    try { history.replaceState(history.state, '', want); } catch (_) {}
+  }
   function goPage(k) {
     _curPage = k;
     var p = pageByKey(k);
@@ -1967,7 +1989,7 @@
       hideFrame();
       if (window.MinarSidur && window.MinarSidur.openPage) window.MinarSidur.openPage(p.minarId);
       else navTo('minar-sidur');
-    } else if (p && p.url) showFrame(p);      // external (Brunahólf) page → iframe
+    } else if (p && p.url) { showFrame(p); rememberFrame(k); }      // external (Brunahólf) page → iframe
     else { hideFrame(); navTo(k); }    // native slökkvitæki view
     var nav = document.getElementById('_app-nav');
     if (nav) nav.querySelectorAll('._app-tab').forEach(function (b) { b.classList.toggle('on', b.dataset.k === k); });
@@ -1998,13 +2020,49 @@
   function showFrame(p) {
     var f = frameEl(), ifr = f.querySelector('iframe');
     var src = withLang(p.url);
-    if (ifr.getAttribute('data-src') !== src) { ifr.src = src; ifr.setAttribute('data-src', src); }
+    if (ifr.getAttribute('data-src') !== src) {
+      ifr.setAttribute('data-src', src);
+      // location.replace bætir ekki færslu í sögu RAMMANS. ifr.src gerði það, og
+      // fyrsta bakk fór þá inn í rammanum í stað app-síðunnar (hash #f-…).
+      var navigated = false;
+      try {
+        if (ifr.contentWindow && ifr.contentWindow.location) {
+          ifr.contentWindow.location.replace(src);
+          navigated = true;
+        }
+      } catch (_) {}
+      if (!navigated) ifr.src = src;
+    }
     // Snertisíður (touch: true) fá krómzoomið á rammann — 353 les klasann. Sjá PAGES.
     f.classList.toggle('_app-frame-touch', !!p.touch);
     f.style.display = 'block';
     try { syncFrameBottom(); } catch (_) {}
   }
   function hideFrame() { var f = document.getElementById('_app-frame'); if (f) f.style.display = 'none'; }
+  // Bakk/hash: #f-<lykill> opnar iframe-síðuna aftur. Annað hash = innbyggð síða
+  // (218 kallar switchView). Ramminn er falinn hér svo hann liggi ekki yfir.
+  // switchView-greinin sjálf (fókuslás) er ósnert.
+  function restoreFromHash() {
+    if (!ACTIVE || isStandalone(ACTIVE)) return;
+    var fk = frameKeyFromLocation();
+    if (fk) {
+      var p = pageByKey(fk);
+      if (!(p && p.url)) return;
+      if (leyfdarSidur(ACTIVE).indexOf(fk) === -1) return;
+      if (_curPage === fk) {
+        var fr = document.getElementById('_app-frame');
+        if (!fr || fr.style.display === 'none') showFrame(p);
+        return;
+      }
+      _historyQuiet = true;
+      try { goPage(fk); } finally { _historyQuiet = false; }
+      return;
+    }
+    var f = document.getElementById('_app-frame');
+    if (f && f.style.display !== 'none') hideFrame();
+  }
+  window.addEventListener('hashchange', restoreFromHash);
+  window.addEventListener('popstate', function () { setTimeout(restoreFromHash, 0); });
 
   // ── switchView hook: launcher opens here; app mode is a focus-lock ───────────
   function patchSwitchView() {
@@ -2104,10 +2162,15 @@
           try {
             var want = new URLSearchParams(location.search).get('page');
             if (want && pageByKey(want) && leyfdarSidur(ACTIVE).indexOf(want) !== -1) _curPage = want;
+            // #f-<lykill> er iframe-síða úr bakk-sögunni. Hún ræður yfir sjálfgefinni heimasíðu.
+            if (!_curPage) {
+              var fk0 = frameKeyFromLocation();
+              if (fk0 && pageByKey(fk0) && pageByKey(fk0).url && leyfdarSidur(ACTIVE).indexOf(fk0) !== -1) _curPage = fk0;
+            }
             // Stjórnandi opnar á sinni fremstu síðu (Tilbúin verk). Á meðan beðið var eftir rólunni gat ræsilandarinn
             // smellt á heimasíðuna (borðið) og sett _curPage — mælt 17.11: flipinn var fremstur en borðið opið.
             var _aR = effectiveApp(ACTIVE);
-            if (!(want && pageByKey(want)) && _aR && _aR.stjornandaFremst && erStjornandi() && pageByKey(_aR.stjornandaFremst)) _curPage = _aR.stjornandaFremst;
+            if (!_curPage && _aR && _aR.stjornandaFremst && erStjornandi() && pageByKey(_aR.stjornandaFremst)) _curPage = _aR.stjornandaFremst;
           } catch (_) {}
           buildShell();
           startShellGuard(); return;
@@ -2126,6 +2189,9 @@
     pagesFor: pagesFor,
     saveAsApp: saveAsApp,
     pageByKey: pageByKey,
-    allPages: allPages
+    allPages: allPages,
+    isApp: function (key) { return !!APP_BY_KEY[key]; },
+    isBuiltin: function (key) { var a = APP_BY_KEY[key]; return !!(a && !a.custom); },
+    builtinKeys: function () { return APPS.filter(function (a) { return a && !a.custom; }).map(function (a) { return a.key; }); }
   };
 })();

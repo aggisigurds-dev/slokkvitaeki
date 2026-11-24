@@ -35,9 +35,6 @@
   // aftast, því þau gera nákvæmlega það sama.
   const P = ':not(#_p349a):not(#_p349b):not(#_p349c)';
   const B = 'body.appmode[data-app="boss"] ';
-  // Sama :not()-keðja og 230/315 nota — án hennar vinnur brunastál-reglan.
-  const NOT = ':not(#view-field):not(#view-counter):not(#view-workshop)';
-  const BSTAL = 'html[data-bstal-banner="on"][data-thm-preset="brunastal"] ';
 
   // 88px (ein stika) → 140px (tvöföld: 104px hnappur + 2×8px padding + borði).
   const PAD = '{padding-bottom:calc(140px + env(safe-area-inset-bottom,0px))!important}';
@@ -50,12 +47,8 @@
       + 'flex:1 0 96px!important;min-width:96px!important}',
     B + '#_app-nav button .e' + P + '{font-size:30px!important;line-height:1!important}',
 
-    // ── Botnfyllingin VERÐUR að fylgja, annars felur stikan síðustu raðirnar ──
-    B + '.view.active' + P + PAD,
-    B + '.view.active' + NOT + P + PAD,
-    BSTAL + B + '.view.active' + NOT + P + PAD,
-    // 330 skrifar líka sína eigin útgáfu á Ársskoðun — mætt hér með sama vopni.
-    B + '#view-arsskodun.active' + P + PAD,
+    // Innihaldsrammi Ársskoðunar (ekki .view sjálft). 353 fyllir .view; þessi 140 px
+    // er auka bil innan rammans svo tvöfalda Boss-stikan hylji ekki síðustu röð.
     B + '[style*="max-width:1720"]' + P + PAD,
   ].join('\n');
 

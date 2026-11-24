@@ -225,17 +225,8 @@
   let nu = { k: 'heim', s: 1, uppruni: 'gamalt', el: null, gluggi: false, virkt: 1 };
   let sidustaerd = 1;     // virkt zoom síðunnar (get())
 
-  function vpEl() {
-    let vp = document.querySelector('meta[name="viewport"]');
-    if (!vp) {
-      vp = document.createElement('meta');
-      vp.setAttribute('name', 'viewport');
-      (document.head || document.documentElement).appendChild(vp);
-    }
-    return vp;
-  }
   function syncViewport() {
-    try { const vp = vpEl(); if (vp.getAttribute('content') !== HUB_VP) vp.setAttribute('content', HUB_VP); } catch (_) {}
+    try { if (window.SlokkViewportUnlock && SlokkViewportUnlock.sync) SlokkViewportUnlock.sync(); } catch (_) {}
   }
   function clearCssZoom() {
     const nodes = [document.documentElement];
@@ -374,10 +365,7 @@
       'html.app-page-zoomed body.appmode .view.active:not(#view-field):not(#view-counter):not(#view-workshop),'
         + 'html.app-page-zoomed[data-viewmode="mobile"] body .view.active:not(#view-field):not(#view-counter):not(#view-workshop){'
         + 'height:calc(100vh / var(--app-page-zoom, 1))!important}',
-      'html.app-page-zoomed body.appmode .view.active{'
-        + 'padding-top:calc(50px / var(--app-page-zoom))!important;'
-        + 'padding-bottom:calc((140px + env(safe-area-inset-bottom,0px)) / var(--app-page-zoom))!important}',
-      'html.app-page-zoomed body.appmode.appmode-nonav .view.active{padding-bottom:calc(24px / var(--app-page-zoom))!important}',
+      // padding-top/bottom á .view: 353 deilir mældri hæð með síðuzoom (Öpp-villa 19).
       /* ── GLUGGAR: eigið zoom + rammi undir app-hausnum / yfir botnstikunni.
          .modal ER bakgrunnurinn (inset:0); border-box svo innihaldið lendi milli króms. ── */
       'body.appmode ._sz-m._sz-m,html[data-viewmode="mobile"] ._sz-m._sz-m{zoom:var(--app-modal-zoom,1)!important}',
@@ -731,15 +719,7 @@
   vefja();
   [200, 800, 2000].forEach(ms => setTimeout(vefja, ms));
 
-  try {
-    const mo = new MutationObserver(() => syncViewport());
-    const startMo = () => {
-      const vp = document.querySelector('meta[name="viewport"]');
-      if (vp) mo.observe(vp, { attributes: true, attributeFilter: ['content'] });
-    };
-    if (document.head) startMo();
-    else document.addEventListener('DOMContentLoaded', startMo, { once: true });
-  } catch (_) {}
+  // Viewport-vaktin er í 336. Önnur hér skrifaði til baka um leið og 336.
 
   function boot() { mountCss(); apply(); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);

@@ -22,11 +22,7 @@
     'body.appmode[data-app="fjarmal"] #_app-nav button,body.appmode[data-app="boss"] #_app-nav button' +
       '{min-height:52px!important;padding:4px 3px!important;font-size:11px!important;gap:2px!important;border-radius:10px}',
     'body.appmode[data-app="fjarmal"] #_app-nav button .e,body.appmode[data-app="boss"] #_app-nav button .e{font-size:18px}',
-    'body.appmode[data-app="fjarmal"] .view.active,body.appmode[data-app="boss"] .view.active' +
-      '{padding-bottom:calc(88px + env(safe-area-inset-bottom,0px))!important}',
-    'html[data-bstal-banner="on"][data-thm-preset="brunastal"] body.appmode[data-app="fjarmal"] .view.active:not(#view-field):not(#view-counter):not(#view-workshop),' +
-    'html[data-bstal-banner="on"][data-thm-preset="brunastal"] body.appmode[data-app="boss"] .view.active:not(#view-field):not(#view-counter):not(#view-workshop)' +
-      '{padding-bottom:calc(88px + env(safe-area-inset-bottom,0px))!important}',
+    // .view padding-bottom: 353 mælir stikuna (Öpp-villa 19). 88 px hér barðist við mælinguna.
 
     // 230 Brunastál: `.view.active:not(#view-field):not(#view-counter):not(#view-workshop)>.main-panel{padding:8px 14px}`
     // The three :not(#id) bump specificity past a plain `#ars-main` rule — copy the
