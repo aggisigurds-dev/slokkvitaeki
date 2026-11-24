@@ -31,7 +31,14 @@
   const ID = '_op-styri';
   const STYLE_ID = 'opp-styribord-354';
   const LS_INST = 'slokk_installed_apps_v1';
-  const BUILTIN = ['fjarmal', 'verkefni', 'brunaholf', 'brunakerfi', 'bilstjori', 'boss', 'jarvis'];
+  // Innbyggt = APPS án custom (261). Fastur listi vantaði skyrslustod, threedwork, verkstjorar
+  // og meðhöndlaði þau sem notenda-búin (rangt manifest í „Athuga öpp").
+  function isBuiltin(key) {
+    try {
+      if (window.AppProfiles && typeof AppProfiles.isBuiltin === 'function') return !!AppProfiles.isBuiltin(key);
+    } catch (_) {}
+    return !(key && key.charAt(0) === 'x');
+  }
   const KROM = [['auto', 'Sjálfvirkt'], ['1', '1,0'], ['1.5', '1,5'], ['2', '2,0'], ['2.5', '2,5'], ['3', '3,0']];
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const state = { checks: {}, related: null, relatedErr: null, busy: false, msg: '' };
@@ -95,7 +102,7 @@
       const b = card.querySelector('._op-open[data-app]'); if (!b) return;
       const key = b.getAttribute('data-app');
       const nm = card.querySelector('.op-nm');
-      const custom = BUILTIN.indexOf(key) < 0;
+      const custom = !isBuiltin(key);
       out.push({
         key, name: nm ? nm.textContent.trim() : key, custom,
         manifest: custom ? ('/api/app-manifest?key=' + encodeURIComponent(key)) : ('/manifest-' + key + '.json'),

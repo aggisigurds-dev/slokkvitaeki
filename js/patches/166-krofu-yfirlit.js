@@ -407,16 +407,9 @@
     // slokk-phone-dev + data-viewmode, not a numeric viewport width.
     void mode;
     if (!isPhoneDevice()) return;
-    try {
-      let vp = document.querySelector('meta[name="viewport"]');
-      if (!vp) {
-        vp = document.createElement('meta');
-        vp.setAttribute('name', 'viewport');
-        (document.head || document.documentElement).appendChild(vp);
-      }
-      const open = window.__HUB_VP || 'width=device-width, initial-scale=1, user-scalable=yes, viewport-fit=cover';  // window.__HUB_VP: breitt útlit á síma, ákveðið í <head> (index.html, 05.10.2026)
-      if (vp.getAttribute('content') !== open) vp.setAttribute('content', open);
-    } catch (_) {}
+    // 336 er eini ritarinn. open er __HUB_VP (breitt útlit) — skrifað ekki hér.
+    const open = window.__HUB_VP || 'width=device-width, initial-scale=1, user-scalable=yes, viewport-fit=cover';  // window.__HUB_VP: breitt útlit á síma, ákveðið í <head> (index.html, 05.10.2026)
+    try { if (open && window.SlokkViewportUnlock && SlokkViewportUnlock.sync) SlokkViewportUnlock.sync(); } catch (_) {}
   }
   // save=true AÐEINS þegar notandinn velur sjálfur (rofinn / setViewMode) — sjá b5bb83da í loadViewMode.
   function applyViewMode(mode, rerender, save) {

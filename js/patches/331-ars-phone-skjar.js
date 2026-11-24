@@ -99,24 +99,11 @@
     return mode === 'desktop' || mode === 'table';
   }
 
-  /* ── Viewport: pinch-zoom í Skjár/Tafla, fyrra gildi í Sími ─────────────── */
+  /* ── Viewport: 336 er eini ritarinn. Síðustærð er CSS, ekki meta. ───────── */
   let _vpSaved = null;
-  function vpEl() {
-    let vp = document.querySelector('meta[name="viewport"]');
-    if (!vp) {
-      vp = document.createElement('meta');
-      vp.setAttribute('name', 'viewport');
-      (document.head || document.documentElement).appendChild(vp);
-    }
-    return vp;
-  }
   function enableZoom() {
-    const vp = vpEl();
-    const cur = vp.getAttribute('content') || '';
-    if (cur !== ZOOM) {
-      if (_vpSaved == null) _vpSaved = cur;
-      vp.setAttribute('content', ZOOM);
-    }
+    // 336 er eini ritarinn. ZOOM og HUB_VP eru bæði __HUB_VP.
+    try { if (ZOOM === HUB_VP && window.SlokkViewportUnlock && SlokkViewportUnlock.sync) SlokkViewportUnlock.sync(); } catch (_) {}
   }
   function hubPageZoomed() {
     try {
@@ -129,16 +116,8 @@
   function restoreZoom() {
     /* Hard síðuzoom (333) á Android: láta pinch-viewport vera áfram. */
     if (hubPageZoomed()) { enableZoom(); return; }
-    const vp = vpEl();
-    const open = HUB_VP;
-    if (_vpSaved != null && !/user-scalable\s*=\s*no|maximum-scale\s*=\s*1(?!\d)|width\s*=\s*\d+/i.test(_vpSaved)) {
-      vp.setAttribute('content', _vpSaved);
-      _vpSaved = null;
-      return;
-    }
     _vpSaved = null;
-    /* Sími á raunsíma: sama opna viewport og Brunahólf — EKKI width=390. */
-    vp.setAttribute('content', open);
+    enableZoom();
   }
   function syncViewport(mode) {
     if (hubPageZoomed()) { enableZoom(); if (!arsActive()) resetCssZoom(); return; }

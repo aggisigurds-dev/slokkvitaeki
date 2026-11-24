@@ -74,16 +74,7 @@
       + 'overflow-wrap:break-word!important;word-break:normal!important;'
       + 'hyphens:manual}');
 
-    /* ── 3. Botnvalmynd má ekki hylja síðustu raðir ──────────────────────── */
-    const navPad = '{padding-bottom:calc(88px + env(safe-area-inset-bottom,0px))!important}';
-    out.push(A + '.view.active' + P + navPad);
-    out.push(
-      'html[data-bstal-banner="on"][data-thm-preset="brunastal"] body.appmode '
-      + '#view-arsskodun.active:not(#view-field):not(#view-counter):not(#view-workshop)'
-      + navPad
-    );
-    out.push(A + '[data-app="fjarmal"] #view-arsskodun.active' + P + navPad);
-    out.push(A + '[data-app="boss"] #view-arsskodun.active' + P + navPad);
+    /* ── 3. Botnfylling .view er mæld í 353 (Öpp-villa 19). Ekki festa 88 px hér. ── */
 
     /* ── 4. Bílstjóraspjöld: full breidd ─────────────────────────────────── */
     both(' ._bil-wrap' + P, '{'

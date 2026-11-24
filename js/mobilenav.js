@@ -151,10 +151,10 @@ function applyTopbarStyles(){
     // (Afgreiðsla overlap on 390px). Inline !important; 314 re-asserts it.
     // __peBannerPad: Stílstjórinn (323) getur mjókkað/falið bannerinn — þá
     // fylgir þessi tala með. Ósett = 86px eins og áður.
-    // 17.11.2026 (Öpp-villa 15): í appham er hausinn annar en Sími-borðinn — sama tala og 314 pinPad (mæld af 353),
-    // svo þessi stimplun og 314 skrifa aldrei hvor sína töluna (86 px ↔ mæld hæð).
-    var appHam = document.body && document.body.classList.contains('appmode');
-    v.style.setProperty('padding-top', appHam ? (window.__appHdrPad || '48px') : (window.__peBannerPad || '86px'),'important');
+    // Appham: 353 mælir padding-top. Stimplun hér (48 eða 86 px) sló til baka við hverja endurstillingu stikunnar.
+    if (!(document.body && document.body.classList.contains('appmode'))) {
+      v.style.setProperty('padding-top', (window.__peBannerPad || '86px'),'important');
+    }
   });
   _topbarKey = wantKey;
 }
