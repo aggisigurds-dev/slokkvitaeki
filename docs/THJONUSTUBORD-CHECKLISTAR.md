@@ -2,13 +2,13 @@
 
 Allt í `js/patches/368-thjonustubord5.js` (einingakerfið), nema Hunter (68 + 493).
 
-## Checklistar (eining 23 og 26)
-- Gögn: `skipulagsbord.by_staff.<nafn>.checklisti` og `.checklisti2` = `[{ id, t, done, star }]` (fylki skrifað heilt).
-- Titill hvors lista: `<svæði>_titill` (strengur, breytanlegur í haus). Samanbrot: `chk_opid.<einingarlykill>` = bool. Bæði á þjóni.
+## Checklistar (eining 23, 26 og 35)
+- Gögn: `skipulagsbord.by_staff.<nafn>.checklisti`, `.checklisti2` og `.checklisti3` = `[{ id, t, done, star }]` (fylki skrifað heilt).
+- Titill hvers lista: `<svæði>_titill` (strengur, breytanlegur í haus). Samanbrot: `chk_opid.<einingarlykill>` = bool. Bæði á þjóni.
 - Kóðinn er EINN: `chkLesa(n, f)`, `chkBreyta(n, f, fn)`, `chkVista`, `skrifaChk`, `chkDragNidur` — `f` = svæði = lykill einingarinnar.
 - `SERVER_OPID` (= checklistar + `stjornumerkt`) segir hvaða einingar geyma samanbrot á þjóni í stað `S.open`.
 - Titilreiturinn (`data-chktitill`) er í render-biðlistanum (línan með `ae.dataset.chk`) — annars rifnar hann í miðri ritun.
-- **Hamur Kröfur** (24.11.2026): eining 23 er í `MODES.krofur.first` — flipi „23 Checklisti" við hlið Forgangslista o.fl.; sami listi og á mitt vinnuborði.
+- **Hamur Kröfur** (24.11.2026): eining 35 (`checklisti3`) er í `MODES.krofur.first` — eigin listi, ekki sami og Checklisti 1 á mitt vinnuborði.
 
 ## Breidd og skiptilínur
 - Breidd einingar: þrep 1–5 (⅓ ⅖ ½ ⅗ 1/1) EÐA spönn 10–60 dálkar (`erSponn`). Vistað í `mitt.breidd` (Mitt vinnuborð) eða `hamir[].breidd` (sérsniðinn hamur).
@@ -21,7 +21,7 @@ Allt í `js/patches/368-thjonustubord5.js` (einingakerfið), nema Hunter (68 + 4
 - `star-opna` opnar í hamnum sem geymir eininguna (`stjHamFyrir`).
 
 ## Spjald → checklisti
-- `sk-chk` (hnappur á spjaldi) → val 1/2 → `sk-chk-fara` býr til atriði `nafn — texti` (líka óvistuð drög). Spjaldið helst nema Agnar svari „Eyða spjaldinu líka?“ játandi (Confirm.show), þá með afturköllun.
+- `sk-chk` (hnappur á spjaldi) → val 1/2/3 → `sk-chk-fara` býr til atriði `nafn — texti` (líka óvistuð drög). Spjaldið helst nema Agnar svari „Eyða spjaldinu líka?“ játandi (Confirm.show), þá með afturköllun.
 
 ## Hunter
 - `68-sidebar-reorder.js` festir Hunter á order 0 (ofan við Vefverslun, order 1) óháð vistaðri röð; takki í röðinni á Þjónustuborðinu (493, aðeins Agnar).
