@@ -2090,6 +2090,12 @@
           if (Date.now() - _bootAt < 12000) { setTimeout(function () { if (_curPage) goPage(_curPage); }, 0); }
           else {
             _curPage = view;
+            // 24.11.2026 (Öpp-villa 1): bakk, hash og innri tenglar kalla switchView
+            // beint, ekki goPage. Án hideFrame() situr #_app-frame yfir innbyggðri
+            // síðu og flipinn bendir á aðra síðu en sést. Iframe-síða (url) er
+            // ósnert — hana opnar goPage/showFrame.
+            var _sid = pageByKey(view);
+            if (!_sid || !_sid.url) hideFrame();
             var nv = document.getElementById('_app-nav');
             if (nv) nv.querySelectorAll('._app-tab').forEach(function (b) { b.classList.toggle('on', b.dataset.k === view); });
           }

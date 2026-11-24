@@ -13,9 +13,18 @@
     if (!coId || !window.App || !window.Companies) return;
     if (window.Companies.currentId === coId && typeof Companies._detailOpen === 'function' && Companies._detailOpen(coId)) {
       var already = document.getElementById('view-companies');
-      if (already && already.classList.contains('active')) return;
+      if (already && already.classList.contains('active')) {
+        // Öpp-villa 1: prófíllinn er þegar opinn en iframe-ramminn getur legið yfir.
+        var fr0 = document.getElementById('_app-frame');
+        if (fr0) fr0.style.display = 'none';
+        return;
+      }
     }
     window.App.view = 'companies';
+    // Öpp-villa 4: þessi leið fer framhjá switchView svo fókuslásinn smellir ekki
+    // til baka. Ramminn fylgir ekki með nema hann sé falinn hér.
+    var fr = document.getElementById('_app-frame');
+    if (fr) fr.style.display = 'none';
     // 01.10.2026: 153/272 setja inline display:block. Aðeins .active fjarlægt
     // skildi Ársskoðun sýnilega undir prófílnum — hopp + tví-skrun.
     document.querySelectorAll('.view,[id^="view-"]').forEach(function(el){

@@ -146,7 +146,10 @@
     // 10.09.2026: Companies.openDetail skiptir ekki um sýn — Tengiliða-síðan stóð áfram opin
     // FYRIR AFTAN prófílinn (tvær sýnir sýnilegar, mælt á lifandi vef). Sama mynstur og 114/147.
     host.querySelectorAll('[data-open]').forEach((el) => el.addEventListener('click', () => {
-      try { if (window.App && App.switchView) App.switchView('companies'); Companies.openDetail(+el.dataset.open); } catch (_) {}
+      try {
+        if (typeof window._openCompanySafe === 'function' && window.App && window.Companies) window._openCompanySafe(+el.dataset.open);
+        else if (window.App && App.switchView) { App.switchView('companies'); Companies.openDetail(+el.dataset.open); }
+      } catch (_) {}
     }));
     host.querySelectorAll('[data-act]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); onAct(b.dataset.act, +b.dataset.id); }));
     vaktaSamhengi(host);
