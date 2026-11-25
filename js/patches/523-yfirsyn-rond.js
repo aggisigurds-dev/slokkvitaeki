@@ -287,6 +287,8 @@
         const h = m.hlutar || {};
         wBh = '<div class="yr-well" title="' + esc('Brunahólf — ' + nm + ' til dags, án vsk, áætlun: unnið ' + isk(m.unnid) + ' kr (tímar ' + isk(h.tima) + ' · Landspítalagöt ' + isk(h.landspitali) + ' · Heklureitsgöt ' + isk(h.heklureitur) + ') · reikningsfært ' + (fin(m.reikningsfaert) ? isk(m.reikningsfaert) + ' kr' : 'ómælt') + ' · ógefið út = unnið − reikningsfært') + '">' +
           '<span class="yr-v">' + stor(m.unnid).t + '<span class="yr-e">' + stor(m.unnid).e + ' Brunahólf</span></span>' +
+          '<span class="yr-n">tímar <b>' + smatt(h.tima) + '</b> · Landspítali <b>' + smatt(h.landspitali) + '</b></span>' +
+          '<span class="yr-n">Heklureitur <b>' + smatt(h.heklureitur) + '</b></span>' +
           '<span class="yr-n">reikningsfært ' + rf + '</span><span class="yr-n">ógefið út ' + og + '</span></div>';
       } else wBh = om('Brunahólf', (m && m.omaelt) || (bh && bh.omaelt) || 'samtala mánaðarins vantar');
       wells = wSl + wBh;
@@ -413,7 +415,9 @@
     let midja;
     if (!D) midja = '<div class="yr-tomt">' + (S.villa ? led('or') + esc(S.villa) : 'Sæki tölur beggja félaga…') + '</div>';
     else {
-      midja ='<div class="yr-grid">' + arsHtml() + virdiHtml(rek) + greittHtml(D.greitt, rek) + leidinniHtml(D) + samtalsHtml(rek) + osottHtml(D, rek) + '</div>' + footHtml(D, rek);
+      // 25.11.2026: aðaltölurnar sem Agnar horfir á (á leiðinni inn, unnið) fremst; virði og greitt inn
+      // koma strax á eftir. Á síma er þetta 2 dálkar svo fleiri tölur sjást án hliðarskruns.
+      midja ='<div class="yr-grid">' + leidinniHtml(D) + samtalsHtml(rek) + virdiHtml(rek) + greittHtml(D.greitt, rek) + arsHtml() + osottHtml(D, rek) + '</div>' + footHtml(D, rek);
     }
     return '<div class="yr-fr">' + DEFS + '<section class="yr-mb" aria-label="Yfirsýn">' + topHtml(n, ctx, rek, D && D.timavera) +
       (S.villa && D ? '<div class="yr-villa">' + led('or') + esc(S.villa) + ' — sýni tölur frá kl. ' + esc(klukka(D.maelt_at)) + '</div>' : '') + midja + '</section></div>';
@@ -545,8 +549,8 @@
       '.yr-ach b,.yr-pi b{font-weight:600;color:#fff}.yr-pi u{text-decoration:none;font-size:11px;font-weight:600;color:#a9b8d0}',
       // mjórri gluggi: þrír dálkar; sími: flísarnar strjúkast til hliðar, flögurnar fara
       '@container yr (max-width: 1150px){.yr-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.yr-chips{display:none}}',
-      '@container yr (max-width: 760px){.yr-grid{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}.yr-k{flex:none;width:270px;scroll-snap-align:start}' +
-        '.yr-foot{grid-template-columns:minmax(0,1fr)}.yr-fl+.yr-fl{display:none}.yr-top,.yr-line{flex-wrap:wrap;gap:10px}.yr-act{margin-left:0}.yr-mark{font-size:16px}}',
+      '@container yr (max-width: 760px){.yr-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.yr-k{min-width:0}' +
+        '.yr-foot{grid-template-columns:minmax(0,1fr)}.yr-fl+.yr-fl{display:none}.yr-top,.yr-line{flex-wrap:wrap;gap:10px}.yr-act{margin-left:0}.yr-mark{font-size:16px}.yr-kn{font-size:26px}}',
     ].join('\n');
   }
 

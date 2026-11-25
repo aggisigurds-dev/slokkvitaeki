@@ -184,12 +184,12 @@ test('Yfirsýnarröndin (523): „Unnið í mánuðinum“ hjá hvoru félagi ke
   const fs = require('node:fs'), path = require('node:path');
   const src = fs.readFileSync(path.join(__dirname, '..', 'js', 'patches', '523-yfirsyn-rond.js'), 'utf8');
   assert.doesNotMatch(src, /vikanHtml|unnidFlis|'tekjur vikunnar'/, 'gamla VIKAN-flísin er farin');
-  assert.match(src, /fetch\('\/api\/rekstur-yfirlit'/); assert.match(src, /samtalsHtml\(rek\) \+ osottHtml/); assert.match(src, /ladaRekstur\(force\)/);
+  assert.match(src, /fetch\('\/api\/rekstur-yfirlit'/); assert.match(src, /leidinniHtml\(D\) \+ samtalsHtml\(rek\) \+ virdiHtml\(rek\) \+ greittHtml/); assert.match(src, /ladaRekstur\(force\)/);
   const Y = rondIVm(false); Y.S.r = REKSTUR();
   const h = Y.html('Agnar', {});
   assert.match(h, /Unnið í nóvember<em>án vsk<\/em>/);
   assert.match(h, /2,10<span class="yr-e">m Slökkvitæki<\/span>/); assert.match(h, /úttektir <b>1,20 m<\/b> · verkstæði <b>0,50 m<\/b>/); assert.match(h, /verslun <b>0,40 m<\/b> · 1\.234 tæki/);
-  assert.match(h, /7,00<span class="yr-e">m Brunahólf<\/span>/); assert.match(h, /reikningsfært <b>3,00 m<\/b>/); assert.match(h, /ógefið út <b>4,00 m<\/b>/);
+  assert.match(h, /7,00<span class="yr-e">m Brunahólf<\/span>/); assert.match(h, /tímar <b>4,00 m<\/b> · Landspítali <b>2,80 m<\/b>/); assert.match(h, /Heklureitur <b>0,20 m<\/b>/); assert.match(h, /reikningsfært <b>3,00 m<\/b>/); assert.match(h, /ógefið út <b>4,00 m<\/b>/);
   assert.match(h, /href="https:\/\/brunaholf\.netlify\.app\/rekstur#tekjulidir"/); assert.match(h, /href="https:\/\/brunaholf\.netlify\.app\/#fjarmalyfirlit"[^>]*>Fjármála-yfirlit →</);
   assert.match(h, /göt: Ajour/, 'ferskleikaflögur haldast'); assert.match(h, /Tímavera<s>\|<\/s>/);
   assert.match(h, /Þessi vika“ og „Síðasta vika/, 'ⓘ vísar vikutölunum á Rekstrarskýrsluna'); assert.match(h, /félögin eru aldrei lögð saman/);
