@@ -18,6 +18,10 @@
 //     mælt ~13 % sölu með verkbeiðni) helst salan öll á söludegi og er talin „óstemmd“.
 //   • FJÖLDI TÆKJA: skoðanir: línur sölunnar „Yfirferð · …“, „Hleðsla · …“, „Nýtt · …“ (qty) í skoðunarmánuðinum; verkstæði:
 //     verkliðir verkbeiðninnar (texti eins og „CO₂ 100 gr. × 26 (samtals)“ → 26 hleðslur) í mánuði klart_at. Samtals úr báðum.
+//   • NÝ SLÖKKVITÆKI ÚR BÚÐ (Agnar 25.11.2026: „fjöldi seldra tækja … miðast bæði við sölu úr búð og úttektum“, og spurður hvað
+//     telst: „Bara slökkvitæki“): línur sölu sem er ekki skoðun, með „slökkvitæki“ í heitinu — en ekki merki, festing, skilti,
+//     límmiði, leiga, hleðsla, yfirferð, slanga eða notuð tæki (mælt á orðaforða búðarinnar maí–nóv 2026). Teljast í mánuði
+//     sölunnar í verslun.taeki.nytt og þar með í samtals.taeki.nytt. Skynjarar og eldvarnateppi teljast ekki.
 //   • Kreditnóta fylgir upprunasölunni (sama mánuði og flokki, hlutfallslega — Agnar 22.11.2026: „0 fellur bara út“, líka tæki);
 //     finnist hún ekki (eða is_credit án credit_of): eigin dagur og flokkur, TALIÐ í kredit_an_frumsolu.
 //     Bakfært (void), drög og kreditnóta á bakfærða sölu telst aldrei (eins og slokkvitaekiGildar í _tekjur.cjs).
@@ -123,10 +127,21 @@ function taekiUrVerklid(service) {
   return null;
 }
 
+// Nýtt slökkvitæki selt í búð (sjá regluna efst) → fjöldi, eða null. Kreditnóta ber neikvætt qty og lækkar töluna.
+const BUD_TAEKI = /sl[öo]kkvit[æa]ki/i;
+const BUD_EKKI = /merki|festing|skilti|l[íi]mmi[ðd]i|leig|hle[ðd]sl|yfirfer|slang|nota[ðd]/i;
+function budTaekiUrLinu(l) {
+  const d = String((l && l.desc) || '');
+  if (!BUD_TAEKI.test(d) || BUD_EKKI.test(d)) return null;
+  const q = l.qty != null ? Number(l.qty) : 1;
+  return Number.isFinite(q) && q !== 0 ? q : null;
+}
+
 const tomMan = () => ({
   kr: { arsthjonusta: 0, brunakerfi: 0, slokkvikerfi: 0, verkstaedi: 0, verslun: 0 },
   taeki_skodanir: { yfirferd: 0, hledsla: 0, nytt: 0 },
   taeki_verkstaedi: { yfirferd: 0, hledsla: 0, nytt: 0 },
+  taeki_verslun: { yfirferd: 0, hledsla: 0, nytt: 0 },
   mat: { an_skyrslu_kr: 0, an_skyrslu_fjoldi: 0, oviss_kr: 0, aaetlad_verk_kr: 0, aaetlad_taeki: 0, leidrett_fjoldi: 0, skyrslur_klaradar: 0, skyrslur_sidbuin: 0 },
 });
 
@@ -225,7 +240,7 @@ function unnidManudir(g, nuIso) {
       }
     }
     hlutar.push({ man: grunnMan, fl: grunnFl, kr: afgangur, mat: grunnMat });
-    return { hlutar, skodMan: sk ? sk.man : null, skFl, leidrett: !!(sk && sk.leidrett), san };
+    return { hlutar, skodMan: sk ? sk.man : null, skFl, leidrett: !!(sk && sk.leidrett), san, grunnMan };
   };
 
   // 1) venjulegar sölur
@@ -243,6 +258,10 @@ function unnidManudir(g, nuIso) {
     // tæki skoðana: línur sölunnar í skoðunarmánuðinum
     if (r.skFl && r.skodMan >= T.SL_FRA) {
       for (const l of Array.isArray(s.linur) ? s.linur : []) { const t = taekiUrLinu(l); if (t) mm(r.skodMan).taeki_skodanir[t.f] += t.n; }
+    }
+    // ný slökkvitæki seld í búð: línur sölu sem er ekki skoðun, í mánuði sölunnar
+    if (!r.skFl && r.grunnMan >= T.SL_FRA) {
+      for (const l of Array.isArray(s.linur) ? s.linur : []) { const n = budTaekiUrLinu(l); if (n) mm(r.grunnMan > nuMan ? nuMan : r.grunnMan).taeki_verslun.nytt += n; }
     }
     // tæki verkstæðis: verkliðir kláraðra verkbeiðna í mánuði klart_at (annars söludagur, merkt áætlað)
     for (const v of vPerSolu[s.num] || []) {
@@ -271,6 +290,9 @@ function unnidManudir(g, nuIso) {
       if (o.skFl && o.skodMan >= T.SL_FRA) {
         for (const l of Array.isArray(s.linur) ? s.linur : []) { const t = taekiUrLinu(l); if (t) mm(o.skodMan).taeki_skodanir[t.f] += t.n; }   // qty er neikvætt á kreditnótu
       }
+      if (!o.skFl && o.grunnMan >= T.SL_FRA) {       // kreditnóta á búðarsölu lækkar seld slökkvitæki í mánuði frumsölunnar
+        for (const l of Array.isArray(s.linur) ? s.linur : []) { const n = budTaekiUrLinu(l); if (n) mm(o.grunnMan > nuMan ? nuMan : o.grunnMan).taeki_verslun.nytt += n; }
+      }
     } else if (adkomnar.get(String(s.credit_of))) {
       // frumsalan er eldri en lesturinn (g.frumsolur, sótt sér): nótan á mánuð hennar, flokkur eftir tegund nótunnar
       lagt(T.manudur(adkomnar.get(String(s.credit_of)).created_at), SKODUN[s.vidskiptategund] || 'verslun', kr, null);
@@ -290,6 +312,7 @@ function manudSamantekt(x) {
   if (!x) x = tomMan();
   const sk = afr(x.kr.arsthjonusta) + afr(x.kr.brunakerfi) + afr(x.kr.slokkvikerfi);
   const t = (a, b) => ({ yfirferd: a.yfirferd + b.yfirferd, hledsla: a.hledsla + b.hledsla, nytt: a.nytt + b.nytt });
+  const tv = x.taeki_verslun || { yfirferd: 0, hledsla: 0, nytt: 0 };
   return {
     skodanir: {
       kr: sk, arsthjonusta_kr: afr(x.kr.arsthjonusta), brunakerfi_kr: afr(x.kr.brunakerfi), slokkvikerfi_kr: afr(x.kr.slokkvikerfi),
@@ -298,8 +321,8 @@ function manudSamantekt(x) {
       taeki: { ...x.taeki_skodanir },
     },
     verkstaedi: { kr: afr(x.kr.verkstaedi), aaetlad_kr: afr(x.mat.aaetlad_verk_kr), aaetlad_taeki: x.mat.aaetlad_taeki, taeki: { ...x.taeki_verkstaedi } },
-    verslun: { kr: afr(x.kr.verslun) },
-    samtals: { kr: sk + afr(x.kr.verkstaedi) + afr(x.kr.verslun), taeki: t(x.taeki_skodanir, x.taeki_verkstaedi) },
+    verslun: { kr: afr(x.kr.verslun), taeki: { ...tv } },
+    samtals: { kr: sk + afr(x.kr.verkstaedi) + afr(x.kr.verslun), taeki: t(t(x.taeki_skodanir, x.taeki_verkstaedi), tv) },
   };
 }
 // Mánuður til dags, síðasti mánuður og ár til dags (frá yfirtöku) — sömu mörk og T.tolur.
@@ -318,4 +341,4 @@ function unnidTolur(res, nuIso) {
   };
 }
 
-module.exports = { FLOKKAR, SKODUN, GLUGGI, manudNumer, skodunarManudur, skodunarManudSolu, taekiUrLinu, taekiUrVerklid, unnidManudir, manudSamantekt, unnidTolur };
+module.exports = { FLOKKAR, SKODUN, GLUGGI, manudNumer, skodunarManudur, skodunarManudSolu, taekiUrLinu, taekiUrVerklid, budTaekiUrLinu, unnidManudir, manudSamantekt, unnidTolur };

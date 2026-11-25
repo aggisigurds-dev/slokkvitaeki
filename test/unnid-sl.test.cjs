@@ -212,3 +212,32 @@ test('kredit án frumsölu er TALIÐ (Agnar 22.11.2026: nóta fylgir frumsölu):
   assert.equal(b.annad.kredit_an_frumsolu, 0); assert.equal(b.man['2026-08'].kr.arsthjonusta, -100, 'á mánuð frumsölunnar'); assert.equal(b.man['2026-11'], undefined);
   assert.equal(U.unnidTolur(a, NU).kredit_an_frumsolu, 2);
 });
+
+test('búð: ný SLÖKKVITÆKI seld yfir borðið teljast í verslun.taeki.nytt og samtals (Agnar 25.11: „Bara slökkvitæki") — ekki merki, festingar, leiga, hleðsla, skynjarar né teppi; kredit fylgir frumsölu; úttekt ekki tvítalin', () => {
+  // reglan ein og sér, á línuheitum eins og þau eru í búðinni
+  const n = (d, q) => U.budTaekiUrLinu(lin(d, q));
+  assert.equal(n('Duft 6 kg. ABC Slökkvitæki', 3), 3);
+  assert.equal(n('CO₂ 5 kg. Slökkvitæki · −50% afsl.', 2), 2, 'afsláttarviðskeyti breytir engu');
+  assert.equal(n('Slökkvitæki Duft 6 kg ABC (20% magnafsláttur skv. tilboði)', 20), 20);
+  for (const d of ['V-merki slökkvitæki 15x15', 'Skipafesting fyrir 6 kg. Slökkvitæki', 'Límmiði - Slökkvitæki - Sjálflýsandi 150x150mm',
+    'Skilti Flöt - Slökkvitæki - Sjálflýsandi -150x150mm', 'Leiga á léttvatnstæki 6 L', 'Notaðir kútar/tæki', 'CO₂ 2 kg. hleðsla',
+    'Léttvatnstæki 6L. yfirferð', 'Reykskynjari', 'Eldvarnateppi 1m x 1m', 'Gasskynjari Battery Kidde', 'Slanga fyrir 5 kg. Kolsýrutæki']) {
+    assert.equal(n(d, 1), null, d + ' er ekki selt slökkvitæki');
+  }
+  // salan: búð í október, kreditnóta í nóvember á eitt tækið, úttekt í nóvember með „Nýtt ·" línu
+  const bud = sala({ id: 101, vidskiptategund: 'bud', upphaed_an_vsk: 5000, created_at: '2026-10-15T10:00:00Z', customer_base_id: 50, customer_id: 500,
+    linur: [lin('Duft 6 kg. ABC Slökkvitæki', 3), lin('CO₂ 5 kg. Slökkvitæki · −50% afsl.', 2), lin('V-merki slökkvitæki 15x15', 5), lin('Reykskynjari', 2), lin('CO₂ 2 kg. hleðsla', 1)] });
+  const kred = sala({ id: 102, vidskiptategund: 'bud', credit_of: 101, upphaed_an_vsk: -1000, created_at: '2026-11-21T10:00:00Z', customer_base_id: 50, customer_id: 500,
+    linur: [lin('Duft 6 kg. ABC Slökkvitæki', -1)] });
+  const utt = sala({ id: 103, upphaed_an_vsk: 2000, linur: [lin('Yfirferð · Duft 6 kg', 4), lin('Nýtt · Duft 6 kg. ABC Slökkvitæki', 2)] });
+  const r = reikna({ solur: [bud, kred, utt], skyrslur: [skyrsla({})] });
+  const okt = U.manudSamantekt(r.man['2026-10']), nov = U.manudSamantekt(r.man['2026-11']);
+  assert.deepEqual(okt.verslun.taeki, { yfirferd: 0, hledsla: 0, nytt: 4 }, '3 + 2 slökkvitæki − 1 á kreditnótu, í mánuði frumsölunnar');
+  assert.equal(okt.samtals.taeki.nytt, 4, 'búðartækin í samtölunni');
+  assert.deepEqual(nov.verslun.taeki, { yfirferd: 0, hledsla: 0, nytt: 0 }, 'kreditnótan lækkar ekki nóvember');
+  assert.equal(nov.skodanir.taeki.nytt, 2, '„Nýtt ·" á úttekt telst í skoðunum');
+  assert.equal(nov.samtals.taeki.nytt, 2, 'úttektartækið ekki tvítalið sem búð');
+  assert.equal(nov.samtals.taeki.yfirferd, 4);
+  assert.equal(heild(r), 6000, 'krónurnar óbreyttar: tækjatalningin bætir engu við tekjur');
+  assert.equal(/kt/i.test(JSON.stringify(U.manudSamantekt(r.man['2026-10']))), false, 'svarið ber ekkert orð með „kt"');
+});

@@ -356,11 +356,17 @@
     if (!ts) return '<span class="yr-hr"></span><span class="yr-vks" title="' + esc('Tæki í ' + nm + ' til dags (línur alls)') + '">' + ic('ars') + 'Tæki í ' + esc(nmS) + '<b>' + isk(um.taeki) + '</b><i>alls</i></span>';
     const allt = (ts.yfirferd || 0) + (ts.hledsla || 0) + (ts.nytt || 0);
     const c = (n, t) => '<span class="yr-tc"><b>' + isk(n) + '</b><i>' + t + '</i></span>';
+    // nytt_bud kom 25.11.2026 („Bara slökkvitæki"): ný seld = úttektir + búð. Eldri svar án hans → búðin sýnd ómæld, ekki 0.
+    const medBud = fin(ts.nytt_bud), bud = medBud ? ts.nytt_bud : null, utt = medBud ? (ts.nytt || 0) - bud : (ts.nytt || 0);
     return '<span class="yr-hr"></span>' +
-      '<span class="yr-vks" title="' + esc('Tæki í ' + nm + ' til dags úr úttektum og verkstæði: yfirfarin ' + isk(ts.yfirferd) + ' · hlaðin ' + isk(ts.hledsla) + ' · ný seld í úttektum ' + isk(ts.nytt) + '. Alls = summa línanna; tæki sem er bæði yfirfarið og hlaðið telst í báðum. Tæki seld í búðinni eru ekki talin (búðarsalan ber aðeins krónur).') + '">' +
+      '<span class="yr-vks" title="' + esc('Tæki í ' + nm + ' til dags: yfirfarin ' + isk(ts.yfirferd) + ' · hlaðin ' + isk(ts.hledsla) + ' · ný seld ' + isk(ts.nytt) +
+        (medBud ? ' (úttektir ' + isk(utt) + ' · búð ' + isk(bud) + ' — aðeins slökkvitæki, ekki skynjarar né teppi)' : '') +
+        '. Alls = summa línanna; tæki sem er bæði yfirfarið og hlaðið telst í báðum; CO₂ 100 g patrónur teljast hver sem hlaðið tæki.') + '">' +
         ic('ars') + 'Tæki í ' + esc(nmS) + '<b>' + isk(allt) + '</b><i>alls</i></span>' +
       '<span class="yr-tg">' + c(ts.yfirferd, 'yfirfarin') + c(ts.hledsla, 'hlaðin') + c(ts.nytt, 'ný seld') + '</span>' +
-      '<span class="yr-n yr-tn" title="Tæki seld í búðinni eru ekki í tækjatölunum: búðarsalan ber aðeins krónur, engan tækjafjölda.">' + led('am') + 'búðarsala ekki talin</span>';
+      (medBud
+        ? '<span class="yr-n yr-tn" title="Ný slökkvitæki seld: úr úttektum og yfir borðið í búðinni">' + led('gr') + 'seld: úttektir ' + isk(utt) + ' · búð ' + isk(bud) + '</span>'
+        : '<span class="yr-n yr-tn" title="Tæki seld í búðinni eru ekki í tækjatölunum í þessu svari.">' + led('am') + 'búðarsala ekki talin</span>');
   }
 
   // Ósótt + verkstæði þjappað (Agnar 25.11.2026: „þjappa hinu aðeins") svo tæki mánaðarins komist fyrir.
