@@ -197,6 +197,25 @@ async function greittInn() {
   return { manudir, regla: 'Með vsk: Payday SL + búð SL (kort/reiðufé) + Payday BH + BH merkt greitt í Kröfu yfirliti' };
 }
 
+// Mæting í dag LIFANDI (Agnar 25.11.2026: „Geturðu ekki bara tengst þessu … þarna kemur allavega hvað margir eru mættir í dag“ og
+// „eins og þarna eru 7 mættir og 1 veikur, væri fínt að sjá það“): sama heimild og Mæting · verkstaðir — brunaholf
+// /api/timavera-dagar, sem sækir OPNAR stimplanir beint úr Tímaveru-API (timavera-pull geymir aðeins frágengnar færslur, þess vegna
+// sýndi röndin „0 í dag“). Veikur = stimplaður á veikindaverkefni í dag („!!! Brunahólf Veikindi / Sick Leave“ og „… Veikindi
+// Barns …“ — einu fjarvistaverkefnin í timavera_entries, mælt 25.11); mættir = hinir. Aðeins fjöldi, aldrei nöfn (heilsufar).
+const VEIKINDI = /veikind|sick/i;
+async function maetingLifandi() {
+  const r = await fetch(`${BH}/api/timavera-dagar?days=2`, { headers: await bhHausar() });
+  if (!r.ok) throw new Error(`timavera-dagar svaraði ${r.status}`);
+  const d = await r.json();
+  const dagar = Array.isArray(d && d.days) ? d.days : [];
+  return { dagur: iso => dagar.find(x => x && x.date === iso) || null, live: (d && d.live) || {} };
+}
+const flokkaDag = (dg) => {
+  const staff = (dg && Array.isArray(dg.staff)) ? dg.staff : [];
+  const veikir = staff.filter(e => (e.projects || []).some(p => VEIKINDI.test(String(p.project || '')))).length;
+  return { alls: staff.length, veikir, maettir: staff.length - veikir, inni: Number(dg && dg.open_count) || 0, klst: dg ? Number(dg.total_hours) || 0 : 0 };
+};
+
 // Mæting (fjöldi starfsmanna í dag og í gær) og ALLIR skráðir tímar vikunnar og síðustu viku (mán–sun). Rekstrarskýrslan
 // ber aðeins rukkanlega tíma (bh.klst); heildin kemur beint úr Tímaveru, sama tafla.
 async function timavera() {
@@ -213,8 +232,17 @@ async function timavera() {
   // Samanburður við SÖMU vikudaga í fyrri viku (rýni 21.11: mán–dagsins í dag á móti allri síðustu viku sýndi ~▼90 % á
   // mánudögum). Heil síðasta vika fylgir líka (svika_oll).
   const samaTil = new Date(Date.parse(fmMan) + vd * DAGUR).toISOString().slice(0, 10);
+  // Lifandi mæting (sjá maetingLifandi). Bregðist hún — eða nær Tímaveru-API ekki (live.ok false) — stendur talning frágenginna
+  // færslna, merkt lifandi:false svo röndin segi „skráðir“ en ekki „mættir“. Aldrei 0 í stað ómælds.
+  let lif = null, lifVilla = null;
+  try { lif = await maetingLifandi(); } catch (e) { lifVilla = String(e && e.message || e).slice(0, 160); console.error('[yfirsyn] mæting', lifVilla); }
+  const lifandi = !!(lif && lif.live && lif.live.ok);
+  const idagF = lifandi ? flokkaDag(lif.dagur(d0)) : null;
+  const igaerF = lif ? lif.dagur(d1) : null;
   return {
-    idag: telja(d0), igaer: telja(d1), vikudagur: vd,
+    idag: idagF ? idagF.alls : telja(d0), igaer: igaerF ? flokkaDag(igaerF).alls : telja(d1), vikudagur: vd,
+    lifandi, maettir: idagF ? idagF.maettir : null, veikir: idagF ? idagF.veikir : null, inni: idagF ? idagF.inni : null,
+    klst_idag: idagF ? Math.round(idagF.klst * 10) / 10 : null, lifandi_villa: lifandi ? null : (lifVilla || (lif && lif.live && lif.live.error) || 'Tímavera svaraði ekki'),
     vika: { fra: man, til: d0, klst: klst(man, d0), starfsmenn: starfsm(man, d0) },
     svika: { fra: fmMan, til: samaTil, klst: klst(fmMan, samaTil) },
     svika_oll: { fra: fmMan, til: sun, klst: klst(fmMan, sun) },

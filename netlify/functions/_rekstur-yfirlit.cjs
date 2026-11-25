@@ -157,7 +157,8 @@ function reksturSl(g, nuIso) {
     // Sundurliðunin sem samtalan er lögð saman úr (Agnar 25.11.2026: yfirfarin, hlaðin, seld). ATH: summan er LÍNUfjöldi —
     // tæki sem er bæði yfirfarið og hlaðið telst í báðum. nytt = ný slökkvitæki úr úttektum OG búð; nytt_bud = þar af búð.
     taeki_sund: { yfirferd: tk.yfirferd || 0, hledsla: tk.hledsla || 0, nytt: tk.nytt || 0,
-      nytt_bud: (sm.verslun && sm.verslun.taeki && sm.verslun.taeki.nytt) || 0 } };
+      nytt_bud: (sm.verslun && sm.verslun.taeki && sm.verslun.taeki.nytt) || 0,
+      co2_kg: (sm.samtals && sm.samtals.co2_kg) || 0 } };      // CO₂ í hleðslur mánaðarins (patrónuverk = ein hleðsla, 25.11.2026)
   return { man, kredit_an_frumsolu: un.annad.kredit_an_frumsolu, un_annad: un.annad, unnid_manudur };
 }
 

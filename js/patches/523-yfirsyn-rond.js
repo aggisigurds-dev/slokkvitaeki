@@ -361,12 +361,15 @@
     return '<span class="yr-hr"></span>' +
       '<span class="yr-vks" title="' + esc('Tæki í ' + nm + ' til dags: yfirfarin ' + isk(ts.yfirferd) + ' · hlaðin ' + isk(ts.hledsla) + ' · ný seld ' + isk(ts.nytt) +
         (medBud ? ' (úttektir ' + isk(utt) + ' · búð ' + isk(bud) + ' — aðeins slökkvitæki, ekki skynjarar né teppi)' : '') +
-        '. Alls = summa línanna; tæki sem er bæði yfirfarið og hlaðið telst í báðum; CO₂ 100 g patrónur teljast hver sem hlaðið tæki.') + '">' +
+        '. Alls = summa línanna; tæki sem er bæði yfirfarið og hlaðið telst í báðum. CO₂-patrónur: eitt áfyllingarverk = ein hleðsla (eitt byrjunargjald), magnið sést sér í kg.') + '">' +
         ic('ars') + 'Tæki í ' + esc(nmS) + '<b>' + isk(allt) + '</b><i>alls</i></span>' +
       '<span class="yr-tg">' + c(ts.yfirferd, 'yfirfarin') + c(ts.hledsla, 'hlaðin') + c(ts.nytt, 'ný seld') + '</span>' +
       (medBud
         ? '<span class="yr-n yr-tn" title="Ný slökkvitæki seld: úr úttektum og yfir borðið í búðinni">' + led('gr') + 'seld: úttektir ' + isk(utt) + ' · búð ' + isk(bud) + '</span>'
-        : '<span class="yr-n yr-tn" title="Tæki seld í búðinni eru ekki í tækjatölunum í þessu svari.">' + led('am') + 'búðarsala ekki talin</span>');
+        : '<span class="yr-n yr-tn" title="Tæki seld í búðinni eru ekki í tækjatölunum í þessu svari.">' + led('am') + 'búðarsala ekki talin</span>') +
+      // CO₂ (Agnar 25.11.2026: „kanski bara heildarmagn af co2 notað í mánuðnum“): kg sem fór í hleðslur — patrónur og CO₂-tæki
+      (fin(ts.co2_kg) && ts.co2_kg > 0 ? '<span class="yr-n yr-tn" title="CO₂ sem fór í hleðslur mánaðarins: patrónur (eitt áfyllingarverk = ein hleðsla, eitt byrjunargjald) og hlaðin CO₂-slökkvitæki">' +
+        led('bl') + 'CO₂ í hleðslur ' + String(ts.co2_kg).replace('.', ',') + ' kg</span>' : '');
   }
 
   // Ósótt + verkstæði þjappað (Agnar 25.11.2026: „þjappa hinu aðeins") svo tæki mánaðarins komist fyrir.
@@ -411,10 +414,7 @@
       '<div class="yr-brand"><span class="yr-mark">Yfirsýn</span><span class="yr-upd">' + led(S.villa ? 'or' : 'gr') + (S.loading && !S.d ? 'Sæki tölur…' : 'Uppfært ' + (S.d ? klukka(S.d.maelt_at) : '')) + '</span></div>' +
       '<div class="yr-chips">' +
         (ctx && fin(ctx.master) ? '<span class="yr-chip" title="Opin mál á borðinu · þar af á þínu borði">Opin mál <b>' + isk(ctx.master) + '</b>' + (fin(ctx.mine) ? ' · þín <b>' + isk(ctx.mine) + '</b>' : '') + '</span>' : '') +
-        // 25.11.2026 (Agnar: „0 við vinnu - 8 í gær passar ekki"): talan er fjöldi starfsmanna með SKRÁÐA tíma í Tímaveru, og dagurinn
-        // í dag fyllist ekki fyrr en tímarnir eru skráðir (mælt 25.11 kl. 13: engin færsla dagsins enn, 8 í gær). „Við vinnu“ lofaði
-        // lifandi viðveru sem gögnin hafa ekki.
-        (ok(tv) ? '<span class="yr-chip" title="Starfsmenn með skráða tíma í Tímaveru. Dagurinn í dag fyllist þegar tímarnir eru skráðir, oft í lok dags — 0 í dag þýðir óskráð, ekki að enginn sé við vinnu.">' + led(tv.idag ? 'gr' : 'gy') + isk(tv.idag) + ' skráðir í dag · <b>' + isk(tv.igaer) + '</b> í gær</span>' : '') +
+        (ok(tv) ? maetingChip(tv) : '') +
         (hm.length ? '<span class="yr-chip" title="' + esc(hm.map(h => h.n + ': ' + h.t).join(' · ')) + '">Heimildir ' + hm.map(h => led(h.lit)).join('') + '</span>' : '') +
       '</div>' +
       '<div class="yr-act">' + hamRofi('rond') + rfTakki() +

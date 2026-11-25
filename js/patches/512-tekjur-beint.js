@@ -131,7 +131,8 @@
     if (sk.skyrslur_klaradar != null) t += fl('Skýrslur kláraðar · ' + nm, tal(sk.skyrslur_klaradar), 'þar af ' + tal(sk.skyrslur_sidbuin || 0) + ' síðbúnar · eftir kláradegi', 'tkb-unnid');
     // 25.11.2026 (Agnar: seld tæki „miðast bæði við sölu úr búð og úttektum", „bara slökkvitæki"): ný slökkvitæki úr búð
     t += fl('Verslun · ' + nm + ' til dags', mkr(m.verslun.kr), (m.verslun.taeki && m.verslun.taeki.nytt) ? 'ný slökkvitæki ' + tal(m.verslun.taeki.nytt) : 'sala án tækja úr skoðun', 'tkb-unnid');
-    t += fl('Samtals unnið · ' + nm + ' til dags', mkr(m.samtals.kr), taekiTexti(m.samtals.taeki), 'tkb-unnid');
+    // CO₂ (25.11.2026): patrónuverk telst ein hleðsla; magnið sem fór í hleðslur sést hér í kg
+    t += fl('Samtals unnið · ' + nm + ' til dags', mkr(m.samtals.kr), taekiTexti(m.samtals.taeki) + (m.samtals.co2_kg ? ' · CO₂ ' + String(m.samtals.co2_kg).replace('.', ',') + ' kg' : ''), 'tkb-unnid');
     if (f) t += fl('Samtals unnið · ' + manNafn(u.fyrri_man), mkr(f.samtals.kr), 'heill mánuður · skoðanir ' + mkr(f.skodanir.kr), 'tkb-unnid');
     t += fl('Unnið · ' + u.manudur.slice(0, 4) + ' til dags', mkr(u.ar_til_dags_kr), u.ar_fra === '2026-05' ? 'frá yfirtöku 04.05' : 'frá 1. jan', 'tkb-unnid');
     if (u.i_vinnslu_kr) t += fl('Á verkstæði núna', mkr(u.i_vinnslu_kr), 'í vinnslu · telst ekki enn', 'tkb-pipa');

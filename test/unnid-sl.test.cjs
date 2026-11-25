@@ -131,7 +131,9 @@ test('verkstæði: V-hlutinn (verd ÷ 1,24) telst á klart_at, salan telur afgan
   assert.equal(Math.round(r.man['2026-11'].kr.verkstaedi), 6600, 'V-hlutinn á klart_at (nóvember)');
   assert.equal(Math.round(r.man['2026-10'].kr.verslun), 3400, 'afgangurinn á söludegi (október)');
   assert.equal(Math.round(heild(r)), 10000, 'samtals óbreytt — ekkert tvítalið');
-  assert.deepEqual(r.man['2026-11'].taeki_verkstaedi, { yfirferd: 0, hledsla: 27, nytt: 0 }, '1 hleðsla + 26 CO₂-hylki; „Önnur þjónusta“ er ekki tæki');
+  // 25.11.2026 (Agnar: „telja bara byrjunargjaldið … og heildarmagn af co2"): CO₂-patrónuverkið telst EIN hleðsla, 26 × 100 g = 2,6 kg
+  assert.deepEqual(r.man['2026-11'].taeki_verkstaedi, { yfirferd: 0, hledsla: 2, nytt: 0 }, '1 hleðsla + 1 CO₂-patrónuverk; „Önnur þjónusta“ er ekki tæki');
+  assert.equal(U.manudSamantekt(r.man['2026-11']).samtals.co2_kg, 2.6, '26 patrónur × 100 g');
   assert.equal(r.man['2026-11'].mat.aaetlad_verk_kr, 0, 'klart_at til → ekki áætlað');
 });
 
@@ -240,4 +242,24 @@ test('búð: ný SLÖKKVITÆKI seld yfir borðið teljast í verslun.taeki.nytt 
   assert.equal(nov.samtals.taeki.yfirferd, 4);
   assert.equal(heild(r), 6000, 'krónurnar óbreyttar: tækjatalningin bætir engu við tekjur');
   assert.equal(/kt/i.test(JSON.stringify(U.manudSamantekt(r.man['2026-10']))), false, 'svarið ber ekkert orð með „kt"');
+});
+
+test('CO₂ (Agnar 25.11: „telja bara byrjunargjaldið … og heildarmagn af co2 notað"): patrónuverk = EIN hleðsla og grömmin í co2_kg; hlaðið CO₂-tæki telst eitt tæki og bætir kg við; kredit lækkar hvort tveggja', () => {
+  assert.deepEqual(U.co2Eining('CO₂ 100 gr. × 60 (samtals)'), { g: 100, patrona: true });
+  assert.deepEqual(U.co2Eining('CO₂ 2 kg. hleðsla'), { g: 2000, patrona: false });
+  assert.equal(U.co2Eining('Duft 6 kg. ABC hleðsla'), null);
+  assert.deepEqual(U.taekiUrVerklid('CO₂ 100 gr. × 60 (samtals)'), { f: 'hledsla', n: 1, co2_g: 6000 }, '60 patrónur = 1 verk, 6 kg');
+  assert.deepEqual(U.taekiUrVerklid('CO₂ 5 kg. hleðsla'), { f: 'hledsla', n: 1, co2_g: 5000 });
+  assert.deepEqual(U.taekiUrVerklid('Duft 2 kg. ABC hleðsla'), { f: 'hledsla', n: 1 }, 'ekkert CO₂');
+  assert.deepEqual(U.taekiUrVerklid('CO₂ 5 kg. yfirferd'), { f: 'yfirferd', n: 1 }, 'yfirferð notar ekkert CO₂');
+  assert.equal(U.taekiUrVerklid('Slanga fyrir 5 kg. Kolsýrutæki'), null);
+  // úttekt með patrónulínu og CO₂-tækjum, kreditnóta á hluta patrónanna
+  const s = sala({ id: 201, upphaed_an_vsk: 3000, linur: [lin('Hleðsla · CO₂ 100 gr.', 30), lin('Hleðsla · CO₂ 2 kg', 2), lin('Yfirferð · CO₂ 5 kg', 4)] });
+  const k = sala({ id: 202, credit_of: 201, upphaed_an_vsk: -500, created_at: '2026-11-21T10:00:00Z', linur: [lin('Hleðsla · CO₂ 100 gr.', -10)] });
+  const r = reikna({ solur: [s, k], skyrslur: [skyrsla({})] });
+  const nov = U.manudSamantekt(r.man['2026-11']);
+  // patrónur: 1 verk − 1 á kredit = 0 hleðslur; CO₂-tæki 2; yfirferð 4. CO₂: 30×100 − 10×100 + 2×2000 = 6.000 g
+  assert.deepEqual(nov.skodanir.taeki, { yfirferd: 4, hledsla: 2, nytt: 0 });
+  assert.equal(nov.samtals.co2_kg, 6, '3 kg patrónur − 1 kg kredit + 4 kg í tvö CO₂-tæki');
+  assert.equal(heild(r), 2500, 'krónurnar óbreyttar');
 });

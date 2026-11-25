@@ -113,17 +113,40 @@ function taekiUrLinu(l) {
   const f = LINU_FLOKKUR[d.slice(0, i).trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ð/g, 'd')];
   if (!f) return null;
   const q = l.qty != null ? Number(l.qty) : 1;
-  return Number.isFinite(q) && q !== 0 ? { f, n: q } : null;
+  if (!(Number.isFinite(q) && q !== 0)) return null;
+  if (f === 'hledsla') {
+    const co2 = co2Eining(d.slice(i + 1));
+    if (co2 && co2.patrona) return { f, n: Math.sign(q), co2_g: q * co2.g };   // patrónur: ein lína = eitt verk (sjá CO₂ hér að neðan)
+    if (co2) return { f, n: q, co2_g: q * co2.g };
+  }
+  return { f, n: q };
 }
-// Tæki úr verklið verkstæðis: „Duft 2 kg. ABC hleðsla“ (1), „CO₂ 100 gr. × 26 (samtals)“ (26 hleðslur), „Duft 2 kg. ABC yfirferð“ (1).
+// CO₂ (Agnar 25.11.2026: „Kanski hægt að telja bara byrjunargjaldið … og kanski bara heildarmagn af co2 notað í mánuðnum“):
+// CO₂ 100 g patrónur teljast EKKI hver sem hlaðið tæki — eitt áfyllingarverk = ein hleðsla (mælt 25.11: hvert af 4 patrónuverkum
+// nóvember bar nákvæmlega eitt „CO₂ byrjunargjald“ á sölunni), og grömmin safnast í co2_g. CO₂-slökkvitæki sem eru hlaðin
+// („CO₂ 5 kg. hleðsla“) teljast áfram eitt tæki hvert og bæta sínum kílóum við. co2Eining: g á einingu, patrona = mælt í grömmum.
+function co2Eining(txt) {
+  const s = String(txt || '');
+  if (!/CO[₂2]|kols[ýy]ru/i.test(s)) return null;
+  const g = /(\d+(?:[,.]\d+)?)\s*gr/i.exec(s);
+  if (g) return { g: Number(g[1].replace(',', '.')), patrona: true };
+  const k = /(\d+(?:[,.]\d+)?)\s*kg/i.exec(s);
+  if (k) return { g: Number(k[1].replace(',', '.')) * 1000, patrona: false };
+  return null;
+}
+// Tæki úr verklið verkstæðis: „Duft 2 kg. ABC hleðsla“ (1), „CO₂ 100 gr. × 26 (samtals)“ (1 hleðsla, 2.600 g CO₂), „Duft 2 kg. ABC yfirferð“ (1).
 function taekiUrVerklid(service) {
   const s = String(service || '');
   const m = /[×x]\s*(\d+)/.exec(s);
   const n = m ? Number(m[1]) : 1;
   if (!(n > 0)) return null;
-  if (/hle[ðd]sl|[áa]fylling/i.test(s)) return { f: 'hledsla', n };
+  const co2 = co2Eining(s);
+  if (/hle[ðd]sl|[áa]fylling/i.test(s)) {
+    if (co2 && co2.patrona) return { f: 'hledsla', n: 1, co2_g: n * co2.g };
+    return co2 ? { f: 'hledsla', n, co2_g: n * co2.g } : { f: 'hledsla', n };
+  }
   if (/yfirfer/i.test(s)) return { f: 'yfirferd', n };
-  if (/^\s*CO[₂2]\s*[\d,.]+\s*gr/i.test(s)) return { f: 'hledsla', n };       // CO₂-hylki: fyllt
+  if (/^\s*CO[₂2]\s*[\d,.]+\s*gr/i.test(s)) return { f: 'hledsla', n: 1, co2_g: n * (co2 ? co2.g : 0) };   // patrónur fylltar: eitt verk
   return null;
 }
 
@@ -142,6 +165,7 @@ const tomMan = () => ({
   taeki_skodanir: { yfirferd: 0, hledsla: 0, nytt: 0 },
   taeki_verkstaedi: { yfirferd: 0, hledsla: 0, nytt: 0 },
   taeki_verslun: { yfirferd: 0, hledsla: 0, nytt: 0 },
+  co2_g: 0,                                                   // CO₂ sem fór í hleðslur (patrónur + CO₂-tæki), grömm
   mat: { an_skyrslu_kr: 0, an_skyrslu_fjoldi: 0, oviss_kr: 0, aaetlad_verk_kr: 0, aaetlad_taeki: 0, leidrett_fjoldi: 0, skyrslur_klaradar: 0, skyrslur_sidbuin: 0 },
 });
 
@@ -257,7 +281,7 @@ function unnidManudir(g, nuIso) {
     if (r.leidrett && r.skodMan >= T.SL_FRA) mm(r.skodMan).mat.leidrett_fjoldi += 1;
     // tæki skoðana: línur sölunnar í skoðunarmánuðinum
     if (r.skFl && r.skodMan >= T.SL_FRA) {
-      for (const l of Array.isArray(s.linur) ? s.linur : []) { const t = taekiUrLinu(l); if (t) mm(r.skodMan).taeki_skodanir[t.f] += t.n; }
+      for (const l of Array.isArray(s.linur) ? s.linur : []) { const t = taekiUrLinu(l); if (t) { const x = mm(r.skodMan); x.taeki_skodanir[t.f] += t.n; if (t.co2_g) x.co2_g += t.co2_g; } }
     }
     // ný slökkvitæki seld í búð: línur sölu sem er ekki skoðun, í mánuði sölunnar
     if (!r.skFl && r.grunnMan >= T.SL_FRA) {
@@ -270,6 +294,7 @@ function unnidManudir(g, nuIso) {
       if (km < T.SL_FRA) continue;
       for (const t of taekiPerVerk[v.id] || []) {
         mm(km > nuMan ? nuMan : km).taeki_verkstaedi[t.f] += t.n;
+        if (t.co2_g) mm(km > nuMan ? nuMan : km).co2_g += t.co2_g;
         if (!v.klart_at) mm(km > nuMan ? nuMan : km).mat.aaetlad_taeki += t.n;
       }
     }
@@ -288,7 +313,7 @@ function unnidManudir(g, nuIso) {
       const f = kr / o.san;
       for (const h of o.hlutar) { if (h.mat === 'i_vinnslu') { annad.i_vinnslu_kr += h.kr * f; continue; } lagt(h.man > nuMan ? nuMan : h.man, h.fl, h.kr * f, h.mat); }
       if (o.skFl && o.skodMan >= T.SL_FRA) {
-        for (const l of Array.isArray(s.linur) ? s.linur : []) { const t = taekiUrLinu(l); if (t) mm(o.skodMan).taeki_skodanir[t.f] += t.n; }   // qty er neikvætt á kreditnótu
+        for (const l of Array.isArray(s.linur) ? s.linur : []) { const t = taekiUrLinu(l); if (t) { const x = mm(o.skodMan); x.taeki_skodanir[t.f] += t.n; if (t.co2_g) x.co2_g += t.co2_g; } }   // qty er neikvætt á kreditnótu
       }
       if (!o.skFl && o.grunnMan >= T.SL_FRA) {       // kreditnóta á búðarsölu lækkar seld slökkvitæki í mánuði frumsölunnar
         for (const l of Array.isArray(s.linur) ? s.linur : []) { const n = budTaekiUrLinu(l); if (n) mm(o.grunnMan > nuMan ? nuMan : o.grunnMan).taeki_verslun.nytt += n; }
@@ -322,7 +347,8 @@ function manudSamantekt(x) {
     },
     verkstaedi: { kr: afr(x.kr.verkstaedi), aaetlad_kr: afr(x.mat.aaetlad_verk_kr), aaetlad_taeki: x.mat.aaetlad_taeki, taeki: { ...x.taeki_verkstaedi } },
     verslun: { kr: afr(x.kr.verslun), taeki: { ...tv } },
-    samtals: { kr: sk + afr(x.kr.verkstaedi) + afr(x.kr.verslun), taeki: t(t(x.taeki_skodanir, x.taeki_verkstaedi), tv) },
+    samtals: { kr: sk + afr(x.kr.verkstaedi) + afr(x.kr.verslun), taeki: t(t(x.taeki_skodanir, x.taeki_verkstaedi), tv),
+      co2_kg: Math.round((x.co2_g || 0) / 100) / 10 },          // CO₂ notað í hleðslur mánaðarins, kg með einum aukastaf
   };
 }
 // Mánuður til dags, síðasti mánuður og ár til dags (frá yfirtöku) — sömu mörk og T.tolur.
@@ -341,4 +367,4 @@ function unnidTolur(res, nuIso) {
   };
 }
 
-module.exports = { FLOKKAR, SKODUN, GLUGGI, manudNumer, skodunarManudur, skodunarManudSolu, taekiUrLinu, taekiUrVerklid, budTaekiUrLinu, unnidManudir, manudSamantekt, unnidTolur };
+module.exports = { FLOKKAR, SKODUN, GLUGGI, manudNumer, skodunarManudur, skodunarManudSolu, taekiUrLinu, taekiUrVerklid, budTaekiUrLinu, co2Eining, unnidManudir, manudSamantekt, unnidTolur };
