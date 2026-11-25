@@ -652,6 +652,8 @@
       '.yr-gs{position:absolute;left:0;right:0;top:53px;text-align:center;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#a9b8d0}',
       '.yr-gcap{display:flex;align-items:center;justify-content:center;gap:5px;width:112px;margin-top:5px;font-size:11px;color:#a9b8d0;white-space:nowrap}.yr-gcap i{width:10px;height:3px;border-radius:2px;background:#fff;box-shadow:0 0 4px #fff}',
       '.yr-rt{display:flex;flex-direction:column;gap:7px;min-width:0;flex:1}',
+      // 25.11: „474 af 614 stöðum" var skorið (88/114 px í 1700 px glugga) — brotnar heldur; mælt: hvorki flís né rönd hækka
+      '.yr-rt .yr-ks{white-space:normal;overflow:visible}',
       '.yr-bl{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:#b8c6dd;white-space:nowrap}.yr-bl span{display:inline-flex;align-items:center;gap:6px}.yr-bl b{font-weight:600;color:#fff}',
       // virði — innfelldur skjár
       '.yr-scr{position:relative;padding:6px 6px 0;border-radius:10px;background:linear-gradient(180deg,rgba(0,6,20,.6),rgba(0,6,20,.35));box-shadow:inset 0 2px 6px rgba(0,0,0,.75),0 1px 0 rgba(255,255,255,.09)}',
