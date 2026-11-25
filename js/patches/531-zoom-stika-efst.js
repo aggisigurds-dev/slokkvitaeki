@@ -212,10 +212,13 @@
 
     // Eitt tol fyrir sama hlutinn: Aa-hnappur 333 vikur medan stikan er uppi (talan opnar sama blad).
     // Endurheimtur strax og stikan hverfur, svo bladid tapist aldrei.
+    // ATH: venjulegur inline-still dugar EKKI - regla med !important i simapotchunum vinnur
+    // lika yfir hann (maelt 25.11.2026). Inline MED forgangi er thad eina sem byrgir hana.
     const aaBtn = document.getElementById('_sz-aa');
     if (aaBtn) {
-      const fela = syna ? 'none' : '';
-      if (aaBtn.style.display !== fela) aaBtn.style.display = fela;
+      const nuna = aaBtn.style.getPropertyValue('display');
+      if (syna && nuna !== 'none') aaBtn.style.setProperty('display', 'none', 'important');
+      else if (!syna && nuna) aaBtn.style.removeProperty('display');
     }
 
     const b = document.getElementById('bstal-banner');
