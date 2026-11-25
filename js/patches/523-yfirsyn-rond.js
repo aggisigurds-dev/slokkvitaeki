@@ -226,24 +226,26 @@
     const ogr = (ok(sl) || ok(bh)) ? (ok(sl) ? sl.ogreitt.kr : 0) + (ok(bh) ? bh.ogreitt.kr : 0) : null;
     const ogrT = 'Ógreitt alls m. vsk — sama tala og Ógreitt í „Á leiðinni inn“.\nSL ' + (ok(sl) ? sl.ogreitt.n + ' kröfur · ' + isk(sl.ogreitt.kr) + ' kr' : 'ómælt') + '\nBH ' + (ok(bh) ? bh.ogreitt.n + ' kröfur · ' + isk(bh.ogreitt.kr) + ' kr' : 'ómælt');
     const max = Math.max(...M.map(m => m.alls || 0)) || 1;
-    const h = val => Math.max(2, Math.round(val / max * 28));
+    const stutt = n => (fin(n) && Math.abs(n) >= 1e6 ? mkr(n) + ' m' : isk(n));
     const sund = m => esc(MAN[manOf(m.fra)] || '') + ' ' + mkr(m.alls) + ' m (Payday SL ' + mkr(m.sl_payday) + ' · búð ' + mkr(m.sl_bud) + ' · Payday BH ' + mkr(m.bh_payday) + (m.bh_hand ? ' · merkt greitt BH ' + mkr(m.bh_hand) + ': ' + esc((m.bh_hand_reikn || []).join(', ')) : '') + ')';
     const inn = gi.sidustu, listi = inn && Array.isArray(inn.listi) ? inn.listi : null;
     const radir = listi && listi.length
-      ? listi.map(r => '<div class="yr-gr" title="' + esc(r.felag + ' · ' + r.nr + ' · ' + r.kunni + ' · ' + isk(r.kr) + ' kr · greitt ' + dd(r.dags)) + '">' +
-          '<span class="yr-gt yr-gt-' + (r.teg === 'teya' ? 'ty' : r.felag === 'BH' ? 'bh' : 'sl') + '">' + (r.teg === 'teya' ? 'Teya' : esc(r.felag)) + '</span>' +
-          '<span class="yr-gn">' + esc(r.teg === 'teya' ? 'Kortauppgjör' : r.kunni) + '</span><b>' + isk(r.kr) + '</b><span class="yr-gd">' + dd(r.dags) + '</span></div>').join('')
+      // tvær línur á röð (1700 px: flísin er ~194 px og ein lína gaf nafninu 16–37 px): nafn + upphæð, svo félag · nr · dagur
+      ? listi.map(r => { const t = r.teg === 'teya' ? 'ty' : r.felag === 'BH' ? 'bh' : 'sl';
+          return '<div class="yr-gr yr-gr-' + t + '" title="' + esc(r.felag + ' · ' + r.nr + ' · ' + r.kunni + ' · ' + isk(r.kr) + ' kr · greitt ' + dd(r.dags)) + '">' +
+            '<span class="yr-g1"><span class="yr-gn">' + esc(r.teg === 'teya' ? 'Teya kortauppgjör' : r.kunni) + '</span><b>' + stutt(r.kr) + '</b></span>' +
+            '<span class="yr-g2"><i class="yr-gt-' + t + '">' + (r.teg === 'teya' ? 'Teya' : esc(r.felag)) + '</i>' + (r.teg === 'teya' ? 'kort' : esc(r.nr)) + ' · ' + dd(r.dags) + '</span></div>'; }).join('')
       : '<div class="yr-gr"><span class="yr-gn">' + (inn && inn.omaelt ? 'ómælt' : 'Engar inngreiðslur fundust') + '</span></div>';
     const vant = inn && Array.isArray(inn.omaelt) && inn.omaelt.length ? '<span class="yr-gv" title="Þessar heimildir svöruðu ekki: ' + esc(inn.omaelt.join(', ')) + '">' + led('or') + 'vantar: ' + esc(inn.omaelt.join(', ')) + '</span>' : '';
     const teya = fin(nu.teya)
-      ? '<span class="yr-ks yr-gty" title="Teya-uppgjör úr pósti (reporting@teya.com, eitt á virkan dag) borin við kortasölur í búð. Teya er staðfesting á kortapeningnum, ekki viðbót: búðin er þegar talin í Greitt inn.' + (fin(nu.sl_kort) ? ' Munur ' + isk(nu.teya - nu.sl_kort) + ' kr (uppgjör berst virkum degi síðar).' : '') + '">Teya ' + esc(MAN[manOf(nu.fra)] || '') + '. <b>' + isk(nu.teya) + '</b> · ' + nu.teya_n + ' uppgj.' + (fin(nu.sl_kort) ? ' · kort í búð <b>' + isk(nu.sl_kort) + '</b>' : '') + '</span>'
+      ? '<span class="yr-ks yr-gty" title="Teya-uppgjör úr pósti (reporting@teya.com, eitt á virkan dag) borin við kortasölur í búð. Teya er staðfesting á kortapeningnum, ekki viðbót: búðin er þegar talin í Greitt inn.' + (fin(nu.sl_kort) ? ' Munur ' + isk(nu.teya - nu.sl_kort) + ' kr (uppgjör berst virkum degi síðar).' : '') + '">Teya ' + esc(MAN[manOf(nu.fra)] || '') + '. <b>' + isk(nu.teya) + '</b> · ' + nu.teya_n + ' uppgj.' + (fin(nu.sl_kort) ? '<br>kort í búð <b>' + isk(nu.sl_kort) + '</b>' : '') + '</span>'
       : '<span class="yr-ks yr-gty">Teya ómælt</span>';
     return '<div class="yr-k yr-gi" title="Greitt inn MEÐ VSK, bæði félög — peningarnir sem komu inn.\n' + M.map(sund).join('\n') + '">' +
       '<span class="yr-kl">' + ic('inn') + 'Greitt inn<em>m. vsk</em></span>' +
-      '<span class="yr-row"><span class="yr-kn">' + mkr(nu.alls) + '<small>m</small></span>' +
-        (ogr != null ? '<span class="yr-kp yr-r yr-gog" title="' + esc(ogrT) + '">Ógreitt alls ' + mkr(ogr) + ' m</span>' : '') + '</span>' +
-      '<div class="yr-gm"><div class="yr-bars">' + M.map((m, i) => '<div' + (i === 3 ? ' class="yr-nu"' : '') + '><i style="height:' + h(m.alls || 0) + 'px"></i></div>').join('') + '</div>' +
-      '<div class="yr-mo">' + M.map((m, i) => '<span' + (i === 3 ? ' class="yr-nu"' : '') + '>' + esc(MAN[manOf(m.fra)] || '') + ' <b>' + mkr(m.alls, 1) + '</b></span>').join('') + '</div></div>' +
+      '<span class="yr-kn">' + mkr(nu.alls) + '<small>m</small></span>' +
+      (ogr != null ? '<span class="yr-kp yr-r yr-gog" title="' + esc(ogrT) + '">Ógreitt alls <b>' + mkr(ogr) + ' m</b></span>' : '') +
+      // mánuðirnir: tala + mjó súla undir (breidd eftir hlutfalli af stærsta mánuði)
+      '<div class="yr-gm">' + M.map((m, i) => '<span' + (i === 3 ? ' class="yr-nu"' : '') + '>' + esc(MAN[manOf(m.fra)] || '') + '<b>' + mkr(m.alls, 1) + '</b><i style="width:' + Math.max(4, Math.round((m.alls || 0) / max * 100)) + '%"></i></span>').join('') + '</div>' +
       '<div class="yr-gl"><span class="yr-gh">Síðustu inngreiðslur</span>' + radir + vant + '</div>' +
       teya +
       '<span class="yr-kf" title="Payday SL og BH + BH-reikningar merktir greiddir í Kröfu yfirliti + Teya-uppgjör úr pósti">' + heimildLed(rek, 'Payday SL') + 'Payday SL<s>|</s>' + heimildLed(rek, 'Greiðslur BH') + 'BH<s>|</s>' + led(fin(nu.teya) ? 'gr' : 'or', 'Teya-uppgjör úr pósti') + 'Teya</span>' +
@@ -764,16 +766,20 @@
       '.yr-avg{position:absolute;left:-2px;right:-2px;border-top:1px dashed rgba(255,255,255,.6);z-index:2}',
       '.yr-mo{display:flex;gap:8px;padding:0 2px;font-size:10.5px;color:#a9b8d0}.yr-mo span{flex:1;display:flex;flex-direction:column;align-items:center;line-height:1.3}.yr-mo b{font-size:12.5px;font-weight:600;color:#fff}.yr-mo .yr-nu b{color:#ffb37a}',
       // Greitt inn (25.11): þjappaðar mánaðarsúlur, síðustu inngreiðslur og Teya-lína
-      '.yr-gi{gap:6px}.yr-gi .yr-kn{font-size:29px}.yr-gog{max-width:58%;overflow:hidden;text-overflow:ellipsis}',
-      '.yr-gi .yr-bars{height:32px;gap:6px}.yr-gi .yr-mo{gap:6px;font-size:10px}.yr-gi .yr-mo span{flex-direction:row;justify-content:center;gap:3px;white-space:nowrap}.yr-gi .yr-mo b{font-size:11px}',
-      '.yr-gl{display:flex;flex-direction:column;gap:2px;padding:6px 8px;border-radius:10px;background:rgba(0,6,18,.38);box-shadow:inset 0 1px 3px rgba(0,0,0,.6),0 1px 0 rgba(255,255,255,.06)}',
-      '.yr-gh{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#a9b8d0;margin-bottom:1px}',
-      '.yr-gr{display:flex;align-items:center;gap:6px;min-width:0;font-size:12px;line-height:17px;color:#dfe7f4}',
-      '.yr-gr b{font-weight:600;color:#fff;white-space:nowrap}.yr-gn{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
-      '.yr-gd{flex:none;width:34px;text-align:right;font-size:11px;color:#a9b8d0;white-space:nowrap}',
-      '.yr-gt{flex:none;min-width:24px;padding:0 4px;border-radius:5px;font-size:9.5px;font-weight:700;line-height:15px;text-align:center;letter-spacing:.03em}',
-      '.yr-gt-sl{background:rgba(255,103,2,.22);color:#ffb37a}.yr-gt-bh{background:rgba(91,143,240,.25);color:#a9c5ff}.yr-gt-ty{background:rgba(34,197,94,.2);color:#86efac}',
-      '.yr-gv{display:flex;align-items:center;gap:5px;font-size:10.5px;color:#ffb37a}.yr-gty{font-size:11.5px}',
+      '.yr-gi{gap:6px}.yr-gi .yr-kn{font-size:29px}.yr-gog{max-width:100%;overflow:hidden;text-overflow:ellipsis}.yr-gog b{margin-left:3px;font-weight:700;color:#fff}',
+      '.yr-gm{display:flex;gap:6px}.yr-gm span{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:0 3px;font-size:10px;color:#a9b8d0;white-space:nowrap}',
+      '.yr-gm b{font-size:11.5px;font-weight:600;color:#fff}.yr-gm .yr-nu b{color:#ffb37a}',
+      '.yr-gm i{flex:0 0 auto;display:block;height:4px;margin-top:3px;border-radius:2px;background:linear-gradient(90deg,#6f86ab,#a9bbd8);box-shadow:inset 0 1px 0 rgba(255,255,255,.4)}',
+      '.yr-gm .yr-nu i{background:linear-gradient(90deg,#c94400,#ffb066);box-shadow:0 0 8px -1px rgba(255,103,2,.9)}',
+      '.yr-gl{display:flex;flex-direction:column;gap:4px;padding:6px 8px;border-radius:10px;background:rgba(0,6,18,.38);box-shadow:inset 0 1px 3px rgba(0,0,0,.6),0 1px 0 rgba(255,255,255,.06)}',
+      '.yr-gh{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#a9b8d0}',
+      '.yr-gr{display:flex;flex-direction:column;min-width:0;padding-left:6px;border-left:2px solid #ff8a1f;color:#dfe7f4}',
+      '.yr-gr-bh{border-left-color:#5b8ff0}.yr-gr-ty{border-left-color:#22c55e}',
+      '.yr-g1{display:flex;align-items:baseline;gap:6px;min-width:0;font-size:12px;line-height:15px}.yr-g1 b{flex:none;font-weight:600;color:#fff;white-space:nowrap}',
+      '.yr-gn{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      '.yr-g2{font-size:10.5px;line-height:13px;color:#a9b8d0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      '.yr-g2 i{font-style:normal;font-weight:700;margin-right:5px}.yr-gt-sl{color:#ffb37a}.yr-gt-bh{color:#a9c5ff}.yr-gt-ty{color:#86efac}',
+      '.yr-gv{display:flex;align-items:center;gap:5px;font-size:10.5px;color:#ffb37a}.yr-gty{font-size:11.5px;line-height:15px;white-space:normal}',
       // á leiðinni
       '.yr-sb{display:flex;height:9px;padding:1px;gap:2px;border-radius:999px;background:rgba(0,6,20,.6);box-shadow:inset 0 1px 3px rgba(0,0,0,.8),0 1px 0 rgba(255,255,255,.09)}.yr-sb-l{height:11px}',
       '.yr-sb i{display:block;height:100%;min-width:4px;border-radius:999px}',
