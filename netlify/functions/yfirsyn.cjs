@@ -310,6 +310,68 @@ async function greittInn() {
   return { manudir, regla: 'Með vsk: Payday SL + búð SL (kort/reiðufé) + Payday BH + BH merkt greitt í Kröfu yfirliti · Teya = uppgjör úr pósti til samanburðar, ekki lagt við' };
 }
 
+// Tekjur hvers mánaðar ársins, hvort félag sér (Agnar 25.11.2026: „tekjur per mánuð allt árið heild. Stacked slökkvitæki + brunahólf").
+// SÖMU reglur og Tekjur í beinni (_tekjur.cjs, engin ný regla), án vsk:
+//   SL = solur final eftir söludegi, kreditnóta á mánuð frumsölunnar (slokkvitaekiManudirFrumsala) — solur hefst 04.05.2026 (yfirtakan).
+//        Mánuðirnir á undan eru reikningar fyrri eiganda (stolpi_reikningar, upphæð MEÐ vsk → ÷ 1,24), aðeins dags < 04.05.2026 svo
+//        ekkert telst tvisvar. Merkt `stolpi` per mánuð svo röndin geti sýnt það sér.
+//   BH = Payday-reikningar PAID/SENT, höfuðstóll, eftir útgáfudegi (brunaholfManudir) — REIKNINGSFÆRT, ekki „unnið“.
+const T = require('./_tekjur.cjs');
+const YFIRTAKA = '2026-05-04';
+async function tekjurAr() {
+  const ar = idag().slice(0, 4), fra = `${ar}-01-01`;
+  const [sl, voidIds, bh, st] = await Promise.all([
+    sbOll(`solur?select=id,status,credit_of,is_credit,upphaed_an_vsk,created_at&status=eq.final&created_at=gte.${fra}&order=id.asc`),
+    sbOll('solur?select=id&status=eq.void&order=id.asc').then(r => r.map(x => x.id)),
+    sbOll(`invoices?select=status,source,hofudstoll,gjalddagi,utgafudagur&source=eq.payday&status=in.(PAID,SENT)&or=(utgafudagur.gte.${fra},and(utgafudagur.is.null,gjalddagi.gte.${fra}))&order=id.asc`),
+    fra < YFIRTAKA ? sbOll(`stolpi_reikningar?select=reikn_nr,tegund,dags,upphaed&dags=gte.${fra}&dags=lt.${YFIRTAKA}&order=reikn_nr.asc,tegund.asc,dags.asc`) : Promise.resolve([]),
+  ]);
+  if (!bh.length) return { omaelt: 'reikningalestur Brunahólfs skilaði engu' };
+  const hef = new Set(sl.map(r => String(r.id))), voidSet = new Set(voidIds.map(String));
+  const vantar = [...new Set(sl.filter(r => r.credit_of != null && !hef.has(String(r.credit_of)) && !voidSet.has(String(r.credit_of))).map(r => Number(r.credit_of)).filter(n => Number.isInteger(n) && n > 0))];
+  const frum = [];
+  for (let i = 0; i < vantar.length; i += 150) { try { frum.push(...await sbOll(`solur?select=id,created_at&id=in.(${vantar.slice(i, i + 150).join(',')})&order=id.asc`)); } catch (e) { /* nótan heldur eigin mánuði */ } }
+  const slMan = T.slokkvitaekiManudirFrumsala(sl, voidIds, frum).man;
+  const bhMan = T.brunaholfManudir(bh);
+  const stMan = {};
+  st.forEach(r => { const m = String(r.dags || '').slice(0, 7); if (m) stMan[m] = (stMan[m] || 0) + (Number(r.upphaed) || 0) / 1.24; });
+  const nuM = idag().slice(0, 7);
+  const manudir = [];
+  for (let i = 1; i <= 12; i++) {
+    const m = `${ar}-${String(i).padStart(2, '0')}`;
+    if (m > nuM) { manudir.push({ man: m, framtid: true }); continue; }
+    const stolpi = kr(stMan[m] || 0), solur = kr(slMan[m] || 0);
+    manudir.push({ man: m, sl: stolpi + solur, stolpi, bh: kr(bhMan[m] || 0), til_dags: m === nuM });
+  }
+  const alls = manudir.reduce((a, x) => a + (x.sl || 0) + (x.bh || 0), 0);
+  return { ar, manudir, alls, sl_alls: manudir.reduce((a, x) => a + (x.sl || 0), 0), bh_alls: manudir.reduce((a, x) => a + (x.bh || 0), 0),
+    regla: 'Án vsk, sömu reglur og Tekjur í beinni. SL: sölur eftir söludegi, kreditnóta á mánuð frumsölunnar; fyrir 04.05.2026 reikningar Stólpa (fyrri eiganda) ÷ 1,24. BH: Payday-reikningar greiddir eða sendir, höfuðstóll, eftir útgáfudegi (reikningsfært).' };
+}
+
+// Mánuðurinn í tölum (Agnar 25.11.2026: „Hve margar skýrslur gerðar í þessum mánuði ársskoðun og brunaskoðun … hve margir reikningar
+// sendir og upphæð send fyrir slökkvitæki og síðan brunahólf"):
+//   Ársskoðun  = úttektarskýrslur appsins (customer_documents uttektarskyrsla/app, ekki afrit) eftir dagsetningu skýrslunnar — sama og Rekstrarskýrslan.
+//   Brunaskoðun = brunakerfi_skyrslur eftir dagsetningu skýrslunnar (data.meta.dags): klárar (final) og í drögum sér.
+//   Reikningar SL = Payday SL (payday_invoices_slokk) stofnaðir í mánuðinum, greiddir eða sendir (CANCELLED/CREDIT ekki).
+//   Reikningar BH = Payday BH (invoices) útgefnir í mánuðinum, greiddir eða sendir. Upphæð án og með vsk.
+async function manudurinn() {
+  const fra = idag().slice(0, 8) + '01';
+  const [utt, bk, slr, bhr] = await Promise.all([
+    sbOll(`customer_documents?select=id,is_duplicate&doc_type=eq.uttektarskyrsla&source=eq.app&doc_date=gte.${fra}&order=id.asc`),
+    sbOll('brunakerfi_skyrslur?select=id,status,dags:data->meta->>dags&order=id.asc'),
+    sbOll(`payday_invoices_slokk?select=id,amount_ex,amount_total&status=in.(PAID,SENT)&created_date=gte.${fra}&order=id.asc`),
+    sbOll(`invoices?select=id,hofudstoll,upphaed_total&source=eq.payday&status=in.(PAID,SENT)&utgafudagur=gte.${fra}&order=id.asc`),
+  ]);
+  const bkM = bk.filter(r => String(r.dags || '') >= fra && String(r.dags || '') <= idag());
+  return {
+    fra, til: idag(),
+    arsskodun: utt.filter(r => r.is_duplicate !== true).length,
+    brunaskodun: bkM.filter(r => r.status === 'final').length, brunaskodun_drog: bkM.filter(r => r.status !== 'final').length,
+    reikn_sl: { n: slr.length, an_vsk: summa(slr, r => r.amount_ex), m_vsk: summa(slr, r => r.amount_total) },
+    reikn_bh: { n: bhr.length, an_vsk: summa(bhr, r => r.hofudstoll), m_vsk: summa(bhr, r => r.upphaed_total) },
+  };
+}
+
 // Mæting í dag LIFANDI (Agnar 25.11.2026: „Geturðu ekki bara tengst þessu … þarna kemur allavega hvað margir eru mættir í dag“ og
 // „eins og þarna eru 7 mættir og 1 veikur, væri fínt að sjá það“): sama heimild og Mæting · verkstaðir — brunaholf
 // /api/timavera-dagar, sem sækir OPNAR stimplanir beint úr Tímaveru-API (timavera-pull geymir aðeins frágengnar færslur, þess vegna
@@ -372,7 +434,7 @@ exports.handler = async (event) => {
   // annar stjórnandi við vél Agnars sæi annars allt). Lota (Claude) er prófunaraðgangur lotunnar (uid 10, Admin).
   const fornafn = String(hver.nafn || '').trim().split(/\s+/)[0];
   if (!LEYFT.includes(fornafn)) return P.json(403, { error: 'Yfirsýnin er aðeins fyrir Agnar og Annþór', bannad: true });
-  const [rek, kbh, ksl, os, ssl, sbh, mt, gi, cg, inn] = await Promise.all([
+  const [rek, kbh, ksl, os, ssl, sbh, mt, gi, cg, inn, tar, man] = await Promise.all([
     mael('Rekstrarskýrslan', () => rekstur(event)),
     mael('Kröfu yfirlit Brunahólfs', krofurBh),
     mael('Kröfur Slökkvitækja', krofurSl),
@@ -383,10 +445,12 @@ exports.handler = async (event) => {
     mael('Greiðslur', greittInn),
     mael('CG-gildi Kröfu yfirlita', cgSidna),
     mael('Síðustu inngreiðslur', sidustuInn),
+    mael('Tekjur ársins', tekjurAr),
+    mael('Mánuðurinn', manudurinn),
   ]);
   if (gi && !gi.omaelt) gi.sidustu = inn;
   const cgOk = cg && !cg.omaelt ? cg : null;
   const te = cgOk ? timiEftirBh(cgOk) : { omaelt: 'CG-gildi Kröfu yfirlita náðust ekki' };
-  return P.json(200, { rekstur: rek, krofur: { sl: ksl, bh: kbh, timi_eftir: te }, osott: os, sidast: { sl: ssl, bh: sbh }, timavera: mt, greitt: gi,
+  return P.json(200, { rekstur: rek, krofur: { sl: ksl, bh: kbh, timi_eftir: te }, osott: os, sidast: { sl: ssl, bh: sbh }, timavera: mt, greitt: gi, tekjur_ar: tar, manudurinn: man,
     samraemi: cgOk ? samraemi(cgOk, kbh, ksl, te) : null, maelt_at: new Date().toISOString() });
 };
