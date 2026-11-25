@@ -29,10 +29,14 @@
   const MERKI = 'data-t5snerti';
 
   // Takkar og tenglar sem mega fá stækkað snertisvæði. Enginn þeirra eyðir gögnum.
+  // Yfirsyn-rondin (.yr-*, patch 523) er VILJANDI utan listans. Hun er thett grid af smaum
+  // flisum: maelt 25.11.2026 stal yfirlag nagrannans smellsvaedi theirra og eitt tilvik for ur
+  // 12 px i 10. Hun er auk thess i smidum hja annarri lotu sama dag. Su rond tharf eigin
+  // radbil, ekki yfirlag - og sa sem a hana setur hann.
   const TAKKAR = [
     '.fela', '.btn', '.flipi', '.dlink', '.dplus', '.lpick', '.clink', '.vs-tog', '.vs-t',
-    '.ph-r', '.ph-h', '.yr-lnk', '.mk-m', '.chkstj', '.chkbox', '.ovcompany', '.lk', '.yr-lk',
-    '.yr-go', '.yr-fm', '.yf-keyra', '.job', '.ek-lk', '.yr-rf', '.yr-cseg', '.yr-ach'
+    '.ph-r', '.ph-h', '.mk-m', '.chkstj', '.chkbox', '.ovcompany', '.lk',
+    '.yf-keyra', '.job', '.ek-lk'
   ].join(',');
   // Þrjár varnir á sama stað: eyðitakkar, ✕ og allt sem dispatcherinn kallar „eyd…".
   const VORN = ':not(.eyda):not(.chkx):not([data-t5*="eyd"]):not([title*="Eyð"])';
