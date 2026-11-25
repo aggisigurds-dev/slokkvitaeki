@@ -228,6 +228,16 @@
     '</div>';
   }
 
+  // Áunnið Brunahólfs í mánuðinum, án vsk: göt (Landspítali + Heklureitur) og rukkanlegir tímar. Sama tala og á Unnið-spjaldinu.
+  function bhAunidLina() {
+    const man = S.r && S.r.brunaholf && S.r.brunaholf.man;
+    const m = man && man[man.length - 1];
+    const h = m && m.hlutar;
+    if (!h) return '';
+    const got = fin(h.landspitali) && fin(h.heklureitur) ? h.landspitali + h.heklureitur : null;
+    return '<span class="yr-n" title="Brunahólf áunnið í mánuðinum, án vsk. Göt = Landspítali + Heklureitur. Rukkanlegir tímar × taxti.">BH áunnið · göt <b>' + (got == null ? 'ómælt' : mkr(got) + ' m') + '</b> · rukkanlegir tímar <b>' + (fin(h.tima) ? mkr(h.tima) + ' m' : 'ómælt') + '</b></span>';
+  }
+
   function leidinniHtml(D) {
     const sl = D.krofur && D.krofur.sl, bh = D.krofur && D.krofur.bh, os = D.osott;
     if (!ok(sl) && !ok(bh)) return omaelt('Á leiðinni inn', (sl && sl.omaelt) || (bh && bh.omaelt));
@@ -248,6 +258,8 @@
         '<span class="yr-lr" title="SL ' + (ok(sl) ? sl.ogreitt.n + ' · ' + isk(sl.ogreitt.kr) + ' kr' : 'ómælt') + ' · BH ' + (ok(bh) ? bh.ogreitt.n + ' · ' + isk(bh.ogreitt.kr) + ' kr' : 'ómælt') + '">' + led('rd') + 'Ógreitt<b>' + mkr(ogr) + '<small>m</small></b></span>' +
         '<span class="yr-lr" title="' + (ok(os) ? os.n + ' verkbeiðnir tilbúnar · ' + isk(os.kr) + ' kr' : 'ómælt') + '">' + led('or') + 'Ósótt<b>' + mkr(osk) + '<small>m</small></b></span>' +
       '</div>' +
+      bhAunidLina() +
+      (ok(bh) ? '<span class="yr-n" title="Kröfu yfirlit Brunahólfs. Sent í bókun telur með ógreiddu þar til krafan parast.">Kröfu yfirlit BH · ósent <b>' + mkr(bh.osent.kr) + ' m</b> · ógreitt <b>' + mkr(bh.ogreitt.kr) + ' m</b></span>' : '') +
       '<span class="yr-kf">' + (vantar.length ? led('or') + 'ómælt: ' + esc(vantar.join(', ')) : led('gr') + 'Kröfur SL · Kröfu yfirlit BH') + '</span>' +
     '</div>';
   }
@@ -285,10 +297,11 @@
         const rf = fin(m.reikningsfaert) ? '<b>' + smatt(m.reikningsfaert) + '</b>' : 'ómælt';
         const og = !fin(m.ogefid) ? 'ómælt' : m.ogefid > 0 ? '<b>' + smatt(m.ogefid) + '</b>' : '<b>ekkert</b> <span class="yr-e" title="Reikningsfært í mánuðinum er umfram unnið — reikningar fyrir vinnu fyrri mánaða eru gefnir út núna">(umfram ' + smatt(-m.ogefid) + ')</span>';
         const h = m.hlutar || {};
-        wBh = '<div class="yr-well" title="' + esc('Brunahólf — ' + nm + ' til dags, án vsk, áætlun: unnið ' + isk(m.unnid) + ' kr (tímar ' + isk(h.tima) + ' · Landspítalagöt ' + isk(h.landspitali) + ' · Heklureitsgöt ' + isk(h.heklureitur) + ') · reikningsfært ' + (fin(m.reikningsfaert) ? isk(m.reikningsfaert) + ' kr' : 'ómælt') + ' · ógefið út = unnið − reikningsfært') + '">' +
+        const got = fin(h.landspitali) && fin(h.heklureitur) ? h.landspitali + h.heklureitur : null;
+        wBh = '<div class="yr-well" title="' + esc('Brunahólf — ' + nm + ' til dags, án vsk, áætlun: unnið ' + isk(m.unnid) + ' kr (rukkanlegir tímar ' + isk(h.tima) + ' · göt ' + (got == null ? 'ómælt' : isk(got) + ' kr') + ' · Landspítali ' + isk(h.landspitali) + ' · Heklureitur ' + isk(h.heklureitur) + ') · reikningsfært ' + (fin(m.reikningsfaert) ? isk(m.reikningsfaert) + ' kr' : 'ómælt') + ' · ógefið út = unnið − reikningsfært') + '">' +
           '<span class="yr-v">' + stor(m.unnid).t + '<span class="yr-e">' + stor(m.unnid).e + ' Brunahólf</span></span>' +
-          '<span class="yr-n">tímar <b>' + smatt(h.tima) + '</b> · Landspítali <b>' + smatt(h.landspitali) + '</b></span>' +
-          '<span class="yr-n">Heklureitur <b>' + smatt(h.heklureitur) + '</b></span>' +
+          '<span class="yr-n">Göt <b>' + (got == null ? 'ómælt' : smatt(got)) + '</b> · Landspítali ' + smatt(h.landspitali) + ' · Heklureitur ' + smatt(h.heklureitur) + '</span>' +
+          '<span class="yr-n">Rukkanlegir tímar <b>' + smatt(h.tima) + '</b></span>' +
           '<span class="yr-n">reikningsfært ' + rf + '</span><span class="yr-n">ógefið út ' + og + '</span></div>';
       } else wBh = om('Brunahólf', (m && m.omaelt) || (bh && bh.omaelt) || 'samtala mánaðarins vantar');
       wells = wSl + wBh;
