@@ -408,6 +408,23 @@
     return l;
   }
 
+  // Mæting dagsins (Agnar 25.11.2026: „0 við vinnu - 8 í gær passar ekki“ → „Geturðu ekki bara tengst þessu … hvað margir eru
+  // mættir í dag“ → „7 mættir og 1 veikur, væri fínt að sjá það“). Lifandi úr Tímaveru, sama heimild og Mæting · verkstaðir;
+  // smellur opnar hana. Náist lifandi staðan ekki: frágengnar færslur, merktar „skráðir“ (berast oft í lok dags), aldrei „mættir“.
+  const MAETING_URL = 'https://brunaholf.netlify.app/#tvmaeting';
+  function maetingChip(tv) {
+    if (tv.lifandi && fin(tv.maettir)) {
+      const vk = fin(tv.veikir) && tv.veikir > 0 ? ' · ' + isk(tv.veikir) + (tv.veikir === 1 ? ' veikur' : ' veikir') : '';
+      const t = 'Lifandi úr Tímaveru — sama og Mæting · verkstaðir: ' + tv.maettir + ' mættir' + (tv.veikir ? ', ' + tv.veikir + ' á veikindaverkefni' : '') +
+        (fin(tv.inni) ? ', ' + tv.inni + ' inni núna' : '') + (fin(tv.klst_idag) ? ', ' + String(tv.klst_idag).replace('.', ',') + ' klst hingað til' : '') +
+        '. Í gær: ' + tv.igaer + '. Smelltu til að opna Mætingu.';
+      return '<a class="yr-chip" href="' + MAETING_URL + '" target="_blank" rel="noopener" title="' + esc(t) + '">' + led(tv.maettir ? 'gr' : 'gy') +
+        isk(tv.maettir) + ' mættir' + vk + ' · <b>' + isk(tv.igaer) + '</b> í gær</a>';
+    }
+    return '<a class="yr-chip" href="' + MAETING_URL + '" target="_blank" rel="noopener" title="' + esc('Lifandi staða Tímaveru náðist ekki' + (tv.lifandi_villa ? ' (' + tv.lifandi_villa + ')' : '') +
+      ' — talin eru starfsmenn með frágengna tíma, sem berast oft í lok dags. Smelltu til að opna Mætingu.') + '">' + led('or') + isk(tv.idag) + ' skráðir í dag · <b>' + isk(tv.igaer) + '</b> í gær</a>';
+  }
+
   function topHtml(n, ctx, rek, tv) {
     const hm = heimildir(rek);
     return '<header class="yr-top">' +
@@ -610,6 +627,7 @@
       '.yr-chips{display:flex;gap:8px;margin-left:6px;min-width:0;overflow:hidden}',
       '.yr-chip{display:inline-flex;align-items:center;gap:7px;height:31px;padding:0 13px;border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(0,8,24,.35));border:1px solid rgba(160,190,235,.28);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 3px 6px -2px rgba(0,0,0,.6);font-size:13px;font-weight:500;color:#e6edf8;white-space:nowrap}',
       '.yr-chip b{font-weight:600;color:#fff}',
+      'a.yr-chip{text-decoration:none!important;cursor:pointer}a.yr-chip:hover{border-color:rgba(190,210,245,.55);color:#fff}a.yr-chip:focus-visible{outline:2px solid #ffb066;outline-offset:2px}',
       '.yr-act{display:flex;align-items:center;gap:10px;margin-left:auto}',
       '.yr-seg{display:flex;padding:3px;border-radius:12px;background:rgba(0,6,18,.55);border:1px solid rgba(160,190,235,.22);box-shadow:inset 0 1px 3px rgba(0,0,0,.7)}',
       '.yr-seg button{height:28px;padding:0 14px;border:0;border-radius:9px;background:transparent;color:#c8d4e8;font:600 13px Poppins,system-ui,sans-serif;cursor:pointer}',
