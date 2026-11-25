@@ -704,8 +704,8 @@
       r('.b274-blad ._bksr table', 'background:transparent;box-shadow:none;border-radius:0;margin:0'),
       r('.b274-blad ._bksr ._hd img', 'display:inline-block;height:40px!important'),
       r('.b274-blad ._bksr ._hd img', 'height:40px'),
-      r('.b274-blad._aflaest td[data-bk],.b274-blad._aflaest td[data-cv],.b274-blad._aflaest td[data-hv],.b274-blad._aflaest td[data-hk]', 'cursor:pointer;position:relative;background:#fffbea;box-shadow:inset 0 0 0 1px #e0a93e'),
-      r('.b274-blad._aflaest td[data-bk]:hover,.b274-blad._aflaest td[data-cv]:hover,.b274-blad._aflaest td[data-hv]:hover,.b274-blad._aflaest td[data-hk]:hover', 'background:#fff3c4'),
+      r('.b274-blad._aflaest td[data-bk],.b274-blad._aflaest td[data-cv],.b274-blad._aflaest td[data-hv],.b274-blad._aflaest td[data-hk],.b274-blad._aflaest td[data-meta],.b274-blad._aflaest [data-txt]', 'cursor:pointer;position:relative;background:#fffbea;box-shadow:inset 0 0 0 1px #e0a93e'),
+      r('.b274-blad._aflaest td[data-bk]:hover,.b274-blad._aflaest td[data-cv]:hover,.b274-blad._aflaest td[data-hv]:hover,.b274-blad._aflaest td[data-hk]:hover,.b274-blad._aflaest td[data-meta]:hover,.b274-blad._aflaest [data-txt]:hover', 'background:#fff3c4'),
       r('.b274-pop', 'position:absolute;left:50%;top:100%;transform:translateX(-50%);z-index:5;display:inline-flex;align-items:center;gap:2px;padding:3px;border-radius:6px;background:' + METAL + ';border:1px solid #000;box-shadow:0 10px 24px -8px rgba(0,0,0,.6);margin-top:2px'),
       r('.b274-pop button', 'all:unset;cursor:pointer;width:34px;height:34px;border-radius:4px;background:' + SILVER + ';color:#11141c;font:800 20px ' + SANS + ';display:inline-flex;align-items:center;justify-content:center;box-shadow:inset 0 1px 0 rgba(255,255,255,.9)'),
       r('.b274-pop button:active', 'filter:brightness(.92)'),
@@ -1413,6 +1413,26 @@
       blad.addEventListener('click', e => {
         const td = e.target.closest('td'); if (!td || !blad.contains(td)) { if (!e.target.closest('.b274-pop')) lokaPop(); return; }
         if (e.target.closest('.b274-pop')) return;
+        // dagsetning skoðunar → dagsval (beint á blaðinu)
+        if (td.dataset.meta === 'dags' && !td.querySelector('input')) {
+          if (!d.meta) d.meta = {};
+          const inp = document.createElement('input'); inp.type = 'date'; inp.value = String(d.meta.dags || '').slice(0, 10); inp.className = 'b274-dbinn'; inp.style.minWidth = '132px';
+          td.textContent = ''; td.appendChild(inp); inp.focus();
+          const lok = () => { if (inp.value) d.meta.dags = inp.value; td.textContent = fmtDags(d.meta.dags) || '—'; vistaBladSidar(repNow); };
+          inp.addEventListener('change', lok); inp.addEventListener('blur', lok);
+          inp.addEventListener('keydown', ev => { if (ev.key === 'Enter') inp.blur(); });
+          return;
+        }
+        // samantekt skoðunar → frjáls texti (beint á blaðinu)
+        const stx = e.target.closest('[data-txt="samantekt"]');
+        if (stx && !stx.querySelector('textarea')) {
+          const ta = document.createElement('textarea'); ta.value = String(d.samantekt || ''); ta.className = 'b274-dbinn';
+          ta.style.cssText = 'width:100%;min-height:72px;resize:vertical;font:inherit;line-height:1.5;padding:6px 8px';
+          stx.textContent = ''; stx.appendChild(ta); ta.focus();
+          const lok = () => { d.samantekt = String(ta.value || '').trim(); stx.innerHTML = d.samantekt ? esc(d.samantekt).replace(/\n/g, '<br>') : '<span style="color:#9aa1ac">Smelltu til að lýsa úttektinni…</span>'; vistaBladSidar(repNow); };
+          ta.addEventListener('blur', lok);
+          return;
+        }
         // búnaðartala → +/−
         if (td.dataset.bk) {
           const tr = td.closest('tr[data-bi]'); const bi = +tr.dataset.bi, k = td.dataset.bk; const row = d.bunadur && d.bunadur[bi]; if (!row) return;

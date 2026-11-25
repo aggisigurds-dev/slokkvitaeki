@@ -125,6 +125,9 @@
   // 21.09.2026 (úttekt): úreldingarvörður verðlistans — sjá savePriceItems.
   let _pricelistAsOf = '', _verdlistiUreltur = false; const _minarVistanir = [];
   let _reports = null, _repAt = 0, _logoData = null;
+  // true meðan 274 teiknar blaðið á skjánum (renderSheet) — þá birtist Samantekt-reiturinn
+  // alltaf (líka tómur, svo megi smella og skrifa); í prentun/PDF birtist hann aðeins með texta.
+  let _sheetMode = false;
 
   function SB() { return (window.DB && DB.sb) || null; }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
@@ -158,6 +161,7 @@
       aths: [],
       cNew: { fl: 'Reykskynjarar', numer: '', svaedi: '', teg: 'Vantar', lysing: '' },
       abend: '',
+      samantekt: '',
       verd: { linur: [] }
     };
   }
@@ -182,6 +186,7 @@
       spenna: String(num(r.spenna_eftir) || ''), i1: r.i1 || '', i2: r.i2 || '', ending: String(num(r.lagm_ending) || '12') };
     b.aths = (d.aths || []).map(x => ({ fl: x.bunadur || 'Annað', numer: x.numer || '', svaedi: x.svaedi || '', teg: x.athugasemd || 'Annað', lysing: x.lysing || '' }));
     b.abend = (d.abendingar || []).join('\n');
+    b.samantekt = d.samantekt || '';
     return b;
   }
 
@@ -769,6 +774,9 @@
             '<div class="_bks-athform" id="_bks-athform">' + athFormHtml() + '</div>' +
             '<div id="_bks-athlist"></div>' +
           '</div></div>' +
+          '<div class="_bks-card"><div class="_bks-ch">Samantekt skoðunar<small>lýsir úttektinni — hvað var gert</small></div><div class="_bks-body">' +
+            '<textarea class="_bks-in" data-k="samantekt" placeholder="Stutt lýsing á úttektinni og því sem var gert, t.d.: Kerfið var gangsett og allir skynjarar prófaðir. Rafhlöður mældar í lagi. Boð bárust frá öllum rásum.">' + esc(s.samantekt || '') + '</textarea>' +
+          '</div></div>' +
           '<div class="_bks-card"><div class="_bks-ch">Ábendingar</div><div class="_bks-body">' +
             '<textarea class="_bks-in" data-k="abend" placeholder="Ein ábending í hverja línu, t.d.: Mælt er með að skipta út gömlum reykskynjurum">' + esc(s.abend) + '</textarea>' +
           '</div></div>' +
@@ -1351,6 +1359,7 @@
     '._bksr ._sig ._v{font-size:10.5px;font-weight:700;padding-bottom:3px;min-height:15px}' +
     '._bksr ._legal{font-size:7.5px;color:#666;margin-top:7px}' +
     '._bksr ._costrip{border-top:1px solid #c9ccd2;margin-top:6px;padding-top:4px;font-size:8px;font-weight:600;text-align:center;color:#16181c}' +
+    '._bksr ._samt{border:1px solid #c9ccd2;border-radius:4px;padding:7px 9px;font-size:10.5px;line-height:1.5;white-space:pre-wrap;min-height:38px}' +
     '@page{size:A4;margin:0}' +
     // efri/neðri spássíur á HVERRI síðu: ytri thead/tfoot endurtaka sig í prentun
     '@media print{._bksr>table>thead td{padding-top:9mm!important}._bksr>table>tfoot td{padding-bottom:8mm!important}}';
@@ -1392,7 +1401,7 @@
       '<table class="_cust _sec" style="margin:8px 0 10px"><tbody>' +
         custRow('Viðskiptavinur', m.custLine) + custRow('Umbeðið af', s.customer.umbedid) +
         custRow('Tengiliður á verkstað', s.customer.tengi) + custRow('Aðsetur', s.customer.heimili) +
-        custRow('Dags. skoðunar', m.dagsFmt) +
+        '<tr><td>Dags. skoðunar:</td><td data-meta="dags" style="font-weight:700">' + esc(m.dagsFmt || '—') + '</td></tr>' +
       '</tbody></table>' +
 
       '<div class="_sec"><table class="_rt"><thead><tr><th>BÚNAÐUR</th><th style="width:70px;text-align:center">SAMTALS</th><th style="width:70px;text-align:center">ÞAR AF NÝTT</th><th style="width:70px;text-align:center">Í LAGI</th><th style="width:80px;text-align:center">EKKI Í LAGI</th><th style="width:70px;text-align:center">VANTAR</th></tr></thead><tbody>' +
@@ -1433,6 +1442,13 @@
           '</tbody></table></div>' +
         '</div>' +
       '</div>' +
+
+      ((_sheetMode || (s.samantekt || '').trim()) ?
+        '<div class="_sec" style="margin-top:14px"><h3 style="margin-top:0">Samantekt skoðunar</h3>' +
+          '<div class="_samt" data-txt="samantekt">' +
+            ((s.samantekt || '').trim() ? esc(s.samantekt).replace(/\n/g, '<br>')
+              : (_sheetMode ? '<span style="color:#9aa1ac">Smelltu til að lýsa úttektinni…</span>' : '')) +
+          '</div></div>' : '') +
 
       (m.hasNextPage ?
         '<div style="font-size:10.5px;font-style:italic;color:#555;margin-top:12px">Athugasemdir og ábendingar á næstu síðu</div>' +
@@ -1579,7 +1595,15 @@
       { t: r.iLagi, color: GREEN }, { t: r.ekki, bold: r.ekki > 0, color: r.ekki > 0 ? RED : INK },
       { t: r.vantar, bold: r.vantar > 0, color: r.vantar > 0 ? AMBER : INK }]));
 
-    // tveir dálkar: hljóð+rafhl vinstri, aðalstöð hægri — teiknum í röð með eigin y
+    // tveir dálkar: hljóð+rafhl vinstri, aðalstöð hægri — teiknum í röð með eigin y.
+    // Áður: ef vinstri dálkurinn flæddi yfir á næstu síðu hélt hægri dálkurinn GAMLA
+    // y-gildinu (af fyrri síðu) og lenti hálfa leið niður með risaeyðu fyrir ofan —
+    // nákvæmlega eyðan sem Agnar sá. Lausn: áætla hæð blokkarinnar og halda henni allri
+    // á EINNI síðu; komist hún ekki fyrir neðan núverandi stöðu er byrjað á nýrri síðu.
+    const _rh = 18;
+    const _leftEst = 12 + 18 + s.hljod.length * _rh + 10 + 12 + 10 * _rh;
+    const _rightEst = 12 + _rh + 18 + s.stod.checks.length * _rh + 8 + 3 * _rh;
+    if (y + 6 + Math.max(_leftEst, _rightEst) > LIMIT) newPage();
     const yTop = y + 6;
     const colW = (CW - 16) / 2, LX = ML, RX = ML + colW + 16;
 
@@ -1616,6 +1640,13 @@
     [['Heiti fjargæsluaðila', s.stod.fjargaesla || '—'], ['Tegund búnaðar', s.stod.tegund || '—'], ['Yfirlitsmynd teiknuð af', s.stod.teiknud || '—']]
       .forEach(r => row(RX, [{ w: colW * 0.5 }, { w: colW * 0.5 }], [{ t: r[0], color: GRAY, size: 8 }, { t: r[1], bold: true, size: 8 }], { size: 8 }));
     y = Math.max(leftEnd, y);
+
+    // Samantekt skoðunar — lýsir úttektinni (hvað var gert), ekki athugasemd per tæki
+    if ((s.samantekt || '').trim()) {
+      title('Samantekt skoðunar');
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor.apply(doc, INK);
+      doc.splitTextToSize(String(s.samantekt).trim(), CW).forEach(ln => { ensure(13); doc.text(ln, ML, y + 9); y += 12.5; });
+    }
 
     // athugasemdir + ábendingar á nýrri síðu (eins og skýrslan)
     if (m.hasNextPage) {
@@ -2042,8 +2073,8 @@
   function renderSheet(co, row) {
     const st = stateFor(co, row); if (!st) return '';
     ensureOverlay();
-    const prev = S; S = st;
-    try { return reportInner(); } finally { S = prev; }
+    const prev = S; S = st; _sheetMode = true;
+    try { return reportInner(); } finally { S = prev; _sheetMode = false; }
   }
   // Lokin skýrsla breytt í aflæstu blaði → sama leið og „Ljúka & vista PDF": vistar, endurgerir PDF-ið og skjalaröðina.
   async function rebuildPdf(co, row) {
