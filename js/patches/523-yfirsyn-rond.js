@@ -172,6 +172,14 @@
 
   // Tekjur ársins, staflaðar SL + BH (Agnar 25.11.2026: „tekjur per mánuð allt árið heild. Stacked slökkvitæki + brunahólf"). Gögn: yfirsyn.cjs
   // tekjurAr() — sömu reglur og Tekjur í beinni; SL fyrir yfirtöku (04.05.2026) eru reikningar Stólpa ÷ 1,24 og sýndir daufari.
+  function fyrraHtml(ta) {
+    if (!fin(ta.fyrra_alls) || ta.fyrra_alls <= 0) return '';
+    const vx = fin(ta.fyrra_til_dags) && ta.fyrra_til_dags > 0 ? Math.round((ta.alls / ta.fyrra_til_dags - 1) * 100) : null;
+    const t = ta.fyrra_ar + ' allt árið: ' + isk(ta.fyrra_alls) + ' kr m. vsk (sömu reglur).' + (vx != null ? ' Til sama dags í fyrra (' + dd(ta.fyrra_ar + '-01-01') + '–' + dd(ta.fyrra_til) + '): ' +
+      isk(ta.fyrra_til_dags) + ' kr — ' + ta.ar + ' til dags ' + isk(ta.alls) + ' kr, ' + (vx >= 0 ? '+' : '') + vx + ' %.' : '');
+    return '<span class="yr-yv" title="' + esc(t) + '">' + esc(ta.fyrra_ar) + ': <b>' + mkr(ta.fyrra_alls, 1) + ' m</b>' +
+      (vx != null ? ' · <s class="' + (vx >= 0 ? 'yr-up' : 'yr-dn') + '">' + (vx >= 0 ? '▲ ' : '▼ ') + Math.abs(vx) + ' %</s>' : '') + '</span>';
+  }
   function arTekjurHtml(ta) {
     if (!ok(ta) || !Array.isArray(ta.manudir) || ta.manudir.length !== 12) return '<span class="yr-ks">' + led('or') + 'Tekjur ársins ómældar' + (ta && ta.omaelt ? ' — ' + esc(ta.omaelt) : '') + '</span>';
     const M = ta.manudir, H = 40, W = 20, BW = 13;
@@ -194,6 +202,9 @@
       '<svg viewBox="0 0 240 ' + H + '" aria-hidden="true">' + s + '</svg>' +
       '<span class="yr-ym">' + M.map(m => { const mi = +String(m.man).slice(5, 7) - 1; return '<span' + (m.til_dags ? ' class="yr-nu"' : '') + '>' + esc((MAN[mi] || '?').charAt(0).toUpperCase()) + '</span>'; }).join('') + '</span>' +
       '<span class="yr-yl"><i class="yr-ldsl"></i>SL <b>' + mkr(ta.sl_alls, 1) + '</b><i class="yr-ldbh"></i>BH <b>' + mkr(ta.bh_alls, 1) + '</b></span>' +
+      // Fyrra ár, AÐEINS árið (Agnar 25.11.2026: „gaman að sjá að þetta sé allt að vaxa“ → „Bara árið. Ekki mánuð“): heildin í fyrra og vöxtur
+      // miðað við SAMA TÍMABIL í fyrra (1. jan til sama dags), svo hálfnað ár sé ekki borið við heilt ár.
+      fyrraHtml(ta) +
     '</a>';
   }
 
@@ -883,6 +894,7 @@
       '.yr-yr svg{display:block;width:100%;height:auto;overflow:visible}.yr-cst{opacity:.45}.yr-yf{fill:rgba(255,255,255,.2)}',
       '.yr-ym{display:flex}.yr-ym span{flex:1;text-align:center;font-size:8.5px;line-height:10px;color:#a9b8d0}.yr-ym .yr-nu{color:#ffb37a;font-weight:700}',
       '.yr-yl{display:flex;align-items:center;gap:5px;font-size:10.5px;line-height:13px;color:#b8c6dd;white-space:nowrap;overflow:hidden}.yr-yl b{font-weight:600;color:#fff}',
+      '.yr-yv{display:flex;align-items:center;gap:4px;font-size:10.5px;line-height:13px;color:#b8c6dd;white-space:nowrap;overflow:hidden}.yr-yv b{font-weight:600;color:#fff}.yr-yv s{text-decoration:none;font-weight:700}',
       '.yr-yl i{flex:none;width:7px;height:7px;border-radius:2px}.yr-ldsl{background:#ff8a1f}.yr-ldbh{margin-left:4px;background:#5b8ff0}',
       // á leiðinni
       '.yr-sb{display:flex;height:9px;padding:1px;gap:2px;border-radius:999px;background:rgba(0,6,20,.6);box-shadow:inset 0 1px 3px rgba(0,0,0,.8),0 1px 0 rgba(255,255,255,.09)}.yr-sb-l{height:11px}',
@@ -950,5 +962,5 @@
     ].join('\n');
   }
 
-  window.YfirsynRond = { html, css, smellur, geymaArs, load, allsherjar, opnaKrofur, S, version: '2026-11-25e' };
+  window.YfirsynRond = { html, css, smellur, geymaArs, load, allsherjar, opnaKrofur, S, version: '2026-11-25f' };
 })();

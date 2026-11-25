@@ -319,8 +319,11 @@ async function greittInn() {
 //   BH = Payday-reikningar PAID/SENT, upphæð m. vsk (upphaed_total), eftir útgáfudegi (brunaholfManudir) — REIKNINGSFÆRT, ekki „unnið“.
 const T = require('./_tekjur.cjs');
 const YFIRTAKA = '2026-05-04';
+// FYRRA ÁR til samanburðar (Agnar 25.11.2026: „Já gaman að sjá að þetta sé allt að vaxa“): sömu reglur á árið á undan, hver mánuður
+// (`fyrra`) og allt árið (`fyrra_alls`). Vöxturinn miðast við SAMA TÍMABIL (`fyrra_til_dags`: 1. jan til sama dags í fyrra) — heilu
+// mánuðirnir úr mánaðartölunum, líðandi mánuður dag fyrir dag eftir dagsetningu raðar (kreditnóta á eigin degi innan þess mánaðar).
 async function tekjurAr() {
-  const ar = idag().slice(0, 4), fra = `${ar}-01-01`;
+  const ar = idag().slice(0, 4), fyrraAr = String(+ar - 1), fra = `${fyrraAr}-01-01`;
   const [sl, voidIds, bh, st] = await Promise.all([
     sbOll(`solur?select=id,status,credit_of,is_credit,samtals,created_at&status=eq.final&created_at=gte.${fra}&order=id.asc`),
     sbOll('solur?select=id&status=eq.void&order=id.asc').then(r => r.map(x => x.id)),
@@ -338,14 +341,23 @@ async function tekjurAr() {
   st.forEach(r => { const m = String(r.dags || '').slice(0, 7); if (m) stMan[m] = (stMan[m] || 0) + (Number(r.upphaed) || 0); });   // upphæð Stólpa er MEÐ vsk
   const nuM = idag().slice(0, 7);
   const manudir = [];
+  const fyrraM = i => { const m = `${fyrraAr}-${String(i).padStart(2, '0')}`; const fs_ = kr(stMan[m] || 0) + kr(slMan[m] || 0), fb = kr(bhMan[m] || 0); return { fyrra_sl: fs_, fyrra_bh: fb, fyrra: fs_ + fb }; };
   for (let i = 1; i <= 12; i++) {
     const m = `${ar}-${String(i).padStart(2, '0')}`;
-    if (m > nuM) { manudir.push({ man: m, framtid: true }); continue; }
+    if (m > nuM) { manudir.push({ man: m, framtid: true, ...fyrraM(i) }); continue; }
     const stolpi = kr(stMan[m] || 0), solur = kr(slMan[m] || 0);
-    manudir.push({ man: m, sl: stolpi + solur, stolpi, bh: kr(bhMan[m] || 0), til_dags: m === nuM });
+    manudir.push({ man: m, sl: stolpi + solur, stolpi, bh: kr(bhMan[m] || 0), til_dags: m === nuM, ...fyrraM(i) });
   }
+  // fyrra ár til sama dags: heilir mánuðir á undan + líðandi mánuður í fyrra dag fyrir dag
+  const nuMan = +nuM.slice(5, 7), sami = fyrraAr + idag().slice(4), manFra = `${fyrraAr}-${nuM.slice(5, 7)}-01`;
+  const iBili = d => { const x = String(d || '').slice(0, 10); return x >= manFra && x <= sami; };
+  let fyrraTilDags = manudir.filter(x => +x.man.slice(5, 7) < nuMan).reduce((a, x) => a + x.fyrra, 0);
+  const voidS = new Set(voidIds.map(String));
+  sl.forEach(r => { if (iBili(r.created_at) && !(r.credit_of != null && voidS.has(String(r.credit_of)))) fyrraTilDags += Number(r.samtals) || 0; });
+  st.forEach(r => { if (iBili(r.dags)) fyrraTilDags += Number(r.upphaed) || 0; });
+  bh.forEach(r => { if (iBili(r.utgafudagur || r.gjalddagi)) fyrraTilDags += Number(r.upphaed_total) || 0; });
   const alls = manudir.reduce((a, x) => a + (x.sl || 0) + (x.bh || 0), 0);
-  return { ar, manudir, alls, sl_alls: manudir.reduce((a, x) => a + (x.sl || 0), 0), bh_alls: manudir.reduce((a, x) => a + (x.bh || 0), 0),
+  return { ar, fyrra_ar: fyrraAr, fyrra_alls: manudir.reduce((a, x) => a + x.fyrra, 0), fyrra_til_dags: kr(fyrraTilDags), fyrra_til: sami, manudir, alls, sl_alls: manudir.reduce((a, x) => a + (x.sl || 0), 0), bh_alls: manudir.reduce((a, x) => a + (x.bh || 0), 0),
     vsk: true,
     regla: 'MEÐ VSK, sömu reglur og Tekjur í beinni. SL: sölur eftir söludegi (samtals m. vsk), kreditnóta á mánuð frumsölunnar; fyrir 04.05.2026 reikningar Stólpa (fyrri eiganda). BH: Payday-reikningar greiddir eða sendir, upphæð m. vsk, eftir útgáfudegi (reikningsfært).' };
 }
