@@ -82,7 +82,8 @@ async function krofurBh() {
   (t1.debtors || []).forEach(db => (db.invoices || []).forEach(i => { if (!i.hidden && !i.done) ogr.push(i); }));
   // Aldur = dagar frá gjalddaga reiknings (sama og aldursskipting fullu yfirsýnarinnar).
   const eldri = ogr.filter(i => (dagarFra(i.gjalddagi) || 0) > 45);
-  const staerst = ogr.slice().sort((a, b) => kr(b.amount) - kr(a.amount))[0] || null;
+  const medNr = ogr.filter(i => i.tilvisun && !i.bidur_porun);
+  const staerst = (medNr.length ? medNr : ogr.filter(i => !i.bidur_porun)).slice().sort((a, b) => kr(b.amount) - kr(a.amount))[0] || null;
   return {
     osent: { n: Number(t2.n) || 0, kr: kr(t2.total) },
     ogreitt: { n: Number(t1.n) || 0, kr: kr(t1.total) },
