@@ -80,8 +80,8 @@
       'border-radius:50%;background:' + GULL + '}',
       '#' + ID + '.opin .zs-pilla{display:none}',
       '#' + ID + ':not(.opin) .zs-hop,#' + ID + ':not(.opin) .zs-v{display:none}',
-      // Eitt tól fyrir sama hlutinn: Aa-hnappur 333 vikur a medan stikan er uppi.
-      '#_sz-aa{display:none!important}',
+      // (Aa-hnappur 333 er falinn i JS, ekki her: regla med haerri serhaefni og !important
+      //  annars stadar i simapotchunum vann yfir '#_sz-aa{display:none!important}' - maelt 25.11.2026.)
       '#' + ID + ' .zs-hop{display:flex;align-items:center;border-radius:8px;border:1px solid #000;',
       'background:' + MALMUR + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 4px 12px -6px rgba(0,0,0,.6);overflow:hidden}',
       '#' + ID + ' button{font-family:' + SANS + ';cursor:pointer;touch-action:manipulation;border:0;background:none}',
@@ -210,13 +210,19 @@
       if (v.disabled !== slokkt) v.disabled = slokkt;
     }
 
+    // Eitt tol fyrir sama hlutinn: Aa-hnappur 333 vikur medan stikan er uppi (talan opnar sama blad).
+    // Endurheimtur strax og stikan hverfur, svo bladid tapist aldrei.
+    const aaBtn = document.getElementById('_sz-aa');
+    if (aaBtn) {
+      const fela = syna ? 'none' : '';
+      if (aaBtn.style.display !== fela) aaBtn.style.display = fela;
+    }
+
     const b = document.getElementById('bstal-banner');
     const hdr = document.getElementById('_app-hdr');
     const efst = synilegt(hdr) ? hdr : (synilegt(b) ? b : null);
     const top = efst ? Math.round(efst.getBoundingClientRect().bottom + 6) : 8;
-    // Aa-hnappur 333 situr lengst til hægri — stikan fer vinstra megin við hann.
-    const aa = document.getElementById('_sz-aa');
-    const haegri = synilegt(aa) ? Math.round(aa.getBoundingClientRect().width + 14) : 8;
+      const haegri = 8;
     const stilla = (n, v2) => { if (el.style.getPropertyValue(n) !== v2) el.style.setProperty(n, v2); };
     stilla('--zs-top', top + 'px');
     stilla('right', haegri + 'px');
