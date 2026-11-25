@@ -77,16 +77,20 @@ async function krofurBh() {
   const d = await r.json();
   const t1 = d && d.tier1, t2 = d && d.tier2;
   if (!t1 || !t2) return { omaelt: 'Kröfu yfirlit Brunahólfs: óvænt snið' };
-  const ogr = [];
+  const ogr = [], osentL = [];
   // sama mengi og samtala Kröfu yfirlits: hvorki faldar né kláraðar (done) kröfur
   (t1.debtors || []).forEach(db => (db.invoices || []).forEach(i => { if (!i.hidden && !i.done) ogr.push(i); }));
+  (t2.debtors || []).forEach(db => (db.invoices || []).forEach(i => { if (!i.hidden && !i.done) osentL.push(i); }));
+  // Kröfulistinn sem glugginn í röndinni sýnir (Agnar 25.11.2026: „sjá alla ógreiddu kröfurnar") — sömu raðir og summan.
+  const radir = (l, tegund) => l.slice().sort((a, b) => kr(b.amount) - kr(a.amount))
+    .map(i => ({ nr: i.tilvisun ? 'R-' + i.tilvisun : '', kunni: i.customer || '', kr: kr(i.amount), dagar: dagarFra(i.gjalddagi), tegund }));
   // Aldur = dagar frá gjalddaga reiknings (sama og aldursskipting fullu yfirsýnarinnar).
   const eldri = ogr.filter(i => (dagarFra(i.gjalddagi) || 0) > 45);
   const medNr = ogr.filter(i => i.tilvisun && !i.bidur_porun);
   const staerst = (medNr.length ? medNr : ogr.filter(i => !i.bidur_porun)).slice().sort((a, b) => kr(b.amount) - kr(a.amount))[0] || null;
   return {
-    osent: { n: Number(t2.n) || 0, kr: kr(t2.total) },
-    ogreitt: { n: Number(t1.n) || 0, kr: kr(t1.total) },
+    osent: { n: Number(t2.n) || 0, kr: kr(t2.total), reikn: radir(osentL, 'osent') },
+    ogreitt: { n: Number(t1.n) || 0, kr: kr(t1.total), reikn: radir(ogr, 'ogreitt') },
     eldri45: { n: eldri.length, kr: summa(eldri, i => i.amount), reikn: eldri.map(i => ({ nr: 'R-' + (i.tilvisun || ''), kunni: i.customer || '', kr: kr(i.amount), dagar: dagarFra(i.gjalddagi) })) },
     staerst: staerst ? { nr: 'R-' + (staerst.tilvisun || ''), kunni: staerst.customer || '', kr: kr(staerst.amount) } : null,
     likleg_greidd: d.likely_paid ? { n: Number(d.likely_paid.n) || 0, kr: kr(d.likely_paid.kr) } : null,
@@ -95,16 +99,19 @@ async function krofurBh() {
 
 async function krofurSl() {
   const [osent, ogreidd] = await Promise.all([
-    sbOll('v_krafa_ekki_send_adgerd?select=num,samtals,dagar&order=num.asc'),
-    sbOll('v_krafa_ogreidd?select=id,samtals,dagar,flokkur&flokkur=in.(innheimta,a_bid)&order=id.asc'),
+    sbOll('v_krafa_ekki_send_adgerd?select=num,customer_nafn,samtals,dagar&order=num.asc'),
+    sbOll('v_krafa_ogreidd?select=id,num,customer_nafn,samtals,dagar,flokkur&flokkur=in.(innheimta,a_bid)&order=id.asc'),
   ]);
   const inn = ogreidd.filter(r => r.flokkur === 'innheimta'), bid = ogreidd.filter(r => r.flokkur === 'a_bid');
   const eldri = inn.filter(r => (Number(r.dagar) || 0) > 45);
+  // Kröfulistinn sem glugginn í röndinni sýnir — sömu raðir og summan, stærst fyrst.
+  const radir = (l, tegund) => l.slice().sort((a, b) => kr(b.samtals) - kr(a.samtals))
+    .map(r => ({ nr: r.num ? String(r.num) : '', kunni: r.customer_nafn || '', kr: kr(r.samtals), dagar: r.dagar == null ? null : Number(r.dagar), tegund }));
   return {
-    osent: { n: osent.length, kr: summa(osent, r => r.samtals) },
-    ogreitt: { n: inn.length, kr: summa(inn, r => r.samtals) },
+    osent: { n: osent.length, kr: summa(osent, r => r.samtals), reikn: radir(osent, 'osent') },
+    ogreitt: { n: inn.length, kr: summa(inn, r => r.samtals), reikn: radir(inn, 'ogreitt') },
     eldri45: { n: eldri.length, kr: summa(eldri, r => r.samtals) },
-    a_bid: { n: bid.length, kr: summa(bid, r => r.samtals) },
+    a_bid: { n: bid.length, kr: summa(bid, r => r.samtals), reikn: radir(bid, 'a_bid') },
   };
 }
 
