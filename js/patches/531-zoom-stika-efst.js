@@ -225,28 +225,35 @@
     // undir bordanum, annars 8 px fra toppi - thar sem hann sat adur og Agnar er vanur ad
     // leita ad honum. (Fyrri utgafa setti hana undir haus appsins lika i vafra og hun lenti
     // tha ofan a efstu rod sidunnar - "Skanna" a Solu.)
-    // Í appham situr hun undir app-hausnum. Í vafra situr hun EFST (8 px) - thar sem
-    // Aa-hnappurinn sat - thvi undir bordanum lendir hun ofan a efstu rod sidunnar
-    // (maelt a Solu: "Skanna"-takkinn hvarf undir hana).
+    // STADSETNING. Reiknud ut fra SAMANBROTNU pillunni (50 px) - hun er thad sem stendur
+    // uppi allan timann; utflett stika ma skyggja a i þær 6 sekundur sem hun er opin.
+    // Í appham: undir app-hausnum. Annars: undir litla samanbrots-takkanum ("▴") efst til
+    // haegri, sem er eini fasti punkturinn thar uppi. Svo faerist hun til vinstri thangad til
+    // hun skarast ekki vid neinn smellanlegan hlut (maelt, ekki agiskad: thrjar tilraunir).
     const erApp = !!(document.body && document.body.classList.contains('appmode'));
     const hdr = document.getElementById('_app-hdr');
-    const top = (erApp && synilegt(hdr)) ? Math.round(hdr.getBoundingClientRect().bottom + 6) : 8;
-      // Stikan reiknar sjalf hvar hun ma sitja: hun leitar ad OLLUM smellanlegum hlutum sem
-    // skera bandid hennar (hausinn) og sest vinstra megin vid thann sem er lengst til vinstri
-    // af theim. Thannig hylur hun hvorki samanbrots-takkann ("▴"), birtuskilatakkann ne
-    // synhnappana - hun endar thar sem Aa-hnappurinn sat. Maelt 25.11.2026: fast gildi (8 px)
-    // la ofan a tveimur theirra, hvoru a faetur odru.
-    const band = { t: top, b: top + 32 };
-    let min = innerWidth - 8;
-    document.querySelectorAll('button,a[href],[role="button"]').forEach(e => {
-      if (el.contains(e)) return;
-      const r = e.getBoundingClientRect();
-      if (!r.width || !r.height) return;
-      if (r.bottom < band.t || r.top > band.b) return;
-      if (r.left < 120) return;                     // hamborgarinn og logoid vinstra megin
-      if (r.left < min) min = r.left;
-    });
-    const haegri = Math.max(8, Math.round(innerWidth - min + 6));
+    const mini = document.querySelector('.bb-mini');
+    let top = 8;
+    if (erApp && synilegt(hdr)) top = Math.round(hdr.getBoundingClientRect().bottom + 6);
+    else if (synilegt(mini)) top = Math.max(8, Math.round(mini.getBoundingClientRect().bottom + 4));
+
+    const BREIDD = 50, HAED = 32;
+    let haegri = 8;
+    for (let n = 0; n < 3; n++) {
+      const kassi = { t: top, b: top + HAED, l: innerWidth - haegri - BREIDD, r: innerWidth - haegri };
+      let min = null;
+      document.querySelectorAll('button,a[href],input,select,[role="button"]').forEach(e => {
+        if (el.contains(e)) return;
+        const r = e.getBoundingClientRect();
+        if (!r.width || !r.height) return;
+        if (r.right < kassi.l || r.left > kassi.r || r.bottom < kassi.t || r.top > kassi.b) return;
+        if (min === null || r.left < min) min = r.left;
+      });
+      if (min === null) break;
+      haegri = Math.round(innerWidth - min + 6);
+      if (haegri > innerWidth - BREIDD - 8) { haegri = 8; break; }   // ekkert plass: aftur til haegri
+    }
+
     const stilla = (n, v2) => { if (el.style.getPropertyValue(n) !== v2) el.style.setProperty(n, v2); };
     stilla('--zs-top', top + 'px');
     stilla('right', haegri + 'px');
