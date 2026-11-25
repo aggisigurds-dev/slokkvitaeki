@@ -97,6 +97,16 @@ async function krofurBh() {
   };
 }
 
+// „Tími eftir" Kröfu yfirlits (CG-03): óinnheimtir Tímavera-tímar × taxti m. vsk og Landspítala-viðbót. Reiknað Í VAFRANUM á
+// Kröfu yfirliti (computeTier3) og skráð í cg_entries eftir hverja FULLA hleðslu síðunnar. Röndin les sömu tölu þaðan (Agnar
+// 25.11.2026: „Þessar tölur eru ekki í samræmi þarna" — röndin sýndi ekki Tími eftir, svo BH stemmdi ekki við „Samtals í pípunni").
+async function timiEftirBh() {
+  const r = await sb('cg_entries?select=id,value,updated_at&id=eq.CG-03');
+  const t = r && r[0];
+  if (!t || t.value == null || !t.updated_at) return { omaelt: 'Kröfu yfirlit hefur ekki skráð „Tími eftir"' };
+  return { kr: kr(t.value), uppfaert: t.updated_at, aldur_klst: Math.round((Date.now() - Date.parse(t.updated_at)) / 36e5 * 10) / 10 };
+}
+
 async function krofurSl() {
   const [osent, ogreidd] = await Promise.all([
     sbOll('v_krafa_ekki_send_adgerd?select=num,customer_nafn,samtals,dagar&order=num.asc'),
@@ -259,7 +269,7 @@ exports.handler = async (event) => {
   // annar stjórnandi við vél Agnars sæi annars allt). Lota (Claude) er prófunaraðgangur lotunnar (uid 10, Admin).
   const fornafn = String(hver.nafn || '').trim().split(/\s+/)[0];
   if (!LEYFT.includes(fornafn)) return P.json(403, { error: 'Yfirsýnin er aðeins fyrir Agnar og Annþór', bannad: true });
-  const [rek, kbh, ksl, os, ssl, sbh, mt, gi] = await Promise.all([
+  const [rek, kbh, ksl, os, ssl, sbh, mt, gi, te] = await Promise.all([
     mael('Rekstrarskýrslan', () => rekstur(event)),
     mael('Kröfu yfirlit Brunahólfs', krofurBh),
     mael('Kröfur Slökkvitækja', krofurSl),
@@ -268,6 +278,7 @@ exports.handler = async (event) => {
     mael('Greiðslur Brunahólfs', sidastBh),
     mael('Tímavera', timavera),
     mael('Greiðslur', greittInn),
+    mael('Tími eftir', timiEftirBh),
   ]);
-  return P.json(200, { rekstur: rek, krofur: { sl: ksl, bh: kbh }, osott: os, sidast: { sl: ssl, bh: sbh }, timavera: mt, greitt: gi, maelt_at: new Date().toISOString() });
+  return P.json(200, { rekstur: rek, krofur: { sl: ksl, bh: kbh, timi_eftir: te }, osott: os, sidast: { sl: ssl, bh: sbh }, timavera: mt, greitt: gi, maelt_at: new Date().toISOString() });
 };
