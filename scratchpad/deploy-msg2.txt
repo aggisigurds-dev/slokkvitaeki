@@ -1,0 +1,33 @@
+[deploy] Teikningar: 6 villur betatestsins + hradi (bakgrunns-forsmid, OCR-bid)
+
+Agnar 25.11: "bara allt" - klara allt sem betatest teikningakerfisins fann, plus
+hradaoverhalninguna ("Baedi"). Allt teiknakerfid (374/375/383/445/480/485):
+
+VILLUR
+- A-1 (383/375): sjalfvirk endurlesa eftir "Opna i TurboPaint" yfirskrifadi
+  ovistadar merkjabreytingar vid hvern gluggafokus i 2 klst. Nu saekir hun adeins
+  thegar rodin er raunverulega nyrri (TeiknVistun.sidast) OG fra TurboPaint.
+- B-2 (374): engin nakvaem gata+husnumer-samsvorun greip thegjandi fyrsta
+  Reykjavikur-husid (Skutuvogs-villan). Nu: ein otviraed eign gildir, fleiri an
+  samsvorunar -> Agnar velur rett hus ur lista.
+- B-1 (383): samsett blad skiptist adeins med visitolu thegar fjoldi ramma passar
+  nakvaemlega vid haedir; fleiri rammar -> staerstu N valdir og radad i lesrod.
+- C (485): tillaga (Arnold) taldist sem greint taeki ("26 vs 27"). Nu taldar ser
+  og merktar "+N tillaga" - engin vistud tala breytt.
+- D-1 (383): gaedaskipti (Forskodun<->Full) endurbyggdu hreinsudu myndina i hvert
+  sinn. Nu litid skyndiminni per upplausn (hl ber vp) -> endurnotkun.
+- B-6 (480): EXIF-snuningur a simamyndum hunsadur -> teikning a hlid. Nu
+  imageOrientation:'from-image'.
+
+HRADI ("Baedi")
+- Bakgrunns-forsmid (445): tilbunar haedir an vistadrar vinnumyndar forsmidast i
+  bakgrunni (requestIdleCallback), eina i einu, a desktop (ekki simi) medan
+  glugginn er opinn -> opnast strax sidar og vistast a thjoninn. Aldrei urelt mynd
+  endurbyggd. TeiknVinnumynd.forsmidaAllar() fyrir sjalfvirkni (luna-bridge).
+- OCR-bid (383/445): gagnvirk fyrsta smid styttir heitiThak i 5s (bara daud bid
+  stytt; skyndiminni/vigur-PDF klarast innan thess). Bakgrunnur heldur fulla 20s.
+
+Allar skrar node --check OK; audit-all --static graent nema 2 oskyld fyrir
+(tmp_import_*.mjs regex, .claude/worktrees afrit). ?v= haekkud i 20261125bt.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
