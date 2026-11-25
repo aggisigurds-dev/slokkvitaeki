@@ -231,7 +231,10 @@
     const erApp = !!(document.body && document.body.classList.contains('appmode'));
     const hdr = document.getElementById('_app-hdr');
     const top = (erApp && synilegt(hdr)) ? Math.round(hdr.getBoundingClientRect().bottom + 6) : 8;
-      const haegri = 8;
+      // Litli samanbrots-takkinn (.bb-mini, "▴") a bordanum situr lengst til haegri uppi.
+    // Maelt: an thessa lenti pillan ofan a honum. Hun vikur til vinstri fyrir honum.
+    const mini = document.querySelector('.bb-mini');
+    const haegri = synilegt(mini) ? Math.round(innerWidth - mini.getBoundingClientRect().left + 6) : 8;
     const stilla = (n, v2) => { if (el.style.getPropertyValue(n) !== v2) el.style.setProperty(n, v2); };
     stilla('--zs-top', top + 'px');
     stilla('right', haegri + 'px');
