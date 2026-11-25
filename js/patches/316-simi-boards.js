@@ -121,8 +121,10 @@
     'body.bs-active #_mnav_btn,body.bs-active #_mnav_bd{display:none!important}',
 
     // ── Brunakerfi yfirlit (Öpp home): 261 50px hammer on filter chips ─────
-    trio('#view-brunakerfi-yfirlit ._bky-filter') + ',' +
-    trio('#view-brunakerfi-yfirlit ._bky-month') + ',' +
+    // 25.11.2026: :not(...) heldur thessari toflu-reglu fra simakortunum i 272
+    // (_bky-schip 40 px, _bky-sman1 38 px) - annars kippti hun theim i 36 px.
+    trio('#view-brunakerfi-yfirlit ._bky-filter:not(._bky-schip)') + ',' +
+    trio('#view-brunakerfi-yfirlit ._bky-month:not(._bky-sman1)') + ',' +
     trio('#view-brunakerfi-yfirlit ._bky-viewbtn') +
       '{min-height:36px!important;padding-top:6px!important;padding-bottom:6px!important;font-size:13px!important}',
     trio('#view-brunakerfi-yfirlit [style*="max-width:1280px"]') +

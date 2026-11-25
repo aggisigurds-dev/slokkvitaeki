@@ -174,12 +174,15 @@
       both(BK + ' [style*="display:flex;gap:8px;flex-wrap:wrap"]' + P) + ','
         + both(BK + ' [style*="display:flex;gap:6px;flex-wrap:wrap"]' + P)
         + strip.slice(0, -1) + ';margin-bottom:8px!important}',
-      both(BK + ' ._bky-filter' + P) + ','
-        + both(BK + ' ._bky-month' + P) + ','
+      // 25.11.2026: thessar threngingar eru fyrir TOFLUNA. Simakortin i 272
+      // (_bky-schip / _bky-sman1 / _bky-sleit) eru undanskilin med :not(...) -
+      // height:36px!important her yfirskrifadi 40/38/44 px snertifletina theirra.
+      both(BK + ' ._bky-filter:not(._bky-schip)' + P) + ','
+        + both(BK + ' ._bky-month:not(._bky-sman1)' + P) + ','
         + both(BK + ' ._bky-viewbtn' + P)
         + '{flex:0 0 auto!important;min-height:36px!important;height:36px!important;'
         + 'padding:0 10px!important;font-size:12px!important;white-space:nowrap!important}',
-      both(BK + ' ._bky-search' + P)
+      both(BK + ' ._bky-search:not(._bky-sleit)' + P)
         + '{flex:0 1 180px!important;min-width:140px!important;min-height:36px!important;'
         + 'height:36px!important;margin-left:0!important;font-size:16px!important}',
       both(BK + ' [style*="overflow-x:auto"]' + P)

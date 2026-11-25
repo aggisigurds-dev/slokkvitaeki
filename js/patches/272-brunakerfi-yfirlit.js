@@ -299,7 +299,7 @@
             '<div class="_bky-stolur">' +
               '<span><b style="color:#15803d">' + doneNow + '</b> b\u00fai\u00f0 ' + NOW + '</span>' +
               '<span><b style="color:#b45309">' + (all.length - doneNow) + '</b> eftir</span>' +
-              '<span><b style="color:#6d28d9">' + newCount + '</b> n\u00ddtt</span>' +
+              '<span><b style="color:#6d28d9">' + newCount + '</b> n\u00fdtt</span>' +
               '<span><b>' + all.length + '</b> f\u00e9l\u00f6g</span>' +
             '</div>' +
           '</div>' +
