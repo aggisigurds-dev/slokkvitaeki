@@ -191,12 +191,13 @@
       return m[String(id)] || {};
     } catch (_) { return {}; }
   }
-  function stodaHtml(r) {
+  function stodaHtml(r, big) {
     const a = arsFor(r.id);
     const done = hasReport(r, NOW);
     const wip = !done && +a.field_inspected_year === NOW;
-    const base = 'display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:99px;' +
-      'font-size:10.5px;font-weight:800;letter-spacing:.02em;white-space:nowrap;border:1px solid;';
+    const base = 'display:inline-flex;align-items:center;justify-content:center;gap:5px;border-radius:99px;' +
+      (big ? 'min-height:40px;padding:0 16px;font-size:13.5px;' : 'padding:3px 10px;font-size:10.5px;') +
+      'font-weight:800;letter-spacing:.02em;white-space:nowrap;border:1px solid;';
     if (done) return '<span title="Skoðun ' + NOW + ' staðfest með brunakerfi-skýrslu" ' +
       'style="' + base + 'cursor:default;background:#dcfce7;border-color:#86efac;color:#166534">✅ Skoðað ' + NOW + '</span>';
     if (wip) return '<span class="_bky-stada" data-id="' + r.id + '" data-st="wip" ' +
@@ -206,6 +207,45 @@
       'title="Setja í vinnslu — þá birtist fyrirtækið á ÞjónustuVerkstæði og sem „Í vinnslu" í Fyrirtæki í Þjónustu" ' +
       'style="' + base + 'cursor:pointer;background:#fff;border-color:#cbd5e1;color:#64748b">＋ Í vinnslu</span>';
   }
+  // -- SIMAFRAMSETNING (25.11.2026, beidni Agnars) ----------------------------
+  // Taflan er 820 px breid og textinn i henni 10,5-12 px. A sima var hun lesin
+  // gegnum vistadan zoom (0,30 -> 0,50); maelt med tools/simasopur.cjs a 390 px:
+  // 64 of sma textabrot, 47 snertifletir undir 36 px, eitt atridi ut fyrir
+  // gluggann. Meira zoom lagar thad ekki - dalkarnir eru of margir. A sima
+  // teiknum vid thvi EITT KORT per felag i raunstaerd i stad toflunnar.
+  // data-viewmode (ekki breidd) raedur, eins og annars stadar i appinu.
+  function erSimi() {
+    try { return document.documentElement.getAttribute('data-viewmode') === 'mobile'; } catch (_) { return false; }
+  }
+  function simiKort(r) {
+    const nowMon = new Date().getMonth() + 1;
+    const due = !hasReport(r, NOW) && r.latestMonth && r.latestMonth <= nowMon && !r.isNew;
+    const yrs = YEARS.map(y => {
+      const url = hasReport(r, y) ? r.years[y] : '';
+      const yy = "\u2019" + y.slice(-2);
+      const bas = 'flex:1 1 0;min-width:0;min-height:38px;display:inline-flex;align-items:center;justify-content:center;gap:5px;' +
+        'border-radius:10px;font-size:13.5px;font-weight:800;text-decoration:none;border:1px solid;';
+      if (url) return '<a href="' + esc(url) + '" target="_blank" rel="noopener" title="Opna sk\u00fdrslu ' + y + '" style="' + bas +
+        'background:#DBEEE3;border-color:rgba(28,143,96,.45);color:#0F5E3F">' +
+        '<span style="width:8px;height:8px;border-radius:50%;background:#1C8F60;flex:none"></span>' + yy + '</a>';
+      const d = (y === String(NOW));
+      return '<span title="' + (d ? 'Vantar sko\u00f0un ' + y : 'Engin sk\u00fdrsla ' + y) + '" style="' + bas +
+        (d ? 'background:#FBEAC6;border-color:rgba(217,146,6,.55);color:#8A5C04' : 'background:#F0EFEA;border-color:#D5D8DE;color:#6B7280') + '">' +
+        '<span style="width:8px;height:8px;border-radius:50%;flex:none;' + (d ? 'background:#D99206' : 'box-shadow:inset 0 0 0 1.5px #C7CAD0') + '"></span>' + yy + '</span>';
+    }).join('');
+    const last = r.latest ? (MON[(r.latestMonth || 1) - 1] + ' ' + r.latest) : 'engin sk\u00fdrsla enn';
+    return '<div class="_bky-row _bky-kort" data-id="' + r.id + '">' +
+      '<div class="_bky-knafn">' + esc(r.nafn) + (r.isNew ? '<span class="_bky-knytt">N\u00ddTT</span>' : '') + '</div>' +
+      (r.address ? '<div class="_bky-kadr">' + esc(r.address) + '</div>' : '') +
+      '<div class="_bky-kyr">' + yrs + '</div>' +
+      '<div class="_bky-kfot">' +
+        '<div class="_bky-kmeta">S\u00ed\u00f0ast <b' + (due ? ' style="color:#b91c1c"' : '') + '>' + esc(last) + (due ? ' \u26a0' : '') + '</b>' +
+        (r.count ? ' \u00b7 ' + r.count + (r.count === 1 ? ' skjal' : ' skj\u00f6l') : '') + '</div>' +
+        stodaHtml(r, true) +
+      '</div>' +
+    '</div>';
+  }
+
   function sortTh(label, col, align, cls) {
     const active = state.sortCol === col;
     const arrow = active ? (state.sortDir === 'asc' ? ' ▲' : ' ▼') : ' ⇅';
@@ -243,6 +283,37 @@
         (on ? '#0f766e;background:#0f766e;color:#fff' : '#d7dce4;background:#fff;color:#475569') + ';font:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">' +
         esc(label) + (n ? ' <span style="opacity:.7;font-weight:600">' + n + '</span>' : '') + '</button>';
     };
+
+    if (erSimi()) {
+      const sChip = (key, label) => '<button class="_bky-filter _bky-schip" data-f="' + key + '" type="button"' +
+        (state.filter === key ? ' data-on="1"' : '') + '>' + esc(label) + '</button>';
+      const sMon = (m, label) => {
+        const n = m === 0 ? all.length : (mc[m] || 0);
+        return '<button class="_bky-month _bky-sman1" data-m="' + m + '" type="button"' + (state.month === m ? ' data-on="1"' : '') + '>' +
+          esc(label) + (n ? ' <span>' + n + '</span>' : '') + '</button>';
+      };
+      root.innerHTML =
+        '<div class="_bky-s">' +
+          '<div class="_bky-shaus">' +
+            '<div class="_bky-stitill">\ud83d\udd25 Brunakerfi</div>' +
+            '<div class="_bky-stolur">' +
+              '<span><b style="color:#15803d">' + doneNow + '</b> b\u00fai\u00f0 ' + NOW + '</span>' +
+              '<span><b style="color:#b45309">' + (all.length - doneNow) + '</b> eftir</span>' +
+              '<span><b style="color:#6d28d9">' + newCount + '</b> n\u00ddtt</span>' +
+              '<span><b>' + all.length + '</b> f\u00e9l\u00f6g</span>' +
+            '</div>' +
+          '</div>' +
+          '<input class="_bky-search _bky-sleit" type="search" placeholder="\ud83d\udd0d Leita (nafn \u00b7 heimilisfang)\u2026" value="' + esc(state.search) + '">' +
+          '<div class="_bky-ssia">' + sChip('all', 'Allt') + sChip('done', '\u2705 B\u00fai\u00f0') + sChip('pending', '\u23f3 Eftir') + sChip('new', '\ud83c\udd95 N\u00fdtt') + '</div>' +
+          '<div class="_bky-sman">' + sMon(0, 'Allir') + MON_FULL.map((m, i) => sMon(i + 1, m.slice(0, 3))).join('') + '</div>' +
+          '<div class="_bky-skort">' +
+            (rows.length ? rows.map(simiKort).join('') : '<div class="_bky-stomt">Engin fyrirt\u00e6ki passa vi\u00f0 s\u00eduna.</div>') +
+          '</div>' +
+          '<div class="_bky-sfot">Gr\u00e6nt \u00e1r = brunakerfis-sk\u00fdrsla \u00feess \u00e1rs \u00e1 skr\u00e1. Gult = vantar ' + NOW + '.</div>' +
+        '</div>';
+      wire(root);
+      return;
+    }
 
     root.innerHTML =
       '<div style="max-width:1280px;margin:0 auto;padding:18px 20px 40px">' +
@@ -434,6 +505,39 @@
         '#' + VIEW_ID + ' ._bky-mob{display:none}' +
         // ☰ Þétt: 📋/📝-hnappurinn (patch 273) víkur — röðin sjálf opnar síðuna
         '#' + VIEW_ID + ' ._bky-cmp ._bks-btn{display:none!important}' +
+        // SIMI: kortaframsetning (25.11.2026) - raunstaerd, engin larett skrun.
+        '#' + VIEW_ID + ' ._bky-s{padding:12px 12px 36px;max-width:620px;margin:0 auto}' +
+        '#' + VIEW_ID + ' ._bky-shaus{display:flex;flex-direction:column;gap:6px;margin:2px 0 12px}' +
+        '#' + VIEW_ID + ' ._bky-stitill{font-size:21px;font-weight:800;color:#0f172a;line-height:1.1}' +
+        '#' + VIEW_ID + ' ._bky-stolur{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;color:#475569}' +
+        '#' + VIEW_ID + ' ._bky-stolur b{font-size:15px;color:#0f172a}' +
+        '#' + VIEW_ID + ' ._bky-sleit{width:100%;box-sizing:border-box;min-height:44px;padding:0 14px;border-radius:12px;' +
+          'border:1px solid #cbd5e1;background:#fff;color:#0f172a;font:inherit;font-size:15px}' +
+        '#' + VIEW_ID + ' ._bky-ssia{display:flex;gap:7px;margin:10px 0 8px}' +
+        '#' + VIEW_ID + ' ._bky-schip{flex:1 1 0;min-width:0;min-height:40px;border-radius:12px;border:1px solid #cbd5e1;' +
+          'background:#fff;color:#334155;font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;white-space:nowrap}' +
+        '#' + VIEW_ID + ' ._bky-schip[data-on]{background:#0f766e;border-color:#0f766e;color:#fff}' +
+        '#' + VIEW_ID + ' ._bky-sman{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;' +
+          'padding:2px 0 8px;scrollbar-width:none}' +
+        '#' + VIEW_ID + ' ._bky-sman::-webkit-scrollbar{display:none}' +
+        '#' + VIEW_ID + ' ._bky-sman1{flex:none;min-height:38px;padding:0 13px;border-radius:10px;border:1px solid #d7dce4;' +
+          'background:#fff;color:#475569;font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;white-space:nowrap}' +
+        '#' + VIEW_ID + ' ._bky-sman1[data-on]{background:#0f766e;border-color:#0f766e;color:#fff}' +
+        '#' + VIEW_ID + ' ._bky-sman1 span{opacity:.65;font-weight:600}' +
+        '#' + VIEW_ID + ' ._bky-skort{display:flex;flex-direction:column;gap:10px}' +
+        '#' + VIEW_ID + ' ._bky-kort{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:13px 14px 12px;' +
+          'box-shadow:0 1px 2px rgba(15,23,42,.05);cursor:pointer}' +
+        '#' + VIEW_ID + ' ._bky-knafn{font-size:16px;font-weight:800;color:#0f172a;line-height:1.25}' +
+        '#' + VIEW_ID + ' ._bky-knytt{margin-left:7px;padding:2px 8px;border-radius:99px;background:#7c3aed;color:#fff;' +
+          'font-size:11px;font-weight:800;vertical-align:middle}' +
+        '#' + VIEW_ID + ' ._bky-kadr{font-size:13.5px;color:#64748b;margin-top:2px;line-height:1.35}' +
+        '#' + VIEW_ID + ' ._bky-kyr{display:flex;gap:6px;margin:11px 0 10px}' +
+        '#' + VIEW_ID + ' ._bky-kfot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}' +
+        '#' + VIEW_ID + ' ._bky-kmeta{font-size:13px;color:#64748b}' +
+        '#' + VIEW_ID + ' ._bky-kmeta b{color:#0f172a}' +
+        '#' + VIEW_ID + ' ._bky-stomt{padding:30px;text-align:center;color:#94a3b8;font-style:italic;background:#fff;' +
+          'border:1px solid #e2e8f0;border-radius:14px}' +
+        '#' + VIEW_ID + ' ._bky-sfot{margin-top:12px;font-size:12.5px;color:#64748b;line-height:1.4}' +
         '@media (max-width:900px){' +
           '#' + VIEW_ID + ' ._bky-wcol{display:none!important}' +
           '#' + VIEW_ID + ' table._bky-tbl{min-width:0!important}' +
@@ -491,6 +595,11 @@
     injectSidebar(); setTimeout(injectSidebar, 1500); patchSwitchView();
     if ((location.hash || '').replace(/^#/, '') === NAV_KEY) setTimeout(() => { if (window.App && App.switchView) App.switchView(NAV_KEY); else open(); }, 300);
     window.addEventListener('hashchange', () => { if ((location.hash || '').replace(/^#/, '') === NAV_KEY) open(); });
+    // Simi <-> tolva: framsetningin er valin i render(), svo hamskipti thurfa endurteikningu.
+    document.addEventListener('slokk-viewmode', () => {
+      const v = document.getElementById(VIEW_ID);
+      if (v && v.classList.contains('active')) render();
+    });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 
