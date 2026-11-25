@@ -311,19 +311,20 @@ async function greittInn() {
 }
 
 // Tekjur hvers mánaðar ársins, hvort félag sér (Agnar 25.11.2026: „tekjur per mánuð allt árið heild. Stacked slökkvitæki + brunahólf").
-// SÖMU reglur og Tekjur í beinni (_tekjur.cjs, engin ný regla), án vsk:
+// SÖMU reglur og Tekjur í beinni (_tekjur.cjs, engin ný regla), en MEÐ VSK (Agnar 25.11.2026: „Geturðu haft allar tölur með vsk“) — raunupphæðir
+// reikninganna, ekki × 1,24: solur.samtals, invoices.upphaed_total og upphæð Stólpa eins og hún stendur:
 //   SL = solur final eftir söludegi, kreditnóta á mánuð frumsölunnar (slokkvitaekiManudirFrumsala) — solur hefst 04.05.2026 (yfirtakan).
-//        Mánuðirnir á undan eru reikningar fyrri eiganda (stolpi_reikningar, upphæð MEÐ vsk → ÷ 1,24), aðeins dags < 04.05.2026 svo
+//        Mánuðirnir á undan eru reikningar fyrri eiganda (stolpi_reikningar, upphæð MEÐ vsk, tekin eins og hún er), aðeins dags < 04.05.2026 svo
 //        ekkert telst tvisvar. Merkt `stolpi` per mánuð svo röndin geti sýnt það sér.
-//   BH = Payday-reikningar PAID/SENT, höfuðstóll, eftir útgáfudegi (brunaholfManudir) — REIKNINGSFÆRT, ekki „unnið“.
+//   BH = Payday-reikningar PAID/SENT, upphæð m. vsk (upphaed_total), eftir útgáfudegi (brunaholfManudir) — REIKNINGSFÆRT, ekki „unnið“.
 const T = require('./_tekjur.cjs');
 const YFIRTAKA = '2026-05-04';
 async function tekjurAr() {
   const ar = idag().slice(0, 4), fra = `${ar}-01-01`;
   const [sl, voidIds, bh, st] = await Promise.all([
-    sbOll(`solur?select=id,status,credit_of,is_credit,upphaed_an_vsk,created_at&status=eq.final&created_at=gte.${fra}&order=id.asc`),
+    sbOll(`solur?select=id,status,credit_of,is_credit,samtals,created_at&status=eq.final&created_at=gte.${fra}&order=id.asc`),
     sbOll('solur?select=id&status=eq.void&order=id.asc').then(r => r.map(x => x.id)),
-    sbOll(`invoices?select=status,source,hofudstoll,gjalddagi,utgafudagur&source=eq.payday&status=in.(PAID,SENT)&or=(utgafudagur.gte.${fra},and(utgafudagur.is.null,gjalddagi.gte.${fra}))&order=id.asc`),
+    sbOll(`invoices?select=status,source,upphaed_total,gjalddagi,utgafudagur&source=eq.payday&status=in.(PAID,SENT)&or=(utgafudagur.gte.${fra},and(utgafudagur.is.null,gjalddagi.gte.${fra}))&order=id.asc`),
     fra < YFIRTAKA ? sbOll(`stolpi_reikningar?select=reikn_nr,tegund,dags,upphaed&dags=gte.${fra}&dags=lt.${YFIRTAKA}&order=reikn_nr.asc,tegund.asc,dags.asc`) : Promise.resolve([]),
   ]);
   if (!bh.length) return { omaelt: 'reikningalestur Brunahólfs skilaði engu' };
@@ -331,10 +332,10 @@ async function tekjurAr() {
   const vantar = [...new Set(sl.filter(r => r.credit_of != null && !hef.has(String(r.credit_of)) && !voidSet.has(String(r.credit_of))).map(r => Number(r.credit_of)).filter(n => Number.isInteger(n) && n > 0))];
   const frum = [];
   for (let i = 0; i < vantar.length; i += 150) { try { frum.push(...await sbOll(`solur?select=id,created_at&id=in.(${vantar.slice(i, i + 150).join(',')})&order=id.asc`)); } catch (e) { /* nótan heldur eigin mánuði */ } }
-  const slMan = T.slokkvitaekiManudirFrumsala(sl, voidIds, frum).man;
-  const bhMan = T.brunaholfManudir(bh);
+  const slMan = T.slokkvitaekiManudirFrumsala(sl.map(r => ({ ...r, upphaed_an_vsk: r.samtals })), voidIds, frum).man;
+  const bhMan = T.brunaholfManudir(bh.map(r => ({ ...r, hofudstoll: r.upphaed_total })));
   const stMan = {};
-  st.forEach(r => { const m = String(r.dags || '').slice(0, 7); if (m) stMan[m] = (stMan[m] || 0) + (Number(r.upphaed) || 0) / 1.24; });
+  st.forEach(r => { const m = String(r.dags || '').slice(0, 7); if (m) stMan[m] = (stMan[m] || 0) + (Number(r.upphaed) || 0); });   // upphæð Stólpa er MEÐ vsk
   const nuM = idag().slice(0, 7);
   const manudir = [];
   for (let i = 1; i <= 12; i++) {
@@ -345,7 +346,8 @@ async function tekjurAr() {
   }
   const alls = manudir.reduce((a, x) => a + (x.sl || 0) + (x.bh || 0), 0);
   return { ar, manudir, alls, sl_alls: manudir.reduce((a, x) => a + (x.sl || 0), 0), bh_alls: manudir.reduce((a, x) => a + (x.bh || 0), 0),
-    regla: 'Án vsk, sömu reglur og Tekjur í beinni. SL: sölur eftir söludegi, kreditnóta á mánuð frumsölunnar; fyrir 04.05.2026 reikningar Stólpa (fyrri eiganda) ÷ 1,24. BH: Payday-reikningar greiddir eða sendir, höfuðstóll, eftir útgáfudegi (reikningsfært).' };
+    vsk: true,
+    regla: 'MEÐ VSK, sömu reglur og Tekjur í beinni. SL: sölur eftir söludegi (samtals m. vsk), kreditnóta á mánuð frumsölunnar; fyrir 04.05.2026 reikningar Stólpa (fyrri eiganda). BH: Payday-reikningar greiddir eða sendir, upphæð m. vsk, eftir útgáfudegi (reikningsfært).' };
 }
 
 // Mánuðurinn í tölum (Agnar 25.11.2026: „Hve margar skýrslur gerðar í þessum mánuði ársskoðun og brunaskoðun … hve margir reikningar

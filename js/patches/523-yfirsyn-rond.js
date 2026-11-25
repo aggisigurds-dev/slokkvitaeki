@@ -44,6 +44,12 @@
   const MAN = ['jan', 'feb', 'mar', 'apr', 'maí', 'jún', 'júl', 'ágú', 'sep', 'okt', 'nóv', 'des'];
   const MANUDUR = ['janúar', 'febrúar', 'mars', 'apríl', 'maí', 'júní', 'júlí', 'ágúst', 'september', 'október', 'nóvember', 'desember'];
   const manOf = iso => { const m = /^\d{4}-(\d{2})/.exec(String(iso || '')); return m ? +m[1] - 1 : null; };
+  // ALLAR TÖLUR MEÐ VSK (Agnar 25.11.2026: „Geturðu haft allar tölur með vsk“). Þar sem upphæð m. vsk er til í gögnunum er hún lesin (Tekjur ársins,
+  // reikningar mánaðarins, greitt inn, kröfur, ósótt, ársþjónusta). Áætlanir sem aðeins eru til án vsk (Virði, Unnið: tímar × taxti, göt, sala
+  // án vsk) fá × 1,24 — öll sala beggja félaga ber 24 % vsk (mælt 25.11: solur 1,2400 · Payday SL 1,2400 · Payday BH 1,2398).
+  const VSK = 1.24;
+  const mv = n => fin(n) ? n * VSK : n;
+  const mvHlut = (o, lyklar) => { if (!o) return o; const c = Object.assign({}, o); lyklar.forEach(k => { c[k] = mv(o[k]); }); return c; };
 
   async function load(force) {
     if (S.loading) return;
@@ -127,7 +133,7 @@
   const lk = (k, inner, cls, titill) => {
     const s = SIDA[k];
     if (!s) return inner;
-    return '<a class="yr-a' + (cls ? ' ' + cls : '') + '" href="' + esc(s.u || s.h) + '"' + (s.u ? ' target="_blank" rel="noopener"' : '') +
+    return '<a class="yr-lk' + (cls ? ' ' + cls : '') + '" href="' + esc(s.u || s.h) + '"' + (s.u ? ' target="_blank" rel="noopener"' : '') +
       ' title="' + esc((titill ? titill + '\n' : '') + 'Opna ' + s.t + (s.u ? ' ↗' : '')) + '">' + inner + '</a>';
   };
 
@@ -153,9 +159,9 @@
   function manudurHtml(mt) {
     if (!ok(mt)) return '<span class="yr-ks">' + led('or') + 'Mánuðurinn ómældur' + (mt && mt.omaelt ? ' — ' + esc(mt.omaelt) : '') + '</span>';
     const mn = MANUDUR[manOf(mt.fra)] || 'mánuðinum';
-    const reikn = (f, heiti, x) => lk(f === 'sl' ? 'kSl' : 'kBh', '<i>' + f.toUpperCase() + '</i><span><b>' + isk(x.n) + '</b> · ' + stuttKr(x.an_vsk) + '</span>', 'yr-mc yr-mc-' + f,
-      'Reikningar ' + heiti + ' í ' + mn + ' (Payday, greiddir eða sendir; ógildir og kreditnótur ekki taldar): ' + isk(x.n) + ' stk · ' + isk(x.an_vsk) + ' kr án vsk · ' + isk(x.m_vsk) + ' kr m. vsk');
-    return '<div class="yr-mn"><span class="yr-mh">Í ' + esc(mn) + '<em>reikningar án vsk</em></span><div class="yr-mg">' +
+    const reikn = (f, heiti, x) => lk(f === 'sl' ? 'kSl' : 'kBh', '<i>' + f.toUpperCase() + '</i><span><b>' + isk(x.n) + '</b> · ' + stuttKr(x.m_vsk) + '</span>', 'yr-mc yr-mc-' + f,
+      'Reikningar ' + heiti + ' í ' + mn + ' (Payday, greiddir eða sendir; ógildir og kreditnótur ekki taldar): ' + isk(x.n) + ' stk · ' + isk(x.m_vsk) + ' kr m. vsk (' + isk(x.an_vsk) + ' kr án vsk)');
+    return '<div class="yr-mn"><span class="yr-mh">Í ' + esc(mn) + '<em>reikningar m. vsk</em></span><div class="yr-mg">' +
       lk('ars', '<i>Ársskoðun</i><span><b>' + isk(mt.arsskodun) + '</b></span>', 'yr-mc', 'Úttektarskýrslur Slökkvitækja (ársskoðun) dagsettar í ' + mn + ', afrit ekki talin') +
       // „+1" en ekki „+1 drög": reiturinn er ~112 px í 1700 px glugga og „0+1 drög" var skorið (mælt 25.11: 49/21 px) — orðið er í title
       lk('brunask', '<i>Brunaskoðun</i><span><b>' + isk(mt.brunaskodun) + '</b>' + (mt.brunaskodun_drog ? '<small>+' + isk(mt.brunaskodun_drog) + '</small>' : '') + '</span>', 'yr-mc',
@@ -176,14 +182,14 @@
       if (m.framtid) { s += '<rect x="' + x + '" y="' + (H - 1.5) + '" width="' + BW + '" height="1.5" rx=".7" class="yr-yf"/>'; return; }
       const sl = m.sl || 0, st = Math.min(sl, m.stolpi || 0), bh = m.bh || 0;
       const hb = bh / mx * H, hs = (sl - st) / mx * H, hst = st / mx * H;
-      s += '<g><title>' + esc(MANUDUR[mi] || m.man) + (m.til_dags ? ' til dags' : '') + ': ' + isk(sl + bh) + ' kr án vsk · SL ' + isk(sl) + (st ? ' (þar af Stólpi ' + isk(st) + ')' : '') + ' · BH ' + isk(bh) + '</title>';
+      s += '<g><title>' + esc(MANUDUR[mi] || m.man) + (m.til_dags ? ' til dags' : '') + ': ' + isk(sl + bh) + ' kr ' + (ta.vsk ? 'm.' : 'án') + ' vsk · SL ' + isk(sl) + (st ? ' (þar af Stólpi ' + isk(st) + ')' : '') + ' · BH ' + isk(bh) + '</title>';
       let y = H;
       if (hb > .3) { y -= hb; s += '<rect x="' + x + '" y="' + y.toFixed(1) + '" width="' + BW + '" height="' + hb.toFixed(1) + '" rx="1.2" class="yr-cb"/>'; }
       if (hs > .3) { y -= hs; s += '<rect x="' + x + '" y="' + y.toFixed(1) + '" width="' + BW + '" height="' + hs.toFixed(1) + '" rx="1.2" class="yr-cs"/>'; }
       if (hst > .3) { y -= hst; s += '<rect x="' + x + '" y="' + y.toFixed(1) + '" width="' + BW + '" height="' + hst.toFixed(1) + '" rx="1.2" class="yr-cs yr-cst"/>'; }
       s += '</g>';
     });
-    return '<a class="yr-a yr-yr" href="' + SIDA.tekjur.h + '" title="' + esc('Tekjur ' + ta.ar + ' per mánuð: ' + (ta.regla || '') + '\nOpna ' + SIDA.tekjur.t) + '">' +
+    return '<a class="yr-lk yr-yr" href="' + SIDA.tekjur.h + '" title="' + esc('Tekjur ' + ta.ar + ' per mánuð: ' + (ta.regla || '') + '\nOpna ' + SIDA.tekjur.t) + '">' +
       '<span class="yr-yh">Tekjur ' + esc(ta.ar) + '<b>' + mkr(ta.alls, 1) + ' m</b></span>' +
       '<svg viewBox="0 0 240 ' + H + '" aria-hidden="true">' + s + '</svg>' +
       '<span class="yr-ym">' + M.map(m => { const mi = +String(m.man).slice(5, 7) - 1; return '<span' + (m.til_dags ? ' class="yr-nu"' : '') + '>' + esc((MAN[mi] || '?').charAt(0).toUpperCase()) + '</span>'; }).join('') + '</span>' +
@@ -206,7 +212,7 @@
     const gamalt = a.reiknad_at ? dagarSidan(a.reiknad_at) : null;
     return '<div class="yr-k yr-hero" title="Virði ársþjónustu ' + esc(a.ar) + ' (Ársskoðun): ' + isk(a.total) + ' kr · búið ' + isk(a.buid) + ' kr á ' + isk(a.buidStadir) + ' stöðum · eftir ' + isk(eftir) + ' kr á ' + isk(eftirSt) + ' stöðum. Hvíta strikið = hve mikið er liðið af árinu.">' +
       '<span class="yr-kl">' + ic('ars') + 'Ársþjónusta ' + esc(a.ar) + '</span>' +
-      '<a class="yr-a yr-ars" href="' + SIDA.ars.h + '" title="Opna ' + SIDA.ars.t + '"><div><div class="yr-gauge">' +
+      '<a class="yr-lk yr-ars" href="' + SIDA.ars.h + '" title="Opna ' + SIDA.ars.t + '"><div><div class="yr-gauge">' +
         '<svg viewBox="0 0 116 66" aria-hidden="true">' +
           '<path d="M5.0 58.0L0.0 58.0M7.6 41.6L4.7 40.7M15.1 26.8L12.7 25.1M26.8 15.1L25.1 12.7M41.6 7.6L40.7 4.7M58.0 5.0L58.0 0.0M74.4 7.6L75.3 4.7M89.2 15.1L90.9 12.7M100.9 26.8L103.3 25.1M108.4 41.6L111.3 40.7M111.0 58.0L116.0 58.0" stroke="rgba(200,215,240,.45)" stroke-width="1.2" stroke-linecap="round"/>' +
           '<path d="M12 58 A46 46 0 0 1 104 58" fill="none" stroke="rgba(0,0,0,.62)" stroke-width="15" stroke-linecap="round"/>' +
@@ -233,12 +239,12 @@
 
   function virdiHtml(rek, D) {
     if (!ok(rek)) return omaelt('Virði mánaðarins', rek && rek.omaelt);
-    const T = rek.timabil, v = rek.badir.tekjur[3], fyrr = rek.badir.tekjur[4];
-    const sl = rek.sl.tekjur[3], bh = rek.bh.virdi[3];
+    const T = rek.timabil, v = mv(rek.badir.tekjur[3]), fyrr = mv(rek.badir.tekjur[4]);
+    const sl = mv(rek.sl.tekjur[3]), bh = mv(rek.bh.virdi[3]);
     const fra = T[3].fra, til = T[3].til, mi = manOf(fra);
     const ar = +String(fra).slice(0, 4), dim = new Date(ar, mi + 1, 0).getDate();
     const dagurNu = +String(til).slice(8, 10);
-    const rod = (rek.rod || []).filter(r => r.d >= fra && r.d <= til);
+    const rod = (rek.rod || []).filter(r => r.d >= fra && r.d <= til).map(r => ({ d: r.d, sl: mv(r.sl || 0), bh: mv(r.bh || 0) }));
     const vmax = Math.max(fyrr || 0, v || 0) * 1.04 || 1;
     const B = 66, H = 60, x = i => ((i + 0.5) / dim * 240);
     const y = val => (B - val / vmax * H).toFixed(1);
@@ -261,12 +267,12 @@
     const fyrrY = y(fyrr || 0);
     const p = pct(v, fyrr), lidid = Math.round(dagurNu / dim * 100);
     const fyrriNafn = MANUDUR[manOf(T[4].fra)] || 'fyrri mánuður';
-    return '<div class="yr-k" title="Virði ' + esc(MANUDUR[mi] || '') + ' án vsk, uppsafnað dag fyrir dag: SL tekjur ' + isk(sl) + ' kr + BH áunnið ' + isk(bh) + ' kr. Strikalína = allur ' + esc(fyrriNafn) + ' (' + isk(fyrr) + ' kr). ' + lidid + ' % af mánuðinum liðið.">' +
+    return '<div class="yr-k" title="Virði ' + esc(MANUDUR[mi] || '') + ' MEÐ VSK (Rekstrarskýrslan × 1,24), uppsafnað dag fyrir dag: SL tekjur ' + isk(sl) + ' kr + BH áunnið ' + isk(bh) + ' kr. Strikalína = allur ' + esc(fyrriNafn) + ' (' + isk(fyrr) + ' kr). ' + lidid + ' % af mánuðinum liðið.">' +
       // stutt mánaðarheiti (25.11: „VIRÐI NÓVEMBER án vsk" var skorið í „án vsl", 148/184 px) — fullt heiti í title flísarinnar
-      '<span class="yr-kl">' + ic('virdi') + 'Virði ' + esc(MAN[mi] ? MAN[mi] + '.' : '') + '<em>án vsk</em></span>' +
-      '<span class="yr-row">' + lk('rekstur', mkr(v) + '<small>m</small>', 'yr-kn', 'Virði ' + (MANUDUR[mi] || '') + ' til dags: ' + isk(v) + ' kr án vsk') + (p != null ? '<span class="yr-kp ' + (p >= lidid ? 'yr-g' : 'yr-o') + '" style="margin-left:auto">' + p + ' % af ' + esc(MAN[manOf(T[4].fra)] || '') + '.</span>' : '') + '</span>' +
-      '<span class="yr-ks" title="SL = tekjur eftir söludegi (önnur regla en „Unnið í mánuðinum“, sem miðar við skoðunarmánuð/klart_at). BH = unnið, sama tala og í „Unnið í mánuðinum“.">' + lk('tekjur', 'SL sala <b>' + mkr(sl) + '</b>', '', 'SL sala ' + isk(sl) + ' kr án vsk') + ' · ' + lk('rekstur', 'BH <b>' + mkr(bh) + '</b>', '', 'BH unnið ' + isk(bh) + ' kr án vsk') + '</span>' +
-      '<a class="yr-a yr-scr" href="' + REKSTUR_URL + '" target="_blank" rel="noopener" title="Dag fyrir dag í Rekstrarskýrslu Brunahólfs ↗"><svg viewBox="0 0 240 66" aria-hidden="true">' + helgar +
+      '<span class="yr-kl">' + ic('virdi') + 'Virði ' + esc(MAN[mi] ? MAN[mi] + '.' : '') + '<em>m. vsk</em></span>' +
+      '<span class="yr-row">' + lk('rekstur', mkr(v) + '<small>m</small>', 'yr-kn', 'Virði ' + (MANUDUR[mi] || '') + ' til dags: ' + isk(v) + ' kr m. vsk') + (p != null ? '<span class="yr-kp ' + (p >= lidid ? 'yr-g' : 'yr-o') + '" style="margin-left:auto">' + p + ' % af ' + esc(MAN[manOf(T[4].fra)] || '') + '.</span>' : '') + '</span>' +
+      '<span class="yr-ks" title="SL = tekjur eftir söludegi (önnur regla en „Unnið í mánuðinum“, sem miðar við skoðunarmánuð/klart_at). BH = unnið, sama tala og í „Unnið í mánuðinum“.">' + lk('tekjur', 'SL sala <b>' + mkr(sl) + '</b>', '', 'SL sala ' + isk(sl) + ' kr m. vsk') + ' · ' + lk('rekstur', 'BH <b>' + mkr(bh) + '</b>', '', 'BH unnið ' + isk(bh) + ' kr m. vsk') + '</span>' +
+      '<a class="yr-lk yr-scr" href="' + REKSTUR_URL + '" target="_blank" rel="noopener" title="Dag fyrir dag í Rekstrarskýrslu Brunahólfs ↗"><svg viewBox="0 0 240 66" aria-hidden="true">' + helgar +
         '<rect x="' + (dagurNu / dim * 240).toFixed(1) + '" y="0" width="' + (240 - dagurNu / dim * 240).toFixed(1) + '" height="' + B + '" fill="url(#yrFut)"/>' +
         '<line x1="0" y1="' + fyrrY + '" x2="240" y2="' + fyrrY + '" stroke="#9fb0cc" stroke-width="1" stroke-dasharray="4 3" opacity=".8"/>' + bars +
         '<path d="M' + pts.join(' L') + ' L' + ex + ',' + B + ' Z" fill="url(#yrArea)"/>' +
@@ -313,7 +319,7 @@
       '<span class="yr-row">' + lk('rekstur', mkr(nu.alls) + '<small>m</small>', 'yr-kn', 'Greitt inn ' + (MANUDUR[manOf(nu.fra)] || '') + ' til dags: ' + isk(nu.alls) + ' kr m. vsk — Rekstrarskýrslan sýnir „Greitt til okkar" hvors félags (án vsk)') +
         (ogr != null ? lk('fjarm', 'Ógreitt alls<b>' + mkr(ogr) + ' m</b>', 'yr-gog', ogrT) : '') + '</span>' +
       // mánuðirnir: tala + mjó súla undir (breidd eftir hlutfalli af stærsta mánuði)
-      '<a class="yr-a yr-gm" href="' + REKSTUR_URL + '" target="_blank" rel="noopener" title="Greitt inn hvern mánuð — Rekstrarskýrsla Brunahólfs ↗">' + M.map((m, i) => '<span' + (i === 3 ? ' class="yr-nu"' : '') + '>' + esc(MAN[manOf(m.fra)] || '') + '<b>' + mkr(m.alls, 1) + '</b><i style="width:' + Math.max(4, Math.round((m.alls || 0) / max * 100)) + '%"></i></span>').join('') + '</a>' +
+      '<a class="yr-lk yr-gm" href="' + REKSTUR_URL + '" target="_blank" rel="noopener" title="Greitt inn hvern mánuð — Rekstrarskýrsla Brunahólfs ↗">' + M.map((m, i) => '<span' + (i === 3 ? ' class="yr-nu"' : '') + '>' + esc(MAN[manOf(m.fra)] || '') + '<b>' + mkr(m.alls, 1) + '</b><i style="width:' + Math.max(4, Math.round((m.alls || 0) / max * 100)) + '%"></i></span>').join('') + '</a>' +
       '<div class="yr-gl" title="Síðustu inngreiðslur — Payday SL og greiðslur Brunahólfs, nýjast fyrst">' + radir + vant + '</div>' +
       teya +
       '<span class="yr-kf" title="Payday SL og BH + BH-reikningar merktir greiddir í Kröfu yfirliti + Teya-uppgjör úr pósti">' + heimildLed(rek, 'Payday SL') + 'Payday SL<s>|</s>' + heimildLed(rek, 'Greiðslur BH') + 'BH</span>' +
@@ -391,21 +397,22 @@
     let wells;
     if (!r) wells = '<div class="yr-well"><span class="yr-v"><span class="yr-e">' + (S.rVilla ? 'ómælt' : '…') + '</span></span><span class="yr-n" title="' + esc(S.rVilla || '') + '">' + esc(S.rVilla || 'sæki samtölu mánaðarins …') + '</span></div>';
     else {
-      const sl = r.slokkvitaeki, um = sl && !sl.omaelt ? sl.unnid_manudur : null;
+      const sl = r.slokkvitaeki, um = sl && !sl.omaelt ? mvHlut(sl.unnid_manudur, ['samtals', 'skodanir', 'verkstaedi', 'verslun']) : null;
       const wSl = um && fin(um.samtals)
-        ? '<div class="yr-well" title="' + esc('Slökkvitæki — ' + nm + ' til dags, án vsk: úttektir ' + isk(um.skodanir) + ' kr · verkstæði ' + isk(um.verkstaedi) + ' kr · verslun ' + isk(um.verslun) + ' kr · samtals ' + isk(um.samtals) + ' kr · ' + isk(um.taeki) + ' tæki') + '">' +
+        ? '<div class="yr-well" title="' + esc('Slökkvitæki — ' + nm + ' til dags, m. vsk: úttektir ' + isk(um.skodanir) + ' kr · verkstæði ' + isk(um.verkstaedi) + ' kr · verslun ' + isk(um.verslun) + ' kr · samtals ' + isk(um.samtals) + ' kr · ' + isk(um.taeki) + ' tæki') + '">' +
           '<span class="yr-v">' + stor(um.samtals).t + '<span class="yr-e">' + stor(um.samtals).e + ' Slökkvitæki</span></span>' +
           '<span class="yr-n">úttektir <b>' + smatt(um.skodanir) + '</b> · verkstæði <b>' + smatt(um.verkstaedi) + '</b></span>' +
           '<span class="yr-n">verslun <b>' + smatt(um.verslun) + '</b> · ' + isk(um.taeki).replace('-', '−') + ' tæki</span></div>'
         : om('Slökkvitæki', (sl && sl.omaelt) || 'samtala mánaðarins vantar');
-      const bh = r.brunaholf, m = bh && bh.man && bh.man[bh.man.length - 1];
+      const bh = r.brunaholf, m0 = bh && bh.man && bh.man[bh.man.length - 1];
+      const m = m0 && Object.assign(mvHlut(m0, ['unnid', 'reikningsfaert', 'ogefid']), { hlutar: mvHlut(m0.hlutar || {}, ['tima', 'landspitali', 'heklureitur']) });
       let wBh;
       if (m && fin(m.unnid)) {
         const rf = fin(m.reikningsfaert) ? '<b>' + smatt(m.reikningsfaert) + '</b>' : 'ómælt';
         const og = !fin(m.ogefid) ? 'ómælt' : m.ogefid > 0 ? '<b>' + smatt(m.ogefid) + '</b>' : '<b>ekkert</b> <span class="yr-e" title="Reikningsfært í mánuðinum er umfram unnið — reikningar fyrir vinnu fyrri mánaða eru gefnir út núna">(umfram ' + smatt(-m.ogefid) + ')</span>';
         const h = m.hlutar || {};
         const got = fin(h.landspitali) && fin(h.heklureitur) ? h.landspitali + h.heklureitur : null;
-        wBh = '<div class="yr-well" title="' + esc('Brunahólf — ' + nm + ' til dags, án vsk, áætlun: unnið ' + isk(m.unnid) + ' kr (rukkanlegir tímar ' + isk(h.tima) + ' · göt ' + (got == null ? 'ómælt' : isk(got) + ' kr') + ' · Landspítali ' + isk(h.landspitali) + ' · Heklureitur ' + isk(h.heklureitur) + ') · reikningsfært ' + (fin(m.reikningsfaert) ? isk(m.reikningsfaert) + ' kr' : 'ómælt') + ' · ógefið út = unnið − reikningsfært') + '">' +
+        wBh = '<div class="yr-well" title="' + esc('Brunahólf — ' + nm + ' til dags, m. vsk, áætlun: unnið ' + isk(m.unnid) + ' kr (rukkanlegir tímar ' + isk(h.tima) + ' · göt ' + (got == null ? 'ómælt' : isk(got) + ' kr') + ' · Landspítali ' + isk(h.landspitali) + ' · Heklureitur ' + isk(h.heklureitur) + ') · reikningsfært ' + (fin(m.reikningsfaert) ? isk(m.reikningsfaert) + ' kr' : 'ómælt') + ' · ógefið út = unnið − reikningsfært') + '">' +
           '<span class="yr-v">' + stor(m.unnid).t + '<span class="yr-e">' + stor(m.unnid).e + ' Brunahólf</span></span>' +
           '<span class="yr-n">Göt <b>' + (got == null ? 'ómælt' : smatt(got)) + '</b> · Landspítali ' + smatt(h.landspitali) + ' · Heklureitur ' + smatt(h.heklureitur) + '</span>' +
           '<span class="yr-n">Rukkanlegir tímar <b>' + smatt(h.tima) + '</b></span>' +
@@ -413,14 +420,14 @@
       } else wBh = om('Brunahólf', (m && m.omaelt) || (bh && bh.omaelt) || 'samtala mánaðarins vantar');
       wells = wSl + wBh;
     }
-    const tit = (r ? ['slokkvitaeki', 'brunaholf'].map(k => { const b = r[k]; return (k === 'slokkvitaeki' ? 'Slökkvitæki: ' : 'Brunahólf: ') + (b && b.setning ? b.setning.setning + (b.setning.aaetlun ? ' ' + b.setning.aaetlun.texti : '') : 'ómælt'); }).join('\n') + '\n' : '') +
-      'Unnið í ' + nm + ' til dags, án vsk — félögin eru aldrei lögð saman. Slökkvitæki: úttektir í skoðunarmánuði, verkstæði þegar tækið er klárt, verslun; kreditnóta fylgir degi frumsölunnar. ' +
+    const tit = (r ? ['slokkvitaeki', 'brunaholf'].map(k => { const b = r[k]; return (k === 'slokkvitaeki' ? 'Slökkvitæki: ' : 'Brunahólf: ') + (b && b.setning ? '(án vsk) ' + b.setning.setning + (b.setning.aaetlun ? ' ' + b.setning.aaetlun.texti : '') : 'ómælt'); }).join('\n') + '\n' : '') +
+      'Unnið í ' + nm + ' til dags, MEÐ VSK (Rekstrarskýrslan × 1,24) — félögin eru aldrei lögð saman. Slökkvitæki: úttektir í skoðunarmánuði, verkstæði þegar tækið er klárt, verslun; kreditnóta fylgir degi frumsölunnar. ' +
       'Brunahólf: stimplaðir tímar × taxti + kláruð göt (áætlun); reikningsfært = Payday-reikningar útgefnir í mánuðinum; ógefið út = unnið − reikningsfært. ' +
       'Virði mánaðarins sýnir SL eftir söludegi (önnur regla); BH er sama talan og hér. Vikutölurnar (tímar, göt, reikningar) eru í Rekstrarskýrslunni undir „Þessi vika“ og „Síðasta vika“. Smelltu til að opna Tekjuliði.';
     const gamalt = r && S.rVilla ? '<span class="yr-n" title="' + esc('Síðasta endurnýjun mistókst: ' + S.rVilla) + '">' + led('or') + 'tölur frá kl. ' + esc(klukka(r.maelt_at)) + ' — endurnýjun mistókst</span>' : '';
     return '<div class="yr-k yr-sam" title="' + esc(tit + (gamalt ? '\nSíðasta endurnýjun mistókst: ' + S.rVilla : '')) + '">' +
       '<a class="yr-samlnk" href="' + lnk + '" target="_blank" rel="noopener">' +
-        '<span class="yr-kl">' + ic('klukka') + 'Unnið í ' + esc(nm) + '<em>án vsk</em></span>' +
+        '<span class="yr-kl">' + ic('klukka') + 'Unnið í ' + esc(nm) + '<em>m. vsk</em></span>' +
         '<div class="yr-vk yr-vk1">' + wells + '</div></a>' + gamalt + kf + '</div>';
   }
 
@@ -591,8 +598,8 @@
     if (!r) return '';
     const um = r.slokkvitaeki && !r.slokkvitaeki.omaelt ? r.slokkvitaeki.unnid_manudur : null;
     const bm = r.brunaholf && r.brunaholf.man && r.brunaholf.man[r.brunaholf.man.length - 1];
-    const a = um && fin(um.samtals) ? 'SL ' + smatt(um.samtals) : 'SL ómælt', b = bm && fin(bm.unnid) ? 'BH ' + smatt(bm.unnid) : 'BH ómælt';
-    return '<a class="yr-a yr-chip" href="' + REKSTUR_URL + '#tekjulidir" target="_blank" rel="noopener" title="Unnið í ' + esc(MANUDUR[manOf(r.idag)] || 'mánuðinum') + ' til dags, án vsk — félögin eru aldrei lögð saman\nOpna Tekjuliði í Rekstrarskýrslu ↗">Unnið <b>' + a + ' · ' + b + '</b></a>';
+    const a = um && fin(um.samtals) ? 'SL ' + smatt(mv(um.samtals)) : 'SL ómælt', b = bm && fin(bm.unnid) ? 'BH ' + smatt(mv(bm.unnid)) : 'BH ómælt';
+    return '<a class="yr-lk yr-chip" href="' + REKSTUR_URL + '#tekjulidir" target="_blank" rel="noopener" title="Unnið í ' + esc(MANUDUR[manOf(r.idag)] || 'mánuðinum') + ' til dags, m. vsk — félögin eru aldrei lögð saman\nOpna Tekjuliði í Rekstrarskýrslu ↗">Unnið <b>' + a + ' · ' + b + '</b></a>';
   }
 
   function linaHtml(ctx, D, rek) {
@@ -607,7 +614,7 @@
       '<div class="yr-chips">' +
         (a && fin(a.total) ? chip('Ársþjónusta', pct(a.buid, a.total) + ' %', 'ars') : '') +
         (D && (ok(sl) || ok(bh)) ? chip('Á leiðinni inn', mkr(leid) + ' m', 'fjarm') : '') +
-        (ok(rek) ? chip('Virði ' + esc(MAN[manOf(rek.timabil[3].fra)] || '') + '.', mkr(rek.badir.tekjur[3]) + ' m', 'rekstur') : '') +
+        (ok(rek) ? chip('Virði ' + esc(MAN[manOf(rek.timabil[3].fra)] || '') + '.', mkr(mv(rek.badir.tekjur[3])) + ' m', 'rekstur') : '') +
         (D && ok(D.greitt) && D.greitt.manudir && D.greitt.manudir[3] ? chip('Greitt inn', mkr(D.greitt.manudir[3].alls) + ' m', 'rekstur') : '') +
         unnidChip() +
         (at.length ? '<span class="yr-chip">' + led('rd') + at.length + ' þarf athygli</span>' : '') +
@@ -853,16 +860,13 @@
       '.yr-g2 i{font-style:normal;font-weight:700;margin-right:5px}.yr-gt-sl{color:#ffb37a}.yr-gt-bh{color:#a9c5ff}.yr-gt-ty{color:#86efac}',
       '.yr-gv{display:flex;align-items:center;gap:5px;font-size:10.5px;color:#ffb37a}.yr-gty{display:flex;align-items:center;gap:4px;font-size:10.5px;line-height:14px}.yr-gty .yr-led{width:7px;height:7px}',
       // upprunasíður (25.11): hver tala er hlekkur. Litur og útlit reitsins halda sér; yfirstrik/hringur við snertingu, fókushringur á lyklaborði.
-      'a.yr-a{color:inherit;text-decoration:none!important;cursor:pointer;-webkit-tap-highlight-color:rgba(255,138,31,.25)}',
-      // borðið setur 1 px ramma á alla hlekki (mælt 25.11: röðin hækkaði 312 → 326 px) og display:block á suma — núllað hér, reitir sem bera
-      // eigin ramma (inngreiðslur, mánaðarreitir SL/BH, Ógreitt alls) fá hann aftur
-      '.yr-mb a.yr-a{border:0!important;margin:0}.yr-mb a.yr-kn{display:inline-block}',
-      '.yr-mb a.yr-gr{border-left:2px solid #ff8a1f!important}.yr-mb a.yr-gr-bh{border-left-color:#5b8ff0!important}',
-      '.yr-mb a.yr-mc-sl{border-left:2px solid #ff8a1f!important}.yr-mb a.yr-mc-bh{border-left:2px solid #5b8ff0!important}',
-      '.yr-mb a.yr-gog{border:1px solid rgba(248,113,113,.5)!important;margin-left:auto}',
-      'a.yr-a:focus-visible{outline:2px solid #ffb066;outline-offset:2px;border-radius:6px}',
+      'a.yr-lk{color:inherit;text-decoration:none!important;cursor:pointer;-webkit-tap-highlight-color:rgba(255,138,31,.25)}',
+      // Klasinn hét fyrst „yr-a" — sama og gula pillan (.yr-a: gulur bakgrunnur + rammi), svo tölurnar fengu gráan/gulan kassa og röðin
+      // hækkaði 312 → 326 px (Agnar sendi skjáskot 25.11). Nú „yr-lk": enginn bakgrunnur né rammi nema reiturinn beri hann sjálfur.
+      '.yr-mb a.yr-kn{display:inline-block}',
+      'a.yr-lk:focus-visible{outline:2px solid #ffb066;outline-offset:2px;border-radius:6px}',
       'a.yr-kn:hover,a.yr-kn:active{color:#ffd0a6;text-decoration:underline dotted rgba(255,176,102,.85)!important;text-decoration-thickness:2px!important;text-underline-offset:5px}',
-      '.yr-ks a.yr-a:hover b,.yr-ks a.yr-a:active b{color:#ffd0a6}',
+      '.yr-ks a.yr-lk:hover b,.yr-ks a.yr-lk:active b{color:#ffd0a6}',
       'a.yr-lr:hover,a.yr-mc:hover,a.yr-ach:hover,a.yr-pi:hover,a.yr-tg:hover .yr-tc,a.yr-gr:hover,a.yr-scr:hover,a.yr-yr:hover,a.yr-ars:hover,a.yr-gm:hover,a.yr-vks:hover,a.yr-bl:hover,a.yr-gog:hover,a.yr-kp:hover,a.yr-chip:hover{box-shadow:0 0 0 1px rgba(255,176,102,.55),inset 0 1px 3px rgba(0,0,0,.5);border-radius:9px}',
       'a.yr-gr{display:flex}a.yr-scr{display:block}a.yr-tg,a.yr-scr,a.yr-yr,a.yr-gm,a.yr-bl{text-decoration:none!important}',
       // Ársþjónusta: mánuðurinn í tölum (25.11) — 2×2 einnar línu reitir svo flísin hækki röndina sem minnst
@@ -946,5 +950,5 @@
     ].join('\n');
   }
 
-  window.YfirsynRond = { html, css, smellur, geymaArs, load, allsherjar, opnaKrofur, S, version: '2026-11-25d' };
+  window.YfirsynRond = { html, css, smellur, geymaArs, load, allsherjar, opnaKrofur, S, version: '2026-11-25e' };
 })();
