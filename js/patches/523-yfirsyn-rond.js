@@ -688,6 +688,9 @@
       '.yr-n b{font-weight:600;color:#fff}',
       '.yr-v .yr-e{font-size:11px;font-weight:500;color:#b8c6dd;margin-left:-2px}.yr-n .yr-e{font-size:10.5px;font-weight:500;color:#a9b8d0}',
       '.yr-well{display:flex;flex-direction:column;gap:4px;min-width:0;padding:7px 9px 6px}',
+      // 25.11: „Göt 6,27 m · Landspítali 6,07 m · Heklureitur 0,20 m" var skorin (192/272 px) — brotnar heldur; mælt í 1700 px:
+      // röndin hækkar ekki (310 px) og Unnið-flísin flæðir ekki yfir (10 px til góða)
+      '.yr-well .yr-n{white-space:normal;overflow:visible}',
       '.yr-v{display:flex;align-items:baseline;gap:5px;font-size:16px;font-weight:600;line-height:1.1;white-space:nowrap}.yr-v small{font-size:11px;font-weight:500;color:#b8c6dd;margin-left:-2px}.yr-v s{text-decoration:none;font-size:11px;font-weight:600}',
       '.yr-h2{color:#b8c6dd;font-weight:500}',
       '.yr-up{color:#4ade80;text-shadow:0 0 8px rgba(74,222,128,.55)}.yr-dn{color:#ff8f86;text-shadow:0 0 8px rgba(248,113,113,.55)}',
