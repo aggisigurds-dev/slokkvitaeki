@@ -15,6 +15,11 @@
  *
  * Hamur: Rönd (sjálfgefið) eða Lína, Vidmot `bord.yfirsyn` (eins á öllum vélum). „Stækka" opnar Rekstrarskýrsluna.
  * API (368 kallar, allt varið með `window.YfirsynRond &&`): html(n, ctx) · css() · smellur(el) · geymaArs(v) · load(force)
+ *
+ * 25.11.2026 (Agnar): Ársþjónusta aftur fremst · ↻ allsherjar endurnýjun (allar heimildir + AppSettings) · „skráðir í dag“
+ * í stað „við vinnu“ (Tímavera berst seint: 0 í dag = óskráð, ekki enginn við vinnu) · BH/SL hlutfallslína á „Á leiðinni inn“,
+ * smellur opnar glugga með öllum ósendum og ógreiddum kröfum félagsins (yfirsyn.cjs sendir raðirnar) · tæki mánaðarins
+ * (yfirfarin, hlaðin, ný seld) á Ósótt-flísinni úr Unnið-reglunni (_rekstur-yfirlit taeki_sund).
  */
 (() => {
   if (window.YfirsynRond) return;
@@ -76,9 +81,10 @@
   function geymaArs(v) {
     try {
       if (!v || !fin(v.total) || v.total <= 0 || !window.AppSettings || !AppSettings.save) return;
-      const lykill = [v.ar, v.total, v.buid, v.stadir, v.buidStadir, v.eftirStadir, v.komin, v.fela_slepptu].join('|');
+      // 25.11.2026: aeftir í stað komin (153 vistar 🔴 Á eftir áætlun-flöguna, ekki ⏳ komin á tíma)
+      const lykill = [v.ar, v.total, v.buid, v.stadir, v.buidStadir, v.eftirStadir, v.aeftir, v.fela_slepptu].join('|');
       const nu = AppSettings.path ? AppSettings.path('yfirsyn_ars') : null;
-      const nuLykill = nu ? [nu.ar, nu.total, nu.buid, nu.stadir, nu.buidStadir, nu.eftirStadir, nu.komin, nu.fela_slepptu].join('|') : '';
+      const nuLykill = nu ? [nu.ar, nu.total, nu.buid, nu.stadir, nu.buidStadir, nu.eftirStadir, nu.aeftir, nu.fela_slepptu].join('|') : '';
       if (lykill === nuLykill || lykill === arsSent) return;
       arsSent = lykill;
       AppSettings.save({ yfirsyn_ars: Object.assign({}, v, { reiknad_at: new Date().toISOString() }) });
@@ -97,6 +103,7 @@
     vidv: '<path d="M8 1.8L1.5 13.5h13zM8 6.2v3.6M8 11.6v.1"/>',
     greitt: '<circle cx="8" cy="8" r="6.3"/><path d="M5.3 8.2l1.9 1.9 3.6-3.8"/>',
     nidur: '<path d="M4 6l4 4 4-4"/>',
+    refresh: '<path d="M13.3 8.3a5.3 5.3 0 1 1-1.6-3.9"/><path d="M13.7 2.2v3.1h-3.1"/>',
   };
   const ic = (k, stil) => '<svg class="yr-ic" viewBox="0 0 16 16" aria-hidden="true"' + (stil ? ' style="' + stil + '"' : '') + '>' + ICON[k] + '</svg>';
   const led = (lit, titill) => '<i class="yr-led yr-led-' + lit + '"' + (titill ? ' title="' + esc(titill) + '"' : '') + '></i>';
@@ -147,7 +154,9 @@
         '<div class="yr-gcap"><i></i>árið ' + Math.round(arP * 100) + ' % liðið</div></div>' +
         '<div class="yr-rt"><span class="yr-kn">' + mkr(a.total, 1) + '<small>m.kr</small></span>' +
           '<span class="yr-ks"><b>' + isk(a.buidStadir) + '</b> af ' + isk(a.stadir) + ' stöðum</span>' +
-          (fin(a.komin) && a.komin > 0 ? '<span class="yr-kp yr-r" title="Óbúið og skoðunarmánuðurinn kominn eða liðinn">' + isk(a.komin) + ' á eftir áætlun</span>' : '') +
+          // 25.11.2026: SAMA tala og „🔴 Á eftir áætlun"-flagan í Ársskoðun (aeftir: mánuðurinn liðinn, óbúið, ekki hafið).
+          // Eldri vistun bar aðeins „komin" (⏳ komin á tíma — önnur tala) og þá er pillan ekki sýnd frekar en að bera rangt heiti.
+          (fin(a.aeftir) && a.aeftir > 0 ? '<span class="yr-kp yr-r" title="Sama og „🔴 Á eftir áætlun" í Ársskoðun: skoðunarmánuðurinn liðinn, óbúið og úttekt ekki hafin">' + isk(a.aeftir) + ' á eftir áætlun</span>' : '') +
         '</div></div>' +
       '<span class="yr-sb yr-sb-l" role="img" aria-label="Búið ' + mkr(a.buid, 1) + ' m, eftir ' + mkr(eftir, 1) + ' m"><i class="yr-s-gr" style="width:' + (p * 100).toFixed(1) + '%"></i><i class="yr-s-am" style="width:' + ((1 - p) * 100).toFixed(1) + '%"></i></span>' +
       '<span class="yr-bl"><span>' + led('gr') + 'Búið <b>' + mkr(a.buid, 1) + ' m</b></span><span>' + led('am') + 'Eftir <b>' + mkr(eftir, 1) + ' m</b> · ' + isk(eftirSt) + ' st.</span></span>' +
@@ -187,7 +196,8 @@
     const p = pct(v, fyrr), lidid = Math.round(dagurNu / dim * 100);
     const fyrriNafn = MANUDUR[manOf(T[4].fra)] || 'fyrri mánuður';
     return '<div class="yr-k" title="Virði ' + esc(MANUDUR[mi] || '') + ' án vsk, uppsafnað dag fyrir dag: SL tekjur ' + isk(sl) + ' kr + BH áunnið ' + isk(bh) + ' kr. Strikalína = allur ' + esc(fyrriNafn) + ' (' + isk(fyrr) + ' kr). ' + lidid + ' % af mánuðinum liðið.">' +
-      '<span class="yr-kl">' + ic('virdi') + 'Virði ' + esc(MANUDUR[mi] || '') + '<em>án vsk</em></span>' +
+      // stutt mánaðarheiti (25.11: „VIRÐI NÓVEMBER án vsk" var skorið í „án vsl", 148/184 px) — fullt heiti í title flísarinnar
+      '<span class="yr-kl">' + ic('virdi') + 'Virði ' + esc(MAN[mi] ? MAN[mi] + '.' : '') + '<em>án vsk</em></span>' +
       '<span class="yr-row"><span class="yr-kn">' + mkr(v) + '<small>m</small></span>' + (p != null ? '<span class="yr-kp ' + (p >= lidid ? 'yr-g' : 'yr-o') + '" style="margin-left:auto">' + p + ' % af ' + esc(MAN[manOf(T[4].fra)] || '') + '.</span>' : '') + '</span>' +
       '<span class="yr-ks" title="SL = tekjur eftir söludegi (önnur regla en „Unnið í mánuðinum“, sem miðar við skoðunarmánuð/klart_at). BH = unnið, sama tala og í „Unnið í mánuðinum“.">SL sala <b>' + mkr(sl) + '</b> · BH <b>' + mkr(bh) + '</b></span>' +
       '<div class="yr-scr"><svg viewBox="0 0 240 66" aria-hidden="true">' + helgar +
@@ -228,26 +238,53 @@
     '</div>';
   }
 
+  // BH/SL hlutfallslína (Agnar 25.11.2026: „hversu mikið er á sitthvoru fyrirtækinu ógreitt … í svona hlutfallslínu, og … clicka á
+  // sitthvorum megin og síðan opnað glugga sem sýnir alla tölurnar"). Hlutur hvors félags í ósendu + ógreiddu (m. vsk); breidd eftir
+  // hlutfalli, minnst 22 % svo minni hliðin sé alltaf smellanleg. Kom í stað línunnar „Kröfu yfirlit BH · ósent · ógreitt".
+  // 25.11.2026 (Agnar: „Þessar tölur eru ekki í samræmi þarna"): BH-hlutinn tekur líka „Tími eftir" (CG-03 af Kröfu yfirliti),
+  // svo BH = ógreitt + ósent + tími eftir = „Samtals í pípunni" á Kröfu yfirliti.
+  function felagBar(sl, bh, te) {
+    const t = x => ok(x) ? x.osent.kr + x.ogreitt.kr : null;
+    const b = t(bh) == null ? null : t(bh) + (ok(te) ? te.kr : 0), s = t(sl);
+    if (b == null && s == null) return '';
+    const alls = ((b || 0) + (s || 0)) || 1;
+    const seg = (felag, nafn, v, cls) => v == null
+      ? '<span class="yr-cseg yr-cseg-om" title="' + esc(nafn + ': ómælt') + '"><span>' + nafn + '</span><b>ómælt</b></span>'
+      : '<button type="button" class="yr-cseg ' + cls + '" data-t5="yr-krofur" data-felag="' + felag + '" style="flex-grow:' + Math.max(v / alls, 0.22).toFixed(3) + '" title="' +
+        esc((felag === 'bh' ? 'Brunahólf — ógreitt + ósent + tími eftir (= „Samtals í pípunni" á Kröfu yfirliti) ' : 'Slökkvitæki — ósent + ógreitt ') + isk(v) + ' kr m. vsk (' + Math.round(v / alls * 100) + ' %). Smelltu til að sjá allar kröfurnar.') + '">' +
+        '<span>' + nafn + ' · ' + Math.round(v / alls * 100) + ' %</span><b>' + mkr(v) + '<small>m</small></b></button>';
+    return '<div class="yr-cbar" role="group" aria-label="Ósent og ógreitt eftir félagi">' + seg('bh', 'BH', b, 'yr-cbh') + seg('sl', 'SL', s, 'yr-csl') + '</div>';
+  }
+
   function leidinniHtml(D) {
     const sl = D.krofur && D.krofur.sl, bh = D.krofur && D.krofur.bh, os = D.osott;
     if (!ok(sl) && !ok(bh)) return omaelt('Á leiðinni inn', (sl && sl.omaelt) || (bh && bh.omaelt));
     const osent = (ok(sl) ? sl.osent.kr : 0) + (ok(bh) ? bh.osent.kr : 0);
     const ogr = (ok(sl) ? sl.ogreitt.kr : 0) + (ok(bh) ? bh.ogreitt.kr : 0);
     const osk = ok(os) ? os.kr : 0;
-    const alls = osent + ogr + osk || 1;
+    // „Tími eftir" (CG-03 af Kröfu yfirliti, 25.11.2026) — gömul tala (> sólarhringur) merkt, ekki falin
+    const te = D.krofur && D.krofur.timi_eftir, tek = ok(te) ? te.kr : 0;
+    const teGamalt = ok(te) && te.aldur_klst > 24;
+    const teTitill = ok(te) ? 'Óinnheimt vinna Brunahólfs (Tímavera-tímar × taxti m. vsk + Landspítala-viðbót) — sama tala og „Tími eftir" á Kröfu yfirliti, skráð ' +
+      dd(te.uppfaert) + ' kl. ' + klukka(te.uppfaert) + (teGamalt ? '. ATH: meira en sólarhrings gömul — opnaðu Kröfu yfirlit til að uppfæra hana.' : '.') : ('Tími eftir: ' + ((te && te.omaelt) || 'ómælt'));
+    const alls = osent + ogr + osk + tek || 1;
     const eldri = (ok(sl) ? sl.eldri45.kr : 0) + (ok(bh) ? bh.eldri45.kr : 0);
     const eldriN = (ok(sl) ? sl.eldri45.n : 0) + (ok(bh) ? bh.eldri45.n : 0);
-    const vantar = [!ok(sl) && 'SL', !ok(bh) && 'BH', !ok(os) && 'ósótt'].filter(Boolean);
+    const vantar = [!ok(sl) && 'SL', !ok(bh) && 'BH', !ok(os) && 'ósótt', !ok(te) && 'tími eftir'].filter(Boolean);
     const w = k => (k / alls * 100).toFixed(1) + '%';
-    return '<div class="yr-k" title="M. vsk, bæði félög. Ósent + ógreitt + ósótt tæki. Ekki leggja saman við virðið — sama féð á leiðinni inn.' + (ok(bh) && bh.staerst ? ' Stærsta krafan: ' + esc(bh.staerst.nr + ' ' + bh.staerst.kunni + ' ' + mkr(bh.staerst.kr) + ' m') + '.' : '') + (ok(sl) && sl.a_bid.n ? ' Auk þess á bið hjá SL: ' + sl.a_bid.n + ' · ' + mkr(sl.a_bid.kr) + ' m.' : '') + '">' +
+    return '<div class="yr-k" title="M. vsk, bæði félög. Ósent + ógreitt + ósótt tæki + tími eftir (BH). Ekki leggja saman við virðið — sama féð á leiðinni inn.' + (ok(bh) && bh.staerst ? ' Stærsta krafan: ' + esc(bh.staerst.nr + ' ' + bh.staerst.kunni + ' ' + mkr(bh.staerst.kr) + ' m') + '.' : '') + (ok(sl) && sl.a_bid && sl.a_bid.n ? ' Þar af á bið hjá SL: ' + sl.a_bid.n + ' · ' + mkr(sl.a_bid.kr) + ' m (telst með, eins og á Kröfu yfirliti).' : '') + '">' +
       '<span class="yr-kl">' + ic('krafa') + 'Á leiðinni inn<em>m. vsk</em></span>' +
-      '<span class="yr-row"><span class="yr-kn">' + mkr(osent + ogr + osk) + '<small>m</small></span>' + (eldri > 0 ? '<span class="yr-kp yr-r" title="' + eldriN + ' ógreiddar kröfur eldri en 45 daga">' + mkr(eldri) + ' m &gt;45 d.</span>' : '') + '</span>' +
-      '<span class="yr-sb"><i class="yr-s-bl" style="width:' + w(osent) + '"></i><i class="yr-s-rd" style="width:' + w(ogr) + '"></i><i class="yr-s-or" style="width:' + w(osk) + '"></i></span>' +
+      '<span class="yr-row"><span class="yr-kn">' + mkr(osent + ogr + osk + tek) + '<small>m</small></span>' + (eldri > 0 ? '<span class="yr-kp yr-r" title="' + eldriN + ' ógreiddar kröfur eldri en 45 daga">' + mkr(eldri) + ' m &gt;45 d.</span>' : '') + '</span>' +
+      '<span class="yr-sb"><i class="yr-s-bl" style="width:' + w(osent) + '"></i><i class="yr-s-rd" style="width:' + w(ogr) + '"></i><i class="yr-s-or" style="width:' + w(osk) + '"></i>' + (tek ? '<i class="yr-s-gy" style="width:' + w(tek) + '"></i>' : '') + '</span>' +
       '<div class="yr-lrs">' +
         '<span class="yr-lr" title="SL ' + (ok(sl) ? sl.osent.n + ' · ' + isk(sl.osent.kr) + ' kr' : 'ómælt') + ' · BH ' + (ok(bh) ? bh.osent.n + ' · ' + isk(bh.osent.kr) + ' kr' : 'ómælt') + '">' + led('bl') + 'Ósent<b>' + mkr(osent) + '<small>m</small></b></span>' +
         '<span class="yr-lr" title="SL ' + (ok(sl) ? sl.ogreitt.n + ' · ' + isk(sl.ogreitt.kr) + ' kr' : 'ómælt') + ' · BH ' + (ok(bh) ? bh.ogreitt.n + ' · ' + isk(bh.ogreitt.kr) + ' kr' : 'ómælt') + '">' + led('rd') + 'Ógreitt<b>' + mkr(ogr) + '<small>m</small></b></span>' +
         '<span class="yr-lr" title="' + (ok(os) ? os.n + ' verkbeiðnir tilbúnar · ' + isk(os.kr) + ' kr' : 'ómælt') + '">' + led('or') + 'Ósótt<b>' + mkr(osk) + '<small>m</small></b></span>' +
+        '<span class="yr-lr" title="' + esc(teTitill) + '">' + led(teGamalt || !ok(te) ? 'or' : 'gy') + 'Tími eftir' + (teGamalt ? ' <small class="yr-e">(' + esc(dd(te.uppfaert)) + ')</small>' : '') +
+          '<b>' + (ok(te) ? mkr(tek) + '<small>m</small>' : '<small>ómælt</small>') + '</b></span>' +
       '</div>' +
+      // „BH áunnið · göt · tímar" fór héðan 25.11 (sama tala stendur á Unnið-flísinni) svo „Tími eftir" kæmist fyrir
+      felagBar(sl, bh, te) +
       '<span class="yr-kf">' + (vantar.length ? led('or') + 'ómælt: ' + esc(vantar.join(', ')) : led('gr') + 'Kröfur SL · Kröfu yfirlit BH') + '</span>' +
     '</div>';
   }
@@ -285,8 +322,11 @@
         const rf = fin(m.reikningsfaert) ? '<b>' + smatt(m.reikningsfaert) + '</b>' : 'ómælt';
         const og = !fin(m.ogefid) ? 'ómælt' : m.ogefid > 0 ? '<b>' + smatt(m.ogefid) + '</b>' : '<b>ekkert</b> <span class="yr-e" title="Reikningsfært í mánuðinum er umfram unnið — reikningar fyrir vinnu fyrri mánaða eru gefnir út núna">(umfram ' + smatt(-m.ogefid) + ')</span>';
         const h = m.hlutar || {};
-        wBh = '<div class="yr-well" title="' + esc('Brunahólf — ' + nm + ' til dags, án vsk, áætlun: unnið ' + isk(m.unnid) + ' kr (tímar ' + isk(h.tima) + ' · Landspítalagöt ' + isk(h.landspitali) + ' · Heklureitsgöt ' + isk(h.heklureitur) + ') · reikningsfært ' + (fin(m.reikningsfaert) ? isk(m.reikningsfaert) + ' kr' : 'ómælt') + ' · ógefið út = unnið − reikningsfært') + '">' +
+        const got = fin(h.landspitali) && fin(h.heklureitur) ? h.landspitali + h.heklureitur : null;
+        wBh = '<div class="yr-well" title="' + esc('Brunahólf — ' + nm + ' til dags, án vsk, áætlun: unnið ' + isk(m.unnid) + ' kr (rukkanlegir tímar ' + isk(h.tima) + ' · göt ' + (got == null ? 'ómælt' : isk(got) + ' kr') + ' · Landspítali ' + isk(h.landspitali) + ' · Heklureitur ' + isk(h.heklureitur) + ') · reikningsfært ' + (fin(m.reikningsfaert) ? isk(m.reikningsfaert) + ' kr' : 'ómælt') + ' · ógefið út = unnið − reikningsfært') + '">' +
           '<span class="yr-v">' + stor(m.unnid).t + '<span class="yr-e">' + stor(m.unnid).e + ' Brunahólf</span></span>' +
+          '<span class="yr-n">Göt <b>' + (got == null ? 'ómælt' : smatt(got)) + '</b> · Landspítali ' + smatt(h.landspitali) + ' · Heklureitur ' + smatt(h.heklureitur) + '</span>' +
+          '<span class="yr-n">Rukkanlegir tímar <b>' + smatt(h.tima) + '</b></span>' +
           '<span class="yr-n">reikningsfært ' + rf + '</span><span class="yr-n">ógefið út ' + og + '</span></div>';
       } else wBh = om('Brunahólf', (m && m.omaelt) || (bh && bh.omaelt) || 'samtala mánaðarins vantar');
       wells = wSl + wBh;
@@ -302,17 +342,55 @@
         '<div class="yr-vk yr-vk1">' + wells + '</div></a>' + gamalt + kf + '</div>';
   }
 
+  // Tæki mánaðarins (Agnar 25.11.2026: „fjöldi yfirfarinna tækja í þessum mánuði, fjöldi hlaðinna …, fjöldi seldra … og síðan
+  // heildina"). Úr Unnið-reglunni (_unnid-sl / _rekstur-yfirlit taeki_sund): sölulínur „Yfirferð · / Hleðsla · / Nýtt ·" í
+  // skoðunarmánuði + verkliðir verkstæðis í mánuði klart_at — sama talan og „Unnið í mánuðinum" sýnir, nú sundurliðuð.
+  // Alls = summa línanna (tæki sem er bæði yfirfarið og hlaðið telst í báðum). Búðarsalan ber aðeins krónur, enga tækjatölu:
+  // það stendur sýnilega á flísinni, ekki falið (aldrei 0 þar sem gögn vantar).
+  function taekiMan() {
+    const sl = S.r && S.r.slokkvitaeki, um = sl && !sl.omaelt ? sl.unnid_manudur : null;
+    const nm = MANUDUR[manOf(S.r && S.r.idag)] || 'mánuðinum';
+    // stutt heiti á flísinni (mælt 25.11: „Tæki í nóvember 875 alls" þurfti 185 px en Ósótt-dálkurinn gefur ~175); fullt í title
+    const nmS = MAN[manOf(S.r && S.r.idag)] ? MAN[manOf(S.r.idag)] + '.' : nm;
+    if (!S.r) return '<span class="yr-hr"></span><span class="yr-n">' + esc(S.rVilla ? 'Tæki mánaðarins ómælt — ' + S.rVilla : 'Sæki tæki mánaðarins …') + '</span>';
+    if (!um) return '<span class="yr-hr"></span><span class="yr-n" title="' + esc((sl && sl.omaelt) || '') + '">Tæki í ' + esc(nm) + ': ómælt</span>';
+    const ts = um.taeki_sund;
+    if (!ts) return '<span class="yr-hr"></span><span class="yr-vks" title="' + esc('Tæki í ' + nm + ' til dags (línur alls)') + '">' + ic('ars') + 'Tæki í ' + esc(nmS) + '<b>' + isk(um.taeki) + '</b><i>alls</i></span>';
+    const allt = (ts.yfirferd || 0) + (ts.hledsla || 0) + (ts.nytt || 0);
+    const c = (n, t) => '<span class="yr-tc"><b>' + isk(n) + '</b><i>' + t + '</i></span>';
+    // nytt_bud kom 25.11.2026 („Bara slökkvitæki"): ný seld = úttektir + búð. Eldri svar án hans → búðin sýnd ómæld, ekki 0.
+    const medBud = fin(ts.nytt_bud), bud = medBud ? ts.nytt_bud : null, utt = medBud ? (ts.nytt || 0) - bud : (ts.nytt || 0);
+    return '<span class="yr-hr"></span>' +
+      '<span class="yr-vks" title="' + esc('Tæki í ' + nm + ' til dags: yfirfarin ' + isk(ts.yfirferd) + ' · hlaðin ' + isk(ts.hledsla) + ' · ný seld ' + isk(ts.nytt) +
+        (medBud ? ' (úttektir ' + isk(utt) + ' · búð ' + isk(bud) + ' — aðeins slökkvitæki, ekki skynjarar né teppi)' : '') +
+        '. Alls = summa línanna; tæki sem er bæði yfirfarið og hlaðið telst í báðum. CO₂-patrónur: hleðslurnar eru byrjunargjöldin (ekki ein á hverja patrónu), magnið sést sér í kg.') + '">' +
+        ic('ars') + 'Tæki í ' + esc(nmS) + '<b>' + isk(allt) + '</b><i>alls</i></span>' +
+      '<span class="yr-tg">' + c(ts.yfirferd, 'yfirfarin') + c(ts.hledsla, 'hlaðin') + c(ts.nytt, 'ný seld') + '</span>' +
+      (medBud
+        ? '<span class="yr-n yr-tn" title="Ný slökkvitæki seld: úr úttektum og yfir borðið í búðinni">' + led('gr') + 'seld: úttektir ' + isk(utt) + ' · búð ' + isk(bud) + '</span>'
+        : '<span class="yr-n yr-tn" title="Tæki seld í búðinni eru ekki í tækjatölunum í þessu svari.">' + led('am') + 'búðarsala ekki talin</span>') +
+      // CO₂ (Agnar 25.11.2026: „kanski bara heildarmagn af co2 notað í mánuðnum“): kg sem fór í hleðslur — patrónur og CO₂-tæki
+      (fin(ts.co2_kg) && ts.co2_kg > 0 ? '<span class="yr-n yr-tn" title="CO₂ sem fór í hleðslur mánaðarins: patrónur (hleðslurnar teljast eftir byrjunargjöldum) og hlaðin CO₂-slökkvitæki">' +
+        led('bl') + 'CO₂ í hleðslur ' + String(ts.co2_kg).replace('.', ',') + ' kg</span>' : '');
+  }
+
+  // Ósótt + verkstæði þjappað (Agnar 25.11.2026: „þjappa hinu aðeins") svo tæki mánaðarins komist fyrir.
   function osottHtml(D, rek) {
     const os = D.osott, vk = ok(rek) && rek.sl && rek.sl.verkstaedi;
     if (!ok(os)) return omaelt('Ósótt tæki', os && os.omaelt);
-    return '<div class="yr-k" title="Verkbeiðnir tilbúnar til afhendingar sem bíða þess að vera sóttar">' +
-      '<span class="yr-kl">' + ic('lykill') + 'Ósótt tæki</span>' +
-      '<span class="yr-row"><span class="yr-kn">' + isk(os.n) + '</span><span class="yr-ks"><b>' + isk(os.kr) + '</b> kr</span></span>' +
-      (fin(os.elst_dagar) ? '<span class="yr-kp ' + (os.elst_dagar > 60 ? 'yr-a' : 'yr-g') + '">elst ' + isk(os.elst_dagar) + ' dagar</span>' : '') +
-      (os.yfir30 ? '<span class="yr-ks">' + isk(os.yfir30) + ' tilbúin lengur en 30 d.</span>' : '') +
+    const elst = fin(os.elst_dagar) ? '<span class="yr-kp ' + (os.elst_dagar > 60 ? 'yr-a' : 'yr-g') + '" style="margin-left:auto" title="' +
+      esc('Elsta tilbúna tækið hefur beðið ' + os.elst_dagar + ' daga' + (os.yfir30 ? ' · ' + os.yfir30 + ' tilbúin lengur en 30 daga' : '')) + '">elst ' + isk(os.elst_dagar) + ' d.' + (os.yfir30 ? ' · ' + isk(os.yfir30) + ' &gt;30' : '') + '</span>' : '';
+    // 25.11.2026 (sannreynt): flísin heitir „Ósótt tæki" og telur því TÆKI (taeki_n, eins og Rekstrarskýrslan) — áður
+    // verkbeiðnir (60 á móti 61 tækjum). Verkbeiðnafjöldinn stendur í title. Eldra svar án taeki_n: verkbeiðnir, merkt.
+    const ostN = fin(os.taeki_n) ? os.taeki_n : os.n;
+    return '<div class="yr-k" title="' + esc((fin(os.taeki_n) ? os.taeki_n + ' tæki á ' : '') + os.n + ' verkbeiðnum, tilbúnum til afhendingar og bíða þess að vera sótt · ' + isk(os.kr) + ' kr') + '">' +
+      '<span class="yr-kl">' + ic('lykill') + 'Ósótt tæki<em>' + isk(os.kr) + ' kr</em></span>' +
+      '<span class="yr-row"><span class="yr-kn">' + isk(ostN) + '</span>' + elst + '</span>' +
       // „bíða" á verkstæðinu eru sömu tækin og ósótt hér að ofan (yfirferð 21.11) — aðeins „í vinnslu" stendur hér.
-      (vk ? '<span class="yr-hr"></span><span class="yr-kl">' + ic('hus') + 'Verkstæðið</span><span class="yr-row"><span class="yr-k2">' + isk(vk.nu) + '</span><span class="yr-ks">tæki í vinnslu</span></span>' : '') +
-      '<span class="yr-kf">' + led('gr') + 'verkbeiðnir</span>' +
+      // Talan er TÆKI (Rekstrarskýrslan: verkliðir á mótteknum verkbeiðnum og í vinnslu) — „tæki" aftur í merkinu 25.11.
+      (vk ? '<span class="yr-vks" title="Tæki á verkbeiðnum sem eru mótteknar eða í vinnslu (Rekstrarskýrslan)">' + ic('hus') + 'Verkstæðið<b>' + isk(vk.nu) + '</b><i>tæki</i></span>' : '') +
+      taekiMan() +
+      '<span class="yr-kf">' + led('gr') + 'verkbeiðnir<s>|</s>' + led(S.r ? 'gr' : 'gy') + 'sölulínur</span>' +
     '</div>';
   }
 
@@ -320,6 +398,9 @@
   function athygli(D, rek) {
     const l = [];
     const bh = D.krofur && D.krofur.bh, sl = D.krofur && D.krofur.sl, os = D.osott;
+    // frávik frá Kröfu yfirliti fremst (sést líka í síma, þar sem hausflögurnar eru faldar); smellur opnar samræmistöfluna
+    const vik = Array.isArray(D.samraemi) ? D.samraemi.filter(x => x.stada === 'vikur') : [];
+    if (vik.length) l.push({ lit: 'or', t5: 'yr-samraemi', t: '<b>Samræmi</b> ' + vik.length + ' víkur', titill: vik.map(x => x.nafn + ': röndin ' + isk(x.rond) + ' · Kröfu yfirlit ' + isk(x.sida)).join(' · ') });
     if (ok(bh)) bh.eldri45.reikn.sort((a, b) => b.kr - a.kr).forEach(r => l.push({ lit: 'rd', t: '<b>' + esc(r.nr + ' ' + String(r.kunni).split(/\s+/)[0]) + '</b> ' + mkr(r.kr) + ' m &gt;45 d.', titill: r.nr + ' ' + r.kunni + ' · ' + isk(r.kr) + ' kr · ' + r.dagar + ' dagar frá gjalddaga' }));
     if (ok(sl) && sl.eldri45.n) l.push({ lit: 'or', t: '<b>' + sl.eldri45.n + ' kröfur SL</b> &gt;45 d. · ' + mkr(sl.eldri45.kr) + ' m', titill: 'Ógreiddar kröfur Slökkvitækja eldri en 45 daga' });
     const gi = D.greitt;
@@ -336,16 +417,70 @@
     return l;
   }
 
+  // SAMRÆMI (Agnar 25.11.2026: „vill að þetta sé allt hárréttar tölur þarna og alltaf syncanlegar"): kröfutölur röndarinnar
+  // bornar við tölurnar sem Kröfu yfirlit BH og SL sýndu síðast (cg_entries, yfirsyn.cjs samraemi). Smellur opnar töfluna.
+  function samraemiChip() {
+    const s = S.d && S.d.samraemi;
+    if (!Array.isArray(s) || !s.length) return '';
+    const stemmir = s.filter(x => x.stada === 'stemmir').length, vikur = s.filter(x => x.stada === 'vikur');
+    const lit = vikur.length ? 'or' : stemmir === s.length ? 'gr' : 'gy';
+    const t = vikur.length ? vikur.map(x => x.nafn + ': röndin ' + isk(x.rond) + ' · Kröfu yfirlit ' + isk(x.sida)).join(' · ') : 'Allar kröfutölur röndarinnar = tölurnar á Kröfu yfirliti BH og SL';
+    return '<button type="button" class="yr-chip yr-chip-b" data-t5="yr-samraemi" title="' + esc(t + '. Smelltu til að sjá töfluna.') + '">' + led(lit) +
+      (vikur.length ? vikur.length + ' víkur' : 'Samræmi') + ' <b>' + stemmir + '/' + s.length + '</b></button>';
+  }
+  function opnaSamraemi() {
+    const s = S.d && S.d.samraemi;
+    if (!Array.isArray(s)) return;
+    document.querySelectorAll('.yrm-back').forEach(n => n.remove());
+    modalStill();
+    const tima = t => t ? dd(t) + ' kl. ' + klukka(t) : '—';
+    const rod = x => '<tr><td class="yrm-ku">' + esc(x.nafn) + '<br><small style="color:#a9b8d0">' + esc(x.id) + ' · síðan skráð ' + esc(tima(x.sida_uppfaert)) + '</small></td>' +
+      '<td class="yrm-kr">' + (x.rond == null ? 'ómælt' : isk(x.rond)) + '</td><td class="yrm-kr">' + (x.sida == null ? '—' : isk(x.sida)) + '</td>' +
+      '<td class="yrm-dg' + (x.stada === 'vikur' ? ' yrm-sein' : '') + '">' + (x.stada === 'stemmir' ? '✓' : x.stada === 'vikur' ? (x.munur > 0 ? '+' : '') + isk(x.munur) : 'ómælt') + '</td></tr>';
+    const back = document.createElement('div');
+    back.className = 'yrm-back';
+    back.innerHTML = '<div class="yrm-box" role="dialog" aria-modal="true" aria-label="Samræmi við Kröfu yfirlit">' +
+      '<div class="yrm-top"><div class="yrm-ti">Samræmi við Kröfu yfirlit<span>Röndin á móti tölunum sem síðurnar sýndu síðast · m. vsk</span></div>' +
+        '<button type="button" class="yrm-x" aria-label="Loka">✕</button></div>' +
+      '<div class="yrm-scr"><table class="yrm-t"><thead><tr><td class="yrm-ku"><small>Tala</small></td><td class="yrm-kr"><small>Röndin</small></td><td class="yrm-kr"><small>Kröfu yfirlit</small></td><td class="yrm-dg"><small>Munur</small></td></tr></thead><tbody>' +
+        s.map(rod).join('') + '</tbody></table></div>' +
+      '<div class="yrm-foot">Kröfu yfirlit BH og SL skrá tölurnar sínar í hvert sinn sem þau eru opnuð í heild. „Víkur" á tölu sem síðan skráði fyrir löngu getur þýtt að gögnin hafi breyst síðan — opnaðu þá Kröfu yfirlitið og endurnýjaðu ↻ hér. ±1 kr er námundun.</div>' +
+    '</div>';
+    const lyk = e => { if (e.key === 'Escape') loka(); };
+    const loka = () => { back.remove(); document.removeEventListener('keydown', lyk); };
+    back.addEventListener('click', e => { if (e.target === back || (e.target.closest && e.target.closest('.yrm-x'))) loka(); });
+    document.addEventListener('keydown', lyk);
+    document.body.appendChild(back);
+  }
+
+  // Mæting dagsins (Agnar 25.11.2026: „0 við vinnu - 8 í gær passar ekki“ → „Geturðu ekki bara tengst þessu … hvað margir eru
+  // mættir í dag“ → „7 mættir og 1 veikur, væri fínt að sjá það“). Lifandi úr Tímaveru, sama heimild og Mæting · verkstaðir;
+  // smellur opnar hana. Náist lifandi staðan ekki: frágengnar færslur, merktar „skráðir“ (berast oft í lok dags), aldrei „mættir“.
+  const MAETING_URL = 'https://brunaholf.netlify.app/#tvmaeting';
+  function maetingChip(tv) {
+    if (tv.lifandi && fin(tv.maettir)) {
+      const vk = fin(tv.veikir) && tv.veikir > 0 ? ' · ' + isk(tv.veikir) + (tv.veikir === 1 ? ' veikur' : ' veikir') : '';
+      const t = 'Lifandi úr Tímaveru — sama og Mæting · verkstaðir: ' + tv.maettir + ' mættir' + (tv.veikir ? ', ' + tv.veikir + ' á veikindaverkefni' : '') +
+        (fin(tv.inni) ? ', ' + tv.inni + ' inni núna' : '') + (fin(tv.klst_idag) ? ', ' + String(tv.klst_idag).replace('.', ',') + ' klst hingað til' : '') +
+        '. Í gær: ' + tv.igaer + '. Smelltu til að opna Mætingu.';
+      return '<a class="yr-chip" href="' + MAETING_URL + '" target="_blank" rel="noopener" title="' + esc(t) + '">' + led(tv.maettir ? 'gr' : 'gy') +
+        isk(tv.maettir) + ' mættir' + vk + ' · <b>' + isk(tv.igaer) + '</b> í gær</a>';
+    }
+    return '<a class="yr-chip" href="' + MAETING_URL + '" target="_blank" rel="noopener" title="' + esc('Lifandi staða Tímaveru náðist ekki' + (tv.lifandi_villa ? ' (' + tv.lifandi_villa + ')' : '') +
+      ' — talin eru starfsmenn með frágengna tíma, sem berast oft í lok dags. Smelltu til að opna Mætingu.') + '">' + led('or') + isk(tv.idag) + ' skráðir í dag · <b>' + isk(tv.igaer) + '</b> í gær</a>';
+  }
+
   function topHtml(n, ctx, rek, tv) {
     const hm = heimildir(rek);
     return '<header class="yr-top">' +
       '<div class="yr-brand"><span class="yr-mark">Yfirsýn</span><span class="yr-upd">' + led(S.villa ? 'or' : 'gr') + (S.loading && !S.d ? 'Sæki tölur…' : 'Uppfært ' + (S.d ? klukka(S.d.maelt_at) : '')) + '</span></div>' +
       '<div class="yr-chips">' +
         (ctx && fin(ctx.master) ? '<span class="yr-chip" title="Opin mál á borðinu · þar af á þínu borði">Opin mál <b>' + isk(ctx.master) + '</b>' + (fin(ctx.mine) ? ' · þín <b>' + isk(ctx.mine) + '</b>' : '') + '</span>' : '') +
-        (ok(tv) ? '<span class="yr-chip" title="Starfsmenn með skráða tíma í Tímaveru">' + led(tv.idag ? 'gr' : 'gy') + isk(tv.idag) + ' við vinnu · <b>' + isk(tv.igaer) + '</b> í gær</span>' : '') +
+        (ok(tv) ? maetingChip(tv) : '') +
         (hm.length ? '<span class="yr-chip" title="' + esc(hm.map(h => h.n + ': ' + h.t).join(' · ')) + '">Heimildir ' + hm.map(h => led(h.lit)).join('') + '</span>' : '') +
+        samraemiChip() +
       '</div>' +
-      '<div class="yr-act">' + hamRofi('rond') +
+      '<div class="yr-act">' + hamRofi('rond') + rfTakki() +
         '<a class="yr-go" href="' + REKSTUR_URL + '" target="_blank" rel="noopener" title="Rekstrarskýrsla dagsins — allar tölurnar og sundurliðun">Stækka' + ic('nidur') + '</a>' +
       '</div>' +
     '</header>';
@@ -353,6 +488,12 @@
   const hamRofi = virkur => '<div class="yr-seg" role="group" aria-label="Stærð yfirsýnar">' +
     '<button type="button" data-t5="yr-ham" data-v="lina" aria-pressed="' + (virkur === 'lina') + '">Lína</button>' +
     '<button type="button" data-t5="yr-ham" data-v="rond" aria-pressed="' + (virkur === 'rond') + '">Rönd</button></div>';
+  // ↻ Allsherjar endurnýjun (Agnar 25.11.2026: „hafu alsherjar refresh takka á honum"): snýst meðan heimildirnar eru sóttar.
+  const rfTakki = () => {
+    const snyst = S.loading || S.rLoading;
+    return '<button type="button" class="yr-rf' + (snyst ? ' yr-rf-spin' : '') + '" data-t5="yr-refresh"' + (snyst ? ' aria-busy="true"' : '') +
+      ' title="Sækja allar tölur beggja félaga upp á nýtt — kröfur, unnið, virði, greitt inn, ársþjónusta, Tímavera, ósótt" aria-label="Endurnýja allar tölur">' + ic('refresh') + '</button>';
+  };
 
   function footHtml(D, rek) {
     const at = athygli(D, rek);
@@ -360,7 +501,9 @@
     const pi = (felag, x) => ok(x) ? '<span class="yr-pi" title="' + esc(dd(x.dags) + ' · ' + x.nr + ' ' + x.kunni + ' · ' + isk(x.kr) + ' kr') + '"><u>' + felag + '</u><b>' + esc(String(x.kunni).split(/\s+/).slice(0, 2).join(' ')) + '</b>' + (x.kr >= 1e6 ? mkr(x.kr) + ' m' : isk(x.kr)) + '</span>' : '';
     return '<div class="yr-foot">' +
       '<div class="yr-fl"><span class="yr-kl yr-fk">' + ic('vidv', 'color:#f87171') + 'Þarf athygli' + (at.length ? ' <span class="yr-cnt">' + at.length + '</span>' : '') + '</span>' +
-        '<div class="yr-rail">' + (at.length ? at.map(a => '<span class="yr-ach" title="' + esc(a.titill || '') + '">' + led(a.lit) + a.t + '</span>').join('') : '<span class="yr-ks">Ekkert sem stendur upp úr</span>') + '</div></div>' +
+        '<div class="yr-rail">' + (at.length ? at.map(a => a.t5
+          ? '<button type="button" class="yr-ach yr-ach-b" data-t5="' + esc(a.t5) + '" title="' + esc(a.titill || '') + '">' + led(a.lit) + a.t + '</button>'
+          : '<span class="yr-ach" title="' + esc(a.titill || '') + '">' + led(a.lit) + a.t + '</span>').join('') : '<span class="yr-ks">Ekkert sem stendur upp úr</span>') + '</div></div>' +
       '<div class="yr-fl"><span class="yr-kl yr-fk">' + ic('greitt', 'color:#4ade80') + 'Síðast greitt</span>' + pi('SL', ssl) + pi('BH', sbh) + '</div>' +
     '</div>';
   }
@@ -377,21 +520,22 @@
 
   function linaHtml(ctx, D, rek) {
     const sl = D && D.krofur && D.krofur.sl, bh = D && D.krofur && D.krofur.bh, os = D && D.osott;
-    const leid = (ok(sl) ? sl.osent.kr + sl.ogreitt.kr : 0) + (ok(bh) ? bh.osent.kr + bh.ogreitt.kr : 0) + (ok(os) ? os.kr : 0);
+    const te = D && D.krofur && D.krofur.timi_eftir;
+    const leid = (ok(sl) ? sl.osent.kr + sl.ogreitt.kr : 0) + (ok(bh) ? bh.osent.kr + bh.ogreitt.kr : 0) + (ok(os) ? os.kr : 0) + (ok(te) ? te.kr : 0);
     const a = (window.AppSettings && AppSettings.path) ? AppSettings.path('yfirsyn_ars') : null;
     const at = D ? athygli(D, rek) : [];
     const chip = (t, v) => '<span class="yr-chip">' + t + ' <b>' + v + '</b></span>';
     return '<div class="yr-line">' +
       '<div class="yr-brand"><span class="yr-mark">Yfirsýn</span><span class="yr-upd">' + led(S.villa ? 'or' : 'gr') + (S.d ? klukka(S.d.maelt_at) : '') + '</span></div>' +
       '<div class="yr-chips">' +
-        (D && (ok(sl) || ok(bh)) ? chip('Á leiðinni inn', mkr(leid) + ' m') : '') +
         (a && fin(a.total) ? chip('Ársþjónusta', pct(a.buid, a.total) + ' %') : '') +
+        (D && (ok(sl) || ok(bh)) ? chip('Á leiðinni inn', mkr(leid) + ' m') : '') +
         (ok(rek) ? chip('Virði ' + esc(MAN[manOf(rek.timabil[3].fra)] || '') + '.', mkr(rek.badir.tekjur[3]) + ' m') : '') +
         (D && ok(D.greitt) && D.greitt.manudir && D.greitt.manudir[3] ? chip('Greitt inn', mkr(D.greitt.manudir[3].alls) + ' m') : '') +
         unnidChip() +
         (at.length ? '<span class="yr-chip">' + led('rd') + at.length + ' þarf athygli</span>' : '') +
       '</div>' +
-      '<div class="yr-act">' + hamRofi('lina') + '</div>' +
+      '<div class="yr-act">' + hamRofi('lina') + rfTakki() + '</div>' +
     '</div>';
   }
 
@@ -413,16 +557,114 @@
     let midja;
     if (!D) midja = '<div class="yr-tomt">' + (S.villa ? led('or') + esc(S.villa) : 'Sæki tölur beggja félaga…') + '</div>';
     else {
-      midja ='<div class="yr-grid">' + arsHtml() + virdiHtml(rek) + greittHtml(D.greitt, rek) + leidinniHtml(D) + samtalsHtml(rek) + osottHtml(D, rek) + '</div>' + footHtml(D, rek);
+      // 25.11.2026 (Agnar: „mátt setja árþjónusta 2026 aftur alveg til vinstri endann"): Ársþjónusta fremst, svo á leiðinni inn
+      // og unnið; virði og greitt inn á eftir. Á síma er þetta 2 dálkar svo fleiri tölur sjást án hliðarskruns.
+      midja ='<div class="yr-grid">' + arsHtml() + leidinniHtml(D) + samtalsHtml(rek) + virdiHtml(rek) + greittHtml(D.greitt, rek) + osottHtml(D, rek) + '</div>' + footHtml(D, rek);
     }
     return '<div class="yr-fr">' + DEFS + '<section class="yr-mb" aria-label="Yfirsýn">' + topHtml(n, ctx, rek, D && D.timavera) +
       (S.villa && D ? '<div class="yr-villa">' + led('or') + esc(S.villa) + ' — sýni tölur frá kl. ' + esc(klukka(D.maelt_at)) + '</div>' : '') + midja + '</section></div>';
+  }
+
+  // ↻ Allsherjar endurnýjun (Agnar 25.11.2026): ALLAR heimildir röndarinnar sóttar upp á nýtt í einu — /api/yfirsyn (kröfur beggja
+  // félaga, greitt inn, Tímavera, ósótt, síðast greitt, Rekstrarskýrslan), /api/rekstur-yfirlit (unnið og tæki mánaðarins, load(true)
+  // kallar ladaRekstur(true)) og AppSettings (virði ársþjónustu sem Ársskoðun reiknar). Endurnýjun sem er á lofti er ekki tvöfölduð.
+  function allsherjar() {
+    if (S.loading || S.rLoading) return;
+    S.at = 0; S.rAt = 0;
+    try { if (window.AppSettings && typeof AppSettings.load === 'function') Promise.resolve(AppSettings.load()).then(notify, () => {}); } catch (_) {}
+    load(true);
+    notify();               // takkinn snýst strax meðan sótt er
+  }
+
+  // Gluggi með öllum kröfum annars félagsins sem röndin leggur saman (Agnar 25.11.2026: „clicka á sitthvorum megin og síðan opnað
+  // glugga sem sýnir alla tölurnar sem er verið að miðast við … alla ógreiddu kröfurnar"). Raðirnar koma úr yfirsyn.cjs (reikn) —
+  // sömu mengi og summurnar. Borðið býr í Shadow DOM (368), svo glugginn situr á document.body með EIGIN stíl (yrm-stil).
+  const MODAL_CSS = [
+    '.yrm-back{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(2,10,24,.72);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);font-family:Poppins,system-ui,sans-serif;line-height:1.35;text-align:left;color:#eef3fb}',
+    '.yrm-box{display:flex;flex-direction:column;width:min(620px,100%);max-height:86vh;border-radius:18px;overflow:hidden;background:linear-gradient(180deg,#163868,#0b1f40 55%,#07152f);box-shadow:0 30px 70px -20px rgba(0,0,0,.95),inset 0 1px 0 rgba(255,255,255,.2),inset 0 0 0 1px rgba(150,185,235,.22)}',
+    '.yrm-top{display:flex;align-items:center;gap:12px;padding:15px 16px 13px 18px;border-bottom:1px solid rgba(255,255,255,.1)}',
+    '.yrm-ti{display:flex;flex-direction:column;gap:2px;min-width:0;font-size:16px;font-weight:600;color:#fff}.yrm-ti span{font-size:11.5px;font-weight:500;color:#a9b8d0}',
+    '.yrm-tot{margin-left:auto;font-size:19px;font-weight:600;color:#ffb37a;font-variant-numeric:tabular-nums;white-space:nowrap}',
+    '.yrm-x{flex:none;width:32px;height:32px;padding:0;border-radius:9px;border:1px solid rgba(160,190,235,.3);background:rgba(0,8,24,.45);color:#cdd9ec;font:600 14px Poppins,system-ui,sans-serif;cursor:pointer}.yrm-x:hover{color:#fff}.yrm-x:focus-visible{outline:2px solid #ffb066;outline-offset:2px}',
+    '.yrm-sum{display:flex;flex-wrap:wrap;gap:6px 18px;padding:10px 18px;font-size:12.5px;color:#cdd9ec;border-bottom:1px solid rgba(255,255,255,.07)}.yrm-sum span{display:inline-flex;align-items:center;gap:7px}.yrm-sum b{color:#fff;font-weight:600}',
+    '.yrm-scr{overflow:auto;padding:2px 14px 12px;-webkit-overflow-scrolling:touch}',
+    '.yrm-sec{margin-top:12px}.yrm-utan{opacity:.72}',
+    '.yrm-sh{display:flex;align-items:center;gap:8px;padding:6px 4px;font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#dbe6f6;border-bottom:1px solid rgba(255,255,255,.14)}',
+    '.yrm-sh b{margin-left:auto;font-size:13px;letter-spacing:0;text-transform:none;color:#fff;font-variant-numeric:tabular-nums}',
+    '.yrm-sn{display:inline-grid;place-items:center;min-width:20px;height:19px;padding:0 6px;border-radius:999px;background:rgba(0,8,24,.55);font-size:11px;letter-spacing:0;color:#cdd9ec}',
+    '.yrm-t{width:100%;border-collapse:collapse;font-size:13px}.yrm-t td{padding:7px 5px;border-bottom:1px solid rgba(255,255,255,.06);white-space:nowrap;vertical-align:top}',
+    '.yrm-nr{color:#a9b8d0;font-size:12px}.yrm-ku{width:99%;white-space:normal!important;color:#eef3fb}',
+    '.yrm-dg{text-align:right;color:#a9b8d0;font-size:12px}.yrm-sein{color:#ffaaa3}.yrm-kr{text-align:right;font-weight:600;color:#fff;font-variant-numeric:tabular-nums}',
+    '.yrm-tomt{padding:28px 10px;text-align:center;color:#a9b8d0;font-size:13px}',
+    '.yrm-bid{display:inline-block;margin-left:4px;padding:0 6px;border-radius:999px;background:rgba(159,176,204,.18);border:1px solid rgba(159,176,204,.4);font-size:10.5px;color:#cdd9ec;vertical-align:1px}',
+    '.yrm-t thead td{border-bottom:1px solid rgba(255,255,255,.18);color:#a9b8d0}',
+    '.yrm-foot{padding:10px 18px 12px;border-top:1px solid rgba(255,255,255,.1);font-size:11px;color:#a9b8d0;line-height:1.5}',
+    '.yrm-back .yr-led{--c:#22c55e;flex:none;display:inline-block;width:8px;height:8px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff 0 16%,var(--c) 52%,#000 130%);box-shadow:0 0 5px var(--c)}',
+    '.yrm-back .yr-led-rd{--c:#f87171}.yrm-back .yr-led-bl{--c:#5b8ff0}.yrm-back .yr-led-gy{--c:#9fb0cc}',
+    '@media (max-width:560px){.yrm-back{padding:0;align-items:flex-end}.yrm-box{max-height:92vh;border-radius:18px 18px 0 0}.yrm-t{font-size:12.5px}}',
+  ].join('\n');
+  function modalStill() {
+    if (document.getElementById('yrm-stil')) return;
+    const s = document.createElement('style');
+    s.id = 'yrm-stil'; s.textContent = MODAL_CSS;
+    document.head.appendChild(s);
+  }
+  function opnaKrofur(felag) {
+    document.querySelectorAll('.yrm-back').forEach(n => n.remove());
+    const D = S.d, x = D && D.krofur && (felag === 'bh' ? D.krofur.bh : D.krofur.sl);
+    if (!ok(x)) return;
+    modalStill();
+    const heiti = felag === 'bh' ? 'Brunahólf' : 'Slökkvitæki';
+    // heild = summa endapunktsins (sama og Kröfu yfirlit); raðasumman getur munað krónu vegna námundunar hverrar raðar (mælt 25.11: 4.558.794 á móti 4.558.795)
+    const hluti = (radir, nafn, lit, utan, heild) => {
+      if (!Array.isArray(radir)) return '<div class="yrm-sec"><div class="yrm-sh">' + led(lit) + esc(nafn) + '<b>listinn barst ekki — endurnýjaðu ↻</b></div></div>';
+      if (!radir.length) return '';
+      const sum = fin(heild) ? heild : radir.reduce((a, r) => a + (r.kr || 0), 0);
+      return '<div class="yrm-sec' + (utan ? ' yrm-utan' : '') + '"><div class="yrm-sh">' + led(lit) + esc(nafn) + '<span class="yrm-sn">' + radir.length + '</span><b>' + isk(sum) + ' kr</b></div>' +
+        '<table class="yrm-t"><tbody>' + radir.map(r => '<tr><td class="yrm-nr">' + esc(r.nr || '—') + '</td><td class="yrm-ku">' + esc(r.kunni || '—') + (r.a_bid ? ' <span class="yrm-bid">á bið</span>' : '') + '</td>' +
+          // neikvæður aldur = gjalddagi ekki kominn (mælt 25.11: R-390 sýndi „-7 d.") → „eftir 7 d."
+          '<td class="yrm-dg' + (r.dagar > 45 ? ' yrm-sein' : '') + '"' + (r.dagar < 0 ? ' title="Ekki komin á gjalddaga"' : '') + '>' +
+            (r.dagar == null ? '' : r.dagar < 0 ? 'eftir ' + esc(-r.dagar) + ' d.' : esc(r.dagar) + ' d.') + '</td><td class="yrm-kr">' + isk(r.kr) + '</td></tr>').join('') +
+        '</tbody></table></div>';
+    };
+    const ogr = x.ogreitt.reikn, osn = x.osent.reikn, bid = x.a_bid && x.a_bid.reikn;
+    const tomt = Array.isArray(ogr) && Array.isArray(osn) && !ogr.length && !osn.length;
+    // BH: „Tími eftir" (CG-03) í samtölunni og sem sérkafli — sundurliðunin sjálf er á Kröfu yfirliti (reiknuð þar í vafranum)
+    const te = felag === 'bh' && D.krofur && D.krofur.timi_eftir, tek = ok(te) ? te.kr : 0;
+    const teKafli = !te ? '' : ok(te)
+      ? '<div class="yrm-sec"><div class="yrm-sh">' + led('gy') + 'Tími eftir — áætlun<b>' + isk(tek) + ' kr</b></div><table class="yrm-t"><tbody><tr><td class="yrm-ku">' +
+        'Óinnheimt vinna (Tímavera-tímar × taxti + Landspítala-viðbót). Sundurliðun: <a href="https://brunaholf.netlify.app/#krofuyfirlit" target="_blank" rel="noopener" style="color:#ffb37a">Kröfu yfirlit →</a>' +
+        '</td><td class="yrm-dg">' + esc(dd(te.uppfaert)) + ' ' + esc(klukka(te.uppfaert)) + '</td></tr></tbody></table></div>'
+      : '<div class="yrm-sec"><div class="yrm-sh">' + led('or') + 'Tími eftir<b>ómælt</b></div></div>';
+    const back = document.createElement('div');
+    back.className = 'yrm-back';
+    back.innerHTML = '<div class="yrm-box" role="dialog" aria-modal="true" aria-label="' + esc('Kröfur ' + heiti) + '">' +
+      '<div class="yrm-top"><div class="yrm-ti">' + esc(heiti) + '<span>' + (felag === 'bh' ? 'Ógreitt, ósent og tími eftir' : 'Ógreitt og ósent') + ' · m. vsk · tölur frá kl. ' + esc(klukka(D.maelt_at)) + '</span></div>' +
+        '<b class="yrm-tot">' + isk(x.osent.kr + x.ogreitt.kr + tek) + ' kr</b><button type="button" class="yrm-x" aria-label="Loka">✕</button></div>' +
+      '<div class="yrm-sum"><span>' + led('rd') + 'Ógreitt <b>' + isk(x.ogreitt.kr) + ' kr</b><span class="yrm-sn">' + isk(x.ogreitt.n) + '</span></span>' +
+        '<span>' + led('bl') + 'Ósent <b>' + isk(x.osent.kr) + ' kr</b><span class="yrm-sn">' + isk(x.osent.n) + '</span></span>' +
+        (ok(te) ? '<span>' + led('gy') + 'Tími eftir <b>' + isk(tek) + ' kr</b></span>' : '') + '</div>' +
+      '<div class="yrm-scr">' + (tomt ? '<div class="yrm-tomt">Engar ógreiddar eða ósendar kröfur.</div>' : hluti(ogr, 'Ógreitt', 'rd', false, x.ogreitt.kr) + hluti(osn, 'Ósent', 'bl', false, x.osent.kr)) + teKafli +
+        (Array.isArray(bid) && bid.length ? hluti(bid, 'Á bið — ekki í samtölunni', 'gy', true) : '') + '</div>' +
+      '<div class="yrm-foot">Sömu raðir og röndin leggur saman — ' + (felag === 'bh'
+        ? 'Kröfu yfirlit Brunahólfs (faldar og kláraðar kröfur ekki með; ósent = drög sem eru ekki send í bókun). Samtalan = „Samtals í pípunni" á Kröfu yfirliti.'
+        : 'Kröfu yfirlit Slökkvitækja (ógreitt = í Payday og ekki greitt; ósent = ekkert sendimerki; „á bið" er merkt og telst með). Samtalan = „Heildarkröfur í sýn".') + ' Dagar = aldur kröfunnar; rautt = eldri en 45 daga.</div>' +
+    '</div>';
+    const lyk = e => { if (e.key === 'Escape') loka(); };
+    const loka = () => { back.remove(); document.removeEventListener('keydown', lyk); };
+    back.addEventListener('click', e => { if (e.target === back || (e.target.closest && e.target.closest('.yrm-x'))) loka(); });
+    document.addEventListener('keydown', lyk);
+    document.body.appendChild(back);
+    try { back.querySelector('.yrm-x').focus(); } catch (_) {}
   }
 
   function smellur(el) {
     const a = el && el.dataset && el.dataset.t5;
     if (a === 'yr-ham') { vmSetja(HAM_LYKILL, el.dataset.v === 'lina' ? 'lina' : 'rond'); notify(); return true; }
     if (a === 'yr-fara') { try { location.hash = '#' + (el.dataset.to || ''); } catch (_) {} return true; }
+    if (a === 'yr-refresh') { allsherjar(); return true; }
+    if (a === 'yr-krofur') { opnaKrofur(el.dataset.felag === 'bh' ? 'bh' : 'sl'); return true; }
+    if (a === 'yr-samraemi') { opnaSamraemi(); return true; }
     return false;
   }
 
@@ -446,6 +688,9 @@
       '.yr-chips{display:flex;gap:8px;margin-left:6px;min-width:0;overflow:hidden}',
       '.yr-chip{display:inline-flex;align-items:center;gap:7px;height:31px;padding:0 13px;border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(0,8,24,.35));border:1px solid rgba(160,190,235,.28);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 3px 6px -2px rgba(0,0,0,.6);font-size:13px;font-weight:500;color:#e6edf8;white-space:nowrap}',
       '.yr-chip b{font-weight:600;color:#fff}',
+      'button.yr-ach-b{font-family:inherit;cursor:pointer}button.yr-ach-b:hover{border-color:rgba(255,176,102,.6)}',
+      'button.yr-chip{font-family:inherit;cursor:pointer}button.yr-chip:hover{border-color:rgba(190,210,245,.55);color:#fff}button.yr-chip:focus-visible{outline:2px solid #ffb066;outline-offset:2px}',
+      'a.yr-chip{text-decoration:none!important;cursor:pointer}a.yr-chip:hover{border-color:rgba(190,210,245,.55);color:#fff}a.yr-chip:focus-visible{outline:2px solid #ffb066;outline-offset:2px}',
       '.yr-act{display:flex;align-items:center;gap:10px;margin-left:auto}',
       '.yr-seg{display:flex;padding:3px;border-radius:12px;background:rgba(0,6,18,.55);border:1px solid rgba(160,190,235,.22);box-shadow:inset 0 1px 3px rgba(0,0,0,.7)}',
       '.yr-seg button{height:28px;padding:0 14px;border:0;border-radius:9px;background:transparent;color:#c8d4e8;font:600 13px Poppins,system-ui,sans-serif;cursor:pointer}',
@@ -455,7 +700,9 @@
       '.yr-tomt,.yr-villa{display:flex;align-items:center;gap:8px;margin:0 14px 14px;padding:12px 14px;border-radius:12px;background:rgba(0,6,18,.45);border:1px solid rgba(160,190,235,.16);font-size:13px;color:#c8d4e8}',
       '.yr-villa{margin-bottom:10px}',
       // flísar — dökkar, upphleyptar, ljós brún
-      '.yr-grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1.35fr) minmax(0,1fr) minmax(0,1.2fr) minmax(0,1.45fr) minmax(0,1fr);gap:10px;padding:0 14px 12px}',
+      // röð frá 25.11: Ársþjónusta · Á leiðinni inn · Unnið · Virði · Greitt inn · Ósótt/tæki. Ósótt fékk 0,1 frá Greitt inn
+      // (súlurnar þola það): mælt í 1700 px var Ósótt 185 px og fjórar línur skornar um 9–28 px.
+      '.yr-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1.6fr) minmax(0,1.35fr) minmax(0,1fr) minmax(0,1.1fr) minmax(0,1.15fr);gap:10px;padding:0 14px 12px}',
       '.yr-k{position:relative;display:flex;flex-direction:column;gap:7px;min-width:0;padding:13px 14px 10px;border-radius:15px;' +
         'background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,0) 36%),radial-gradient(90% 80% at 50% 42%,rgba(70,130,210,.32),transparent 70%),linear-gradient(180deg,#0f2b52,#081a36);' +
         'box-shadow:inset 0 1px 0 rgba(255,255,255,.24),inset 0 0 0 1px rgba(150,185,235,.22),inset 0 -1px 0 rgba(0,0,0,.55),0 0 0 1px rgba(0,0,0,.5),0 16px 26px -14px rgba(0,0,0,.95)}',
@@ -493,6 +740,8 @@
       '.yr-gs{position:absolute;left:0;right:0;top:53px;text-align:center;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#a9b8d0}',
       '.yr-gcap{display:flex;align-items:center;justify-content:center;gap:5px;width:112px;margin-top:5px;font-size:11px;color:#a9b8d0;white-space:nowrap}.yr-gcap i{width:10px;height:3px;border-radius:2px;background:#fff;box-shadow:0 0 4px #fff}',
       '.yr-rt{display:flex;flex-direction:column;gap:7px;min-width:0;flex:1}',
+      // 25.11: „474 af 614 stöðum" var skorið (88/114 px í 1700 px glugga) — brotnar heldur; mælt: hvorki flís né rönd hækka
+      '.yr-rt .yr-ks{white-space:normal;overflow:visible}',
       '.yr-bl{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:#b8c6dd;white-space:nowrap}.yr-bl span{display:inline-flex;align-items:center;gap:6px}.yr-bl b{font-weight:600;color:#fff}',
       // virði — innfelldur skjár
       '.yr-scr{position:relative;padding:6px 6px 0;border-radius:10px;background:linear-gradient(180deg,rgba(0,6,20,.6),rgba(0,6,20,.35));box-shadow:inset 0 2px 6px rgba(0,0,0,.75),0 1px 0 rgba(255,255,255,.09)}',
@@ -516,6 +765,7 @@
       '.yr-s-or{background:linear-gradient(180deg,#ffb066,#ec5300);box-shadow:inset 0 1px 0 rgba(255,235,210,.7),0 0 8px rgba(255,138,31,.8)}',
       '.yr-s-gr{background:linear-gradient(180deg,#86efac,#16a34a);box-shadow:inset 0 1px 0 rgba(220,255,230,.6),0 0 10px rgba(74,222,128,.7)}',
       '.yr-s-am{background:linear-gradient(180deg,#fbe1a0,#e9ad25);box-shadow:inset 0 1px 0 rgba(255,245,215,.7),0 0 8px rgba(242,193,78,.6)}',
+      '.yr-s-gy{background:linear-gradient(180deg,#c9d4e6,#7f8fab);box-shadow:inset 0 1px 0 rgba(255,255,255,.6),0 0 6px rgba(159,176,204,.5)}',   // Tími eftir (25.11)
       '.yr-lrs{display:flex;flex-direction:column;gap:5px}',
       '.yr-lr{display:flex;align-items:center;gap:8px;padding:5px 10px;font-size:12.5px;color:#dfe6f2;white-space:nowrap}.yr-lr b{margin-left:auto;font-size:15px;font-weight:600;color:#fff}.yr-lr b small{margin-left:2px;font-size:11px;font-weight:500;color:#b8c6dd}',
       // samtals (kom í stað „Vikan“ 22.11): tveir brunnar, einn fyrir hvort félag; smellur opnar Tekjuliði
@@ -526,6 +776,9 @@
       '.yr-n b{font-weight:600;color:#fff}',
       '.yr-v .yr-e{font-size:11px;font-weight:500;color:#b8c6dd;margin-left:-2px}.yr-n .yr-e{font-size:10.5px;font-weight:500;color:#a9b8d0}',
       '.yr-well{display:flex;flex-direction:column;gap:4px;min-width:0;padding:7px 9px 6px}',
+      // 25.11: „Göt 6,27 m · Landspítali 6,07 m · Heklureitur 0,20 m" var skorin (192/272 px) — brotnar heldur; mælt í 1700 px:
+      // röndin hækkar ekki (310 px) og Unnið-flísin flæðir ekki yfir (10 px til góða)
+      '.yr-well .yr-n{white-space:normal;overflow:visible}',
       '.yr-v{display:flex;align-items:baseline;gap:5px;font-size:16px;font-weight:600;line-height:1.1;white-space:nowrap}.yr-v small{font-size:11px;font-weight:500;color:#b8c6dd;margin-left:-2px}.yr-v s{text-decoration:none;font-size:11px;font-weight:600}',
       '.yr-h2{color:#b8c6dd;font-weight:500}',
       '.yr-up{color:#4ade80;text-shadow:0 0 8px rgba(74,222,128,.55)}.yr-dn{color:#ff8f86;text-shadow:0 0 8px rgba(248,113,113,.55)}',
@@ -543,12 +796,32 @@
       '.yr-rail{display:flex;gap:7px;min-width:0;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent)}',
       '.yr-ach,.yr-pi{flex:none;display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 12px;border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(0,8,24,.3));border:1px solid rgba(160,190,235,.22);box-shadow:inset 0 1px 0 rgba(255,255,255,.12);font-size:12.5px;color:#dfe6f2;white-space:nowrap}',
       '.yr-ach b,.yr-pi b{font-weight:600;color:#fff}.yr-pi u{text-decoration:none;font-size:11px;font-weight:600;color:#a9b8d0}',
+      // ↻ allsherjar endurnýjun (25.11)
+      '.yr-rf{flex:none;display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;padding:0;border-radius:11px;border:1px solid rgba(160,190,235,.3);background:linear-gradient(180deg,rgba(255,255,255,.1),rgba(0,8,24,.4));color:#dbe6f6;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 3px 6px -2px rgba(0,0,0,.6)}',
+      '.yr-line .yr-rf{width:32px;height:32px;border-radius:10px}',
+      '.yr-rf:hover{color:#fff;border-color:rgba(190,210,245,.55)}.yr-rf:focus-visible{outline:2px solid #ffb066;outline-offset:2px}.yr-rf .yr-ic{width:17px;height:17px;stroke-width:2}',
+      '.yr-rf-spin{cursor:progress}.yr-rf-spin .yr-ic{animation:yr-snu .9s linear infinite}@keyframes yr-snu{to{transform:rotate(360deg)}}',
+      // BH/SL hlutfallslína á „Á leiðinni inn" (25.11)
+      '.yr-cbar{display:flex;gap:4px;min-width:0}',
+      '.yr-cseg{flex:1 1 0;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:1px;min-width:66px;height:38px;padding:0 10px;border:0;border-radius:10px;color:#fff;text-align:left;font-family:inherit;cursor:pointer;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),inset 0 -1px 0 rgba(0,0,0,.3),0 4px 9px -4px rgba(0,0,0,.8)}',
+      '.yr-cseg span{font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,.9);white-space:nowrap}',
+      '.yr-cseg b{font-size:14.5px;font-weight:600;line-height:1.1;white-space:nowrap}.yr-cseg b small{margin-left:2px;font-size:10px;font-weight:500;color:rgba(255,255,255,.85)}',
+      '.yr-cbh{background:linear-gradient(180deg,#6b9bf3,#2f6fe4 70%,#285fc4)}.yr-csl{background:linear-gradient(180deg,#ffa55c,#ec5f00 70%,#cf5200)}',
+      '.yr-cbh:hover,.yr-csl:hover{filter:brightness(1.12)}.yr-cseg:focus-visible{outline:2px solid #fff;outline-offset:2px}',
+      '.yr-cseg-om{cursor:default;background:rgba(0,8,22,.45)}',
+      // tæki mánaðarins + þjappað ósótt/verkstæði (25.11)
+      '.yr-vks{display:flex;align-items:center;gap:7px;min-width:0;font-size:12px;color:#c8d4e8;white-space:nowrap}.yr-vks .yr-ic{color:#ff8a1f}',
+      '.yr-vks b{margin-left:auto;font-size:16px;font-weight:600;color:#fff}.yr-vks i{font-style:normal;font-size:11.5px;color:#a9b8d0}',
+      '.yr-tg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}',
+      '.yr-tc{display:flex;flex-direction:column;align-items:center;gap:1px;min-width:0;padding:5px 2px 4px;border-radius:9px;background:rgba(0,8,22,.45);box-shadow:inset 0 1px 3px rgba(0,0,0,.7),0 1px 0 rgba(255,255,255,.08)}',
+      '.yr-tc b{font-size:16px;font-weight:600;line-height:1.1;color:#fff}.yr-tc i{max-width:100%;font-style:normal;font-size:10.5px;color:#a9b8d0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      '.yr-tn{display:flex;align-items:center;gap:6px}.yr-tn .yr-led{width:6px;height:6px}',
       // mjórri gluggi: þrír dálkar; sími: flísarnar strjúkast til hliðar, flögurnar fara
       '@container yr (max-width: 1150px){.yr-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.yr-chips{display:none}}',
-      '@container yr (max-width: 760px){.yr-grid{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}.yr-k{flex:none;width:270px;scroll-snap-align:start}' +
-        '.yr-foot{grid-template-columns:minmax(0,1fr)}.yr-fl+.yr-fl{display:none}.yr-top,.yr-line{flex-wrap:wrap;gap:10px}.yr-act{margin-left:0}.yr-mark{font-size:16px}}',
+      '@container yr (max-width: 760px){.yr-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.yr-k{min-width:0}' +
+        '.yr-foot{grid-template-columns:minmax(0,1fr)}.yr-fl+.yr-fl{display:none}.yr-top,.yr-line{flex-wrap:wrap;gap:10px}.yr-act{margin-left:0}.yr-mark{font-size:16px}.yr-kn{font-size:26px}}',
     ].join('\n');
   }
 
-  window.YfirsynRond = { html, css, smellur, geymaArs, load, S, version: '2026-11-22' };
+  window.YfirsynRond = { html, css, smellur, geymaArs, load, allsherjar, opnaKrofur, S, version: '2026-11-25' };
 })();

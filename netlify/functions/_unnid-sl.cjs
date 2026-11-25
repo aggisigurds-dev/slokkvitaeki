@@ -18,6 +18,10 @@
 //     mælt ~13 % sölu með verkbeiðni) helst salan öll á söludegi og er talin „óstemmd“.
 //   • FJÖLDI TÆKJA: skoðanir: línur sölunnar „Yfirferð · …“, „Hleðsla · …“, „Nýtt · …“ (qty) í skoðunarmánuðinum; verkstæði:
 //     verkliðir verkbeiðninnar (texti eins og „CO₂ 100 gr. × 26 (samtals)“ → 26 hleðslur) í mánuði klart_at. Samtals úr báðum.
+//   • NÝ SLÖKKVITÆKI ÚR BÚÐ (Agnar 25.11.2026: „fjöldi seldra tækja … miðast bæði við sölu úr búð og úttektum“, og spurður hvað
+//     telst: „Bara slökkvitæki“): línur sölu sem er ekki skoðun, með „slökkvitæki“ í heitinu — en ekki merki, festing, skilti,
+//     límmiði, leiga, hleðsla, yfirferð, slanga eða notuð tæki (mælt á orðaforða búðarinnar maí–nóv 2026). Teljast í mánuði
+//     sölunnar í verslun.taeki.nytt og þar með í samtals.taeki.nytt. Skynjarar og eldvarnateppi teljast ekki.
 //   • Kreditnóta fylgir upprunasölunni (sama mánuði og flokki, hlutfallslega — Agnar 22.11.2026: „0 fellur bara út“, líka tæki);
 //     finnist hún ekki (eða is_credit án credit_of): eigin dagur og flokkur, TALIÐ í kredit_an_frumsolu.
 //     Bakfært (void), drög og kreditnóta á bakfærða sölu telst aldrei (eins og slokkvitaekiGildar í _tekjur.cjs).
@@ -109,24 +113,68 @@ function taekiUrLinu(l) {
   const f = LINU_FLOKKUR[d.slice(0, i).trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ð/g, 'd')];
   if (!f) return null;
   const q = l.qty != null ? Number(l.qty) : 1;
-  return Number.isFinite(q) && q !== 0 ? { f, n: q } : null;
+  if (!(Number.isFinite(q) && q !== 0)) return null;
+  if (f === 'hledsla') {
+    const co2 = co2Eining(d.slice(i + 1));
+    if (co2 && co2.patrona) return { f, n: Math.sign(q), co2_g: q * co2.g };   // patrónur: ein lína = eitt verk (sjá CO₂ hér að neðan)
+    if (co2) return { f, n: q, co2_g: q * co2.g };
+  }
+  return { f, n: q };
 }
-// Tæki úr verklið verkstæðis: „Duft 2 kg. ABC hleðsla“ (1), „CO₂ 100 gr. × 26 (samtals)“ (26 hleðslur), „Duft 2 kg. ABC yfirferð“ (1).
+// CO₂ (Agnar 25.11.2026: „Kanski hægt að telja bara byrjunargjaldið … og kanski bara heildarmagn af co2 notað í mánuðnum“):
+// CO₂ 100 g patrónur teljast EKKI hver sem hlaðið tæki — eitt áfyllingarverk = ein hleðsla (mælt 25.11: hvert af 4 patrónuverkum
+// nóvember bar nákvæmlega eitt „CO₂ byrjunargjald“ á sölunni), og grömmin safnast í co2_g. CO₂-slökkvitæki sem eru hlaðin
+// („CO₂ 5 kg. hleðsla“) teljast áfram eitt tæki hvert og bæta sínum kílóum við. co2Eining: g á einingu, patrona = mælt í grömmum.
+function co2Eining(txt) {
+  const s = String(txt || '');
+  if (!/CO[₂2]|kols[ýy]ru/i.test(s)) return null;
+  const g = /(\d+(?:[,.]\d+)?)\s*gr/i.exec(s);
+  if (g) return { g: Number(g[1].replace(',', '.')), patrona: true };
+  const k = /(\d+(?:[,.]\d+)?)\s*kg/i.exec(s);
+  if (k) return { g: Number(k[1].replace(',', '.')) * 1000, patrona: false };
+  return null;
+}
+// Tæki úr verklið verkstæðis: „Duft 2 kg. ABC hleðsla“ (1), „CO₂ 100 gr. × 26 (samtals)“ (1 hleðsla, 2.600 g CO₂), „Duft 2 kg. ABC yfirferð“ (1).
 function taekiUrVerklid(service) {
   const s = String(service || '');
   const m = /[×x]\s*(\d+)/.exec(s);
   const n = m ? Number(m[1]) : 1;
   if (!(n > 0)) return null;
-  if (/hle[ðd]sl|[áa]fylling/i.test(s)) return { f: 'hledsla', n };
+  const co2 = co2Eining(s);
+  // Patrónuverk telur 0 tæki hér: hleðslurnar eru BYRJUNARGJÖLD sölunnar (talin í unnidManudir), magnið fer í co2_g. Mælt 25.11:
+  // 20 patrónuverk í nóvember á móti 17 byrjunargjöldum — sala sem skiptist í tvær verkbeiðnir ber eitt gjald.
+  if (/hle[ðd]sl|[áa]fylling/i.test(s)) {
+    if (co2 && co2.patrona) return { f: 'hledsla', n: 0, co2_g: n * co2.g, patrona: true };
+    return co2 ? { f: 'hledsla', n, co2_g: n * co2.g } : { f: 'hledsla', n };
+  }
   if (/yfirfer/i.test(s)) return { f: 'yfirferd', n };
-  if (/^\s*CO[₂2]\s*[\d,.]+\s*gr/i.test(s)) return { f: 'hledsla', n };       // CO₂-hylki: fyllt
+  if (/^\s*CO[₂2]\s*[\d,.]+\s*gr/i.test(s)) return { f: 'hledsla', n: 0, co2_g: n * (co2 ? co2.g : 0), patrona: true };
   return null;
+}
+// „CO₂ byrjunargjald“ á sölu → fjöldi (Agnar 25.11.2026: „Kanski hægt að telja bara byrjunargjaldið“).
+const byrjunargjold = (s) => (Array.isArray(s && s.linur) ? s.linur : []).reduce((a, l) => {
+  const d = String((l && l.desc) || '');
+  if (!/byrjunargjald/i.test(d) || !/CO[₂2]/i.test(d)) return a;
+  const q = l.qty != null ? Number(l.qty) : 1;
+  return a + (Number.isFinite(q) ? q : 0);
+}, 0);
+
+// Nýtt slökkvitæki selt í búð (sjá regluna efst) → fjöldi, eða null. Kreditnóta ber neikvætt qty og lækkar töluna.
+const BUD_TAEKI = /sl[öo]kkvit[æa]ki/i;
+const BUD_EKKI = /merki|festing|skilti|l[íi]mmi[ðd]i|leig|hle[ðd]sl|yfirfer|slang|nota[ðd]/i;
+function budTaekiUrLinu(l) {
+  const d = String((l && l.desc) || '');
+  if (!BUD_TAEKI.test(d) || BUD_EKKI.test(d)) return null;
+  const q = l.qty != null ? Number(l.qty) : 1;
+  return Number.isFinite(q) && q !== 0 ? q : null;
 }
 
 const tomMan = () => ({
   kr: { arsthjonusta: 0, brunakerfi: 0, slokkvikerfi: 0, verkstaedi: 0, verslun: 0 },
   taeki_skodanir: { yfirferd: 0, hledsla: 0, nytt: 0 },
   taeki_verkstaedi: { yfirferd: 0, hledsla: 0, nytt: 0 },
+  taeki_verslun: { yfirferd: 0, hledsla: 0, nytt: 0 },
+  co2_g: 0,                                                   // CO₂ sem fór í hleðslur (patrónur + CO₂-tæki), grömm
   mat: { an_skyrslu_kr: 0, an_skyrslu_fjoldi: 0, oviss_kr: 0, aaetlad_verk_kr: 0, aaetlad_taeki: 0, leidrett_fjoldi: 0, skyrslur_klaradar: 0, skyrslur_sidbuin: 0 },
 });
 
@@ -225,7 +273,7 @@ function unnidManudir(g, nuIso) {
       }
     }
     hlutar.push({ man: grunnMan, fl: grunnFl, kr: afgangur, mat: grunnMat });
-    return { hlutar, skodMan: sk ? sk.man : null, skFl, leidrett: !!(sk && sk.leidrett), san };
+    return { hlutar, skodMan: sk ? sk.man : null, skFl, leidrett: !!(sk && sk.leidrett), san, grunnMan };
   };
 
   // 1) venjulegar sölur
@@ -242,17 +290,29 @@ function unnidManudir(g, nuIso) {
     if (r.leidrett && r.skodMan >= T.SL_FRA) mm(r.skodMan).mat.leidrett_fjoldi += 1;
     // tæki skoðana: línur sölunnar í skoðunarmánuðinum
     if (r.skFl && r.skodMan >= T.SL_FRA) {
-      for (const l of Array.isArray(s.linur) ? s.linur : []) { const t = taekiUrLinu(l); if (t) mm(r.skodMan).taeki_skodanir[t.f] += t.n; }
+      for (const l of Array.isArray(s.linur) ? s.linur : []) { const t = taekiUrLinu(l); if (t) { const x = mm(r.skodMan); x.taeki_skodanir[t.f] += t.n; if (t.co2_g) x.co2_g += t.co2_g; } }
+    }
+    // ný slökkvitæki seld í búð: línur sölu sem er ekki skoðun, í mánuði sölunnar
+    if (!r.skFl && r.grunnMan >= T.SL_FRA) {
+      for (const l of Array.isArray(s.linur) ? s.linur : []) { const n = budTaekiUrLinu(l); if (n) mm(r.grunnMan > nuMan ? nuMan : r.grunnMan).taeki_verslun.nytt += n; }
     }
     // tæki verkstæðis: verkliðir kláraðra verkbeiðna í mánuði klart_at (annars söludagur, merkt áætlað)
+    let patMan = null, patAaetlad = false;      // fyrsta patrónuverk sölunnar: þangað fara byrjunargjöldin
     for (const v of vPerSolu[s.num] || []) {
       if (!V_KLAR.has(v.status)) continue;
       const km = v.klart_at ? T.manudur(v.klart_at) : T.manudur(s.created_at);
       if (km < T.SL_FRA) continue;
       for (const t of taekiPerVerk[v.id] || []) {
         mm(km > nuMan ? nuMan : km).taeki_verkstaedi[t.f] += t.n;
+        if (t.co2_g) mm(km > nuMan ? nuMan : km).co2_g += t.co2_g;
         if (!v.klart_at) mm(km > nuMan ? nuMan : km).mat.aaetlad_taeki += t.n;
+        if (t.patrona && (patMan == null || km < patMan)) { patMan = km; patAaetlad = !v.klart_at; }
       }
+    }
+    // CO₂-patrónur: hleðslurnar = byrjunargjöld sölunnar (Agnar 25.11.2026: „telja bara byrjunargjaldið“), ekki ein á hverja patrónu
+    if (patMan) {
+      const bg = byrjunargjold(s), pm = patMan > nuMan ? nuMan : patMan;
+      if (bg) { mm(pm).taeki_verkstaedi.hledsla += bg; if (patAaetlad) mm(pm).mat.aaetlad_taeki += bg; }
     }
   }
   // 2) kreditnótur: fylgja upprunasölunni (hlutfallslega), annars eigin degi
@@ -269,7 +329,10 @@ function unnidManudir(g, nuIso) {
       const f = kr / o.san;
       for (const h of o.hlutar) { if (h.mat === 'i_vinnslu') { annad.i_vinnslu_kr += h.kr * f; continue; } lagt(h.man > nuMan ? nuMan : h.man, h.fl, h.kr * f, h.mat); }
       if (o.skFl && o.skodMan >= T.SL_FRA) {
-        for (const l of Array.isArray(s.linur) ? s.linur : []) { const t = taekiUrLinu(l); if (t) mm(o.skodMan).taeki_skodanir[t.f] += t.n; }   // qty er neikvætt á kreditnótu
+        for (const l of Array.isArray(s.linur) ? s.linur : []) { const t = taekiUrLinu(l); if (t) { const x = mm(o.skodMan); x.taeki_skodanir[t.f] += t.n; if (t.co2_g) x.co2_g += t.co2_g; } }   // qty er neikvætt á kreditnótu
+      }
+      if (!o.skFl && o.grunnMan >= T.SL_FRA) {       // kreditnóta á búðarsölu lækkar seld slökkvitæki í mánuði frumsölunnar
+        for (const l of Array.isArray(s.linur) ? s.linur : []) { const n = budTaekiUrLinu(l); if (n) mm(o.grunnMan > nuMan ? nuMan : o.grunnMan).taeki_verslun.nytt += n; }
       }
     } else if (adkomnar.get(String(s.credit_of))) {
       // frumsalan er eldri en lesturinn (g.frumsolur, sótt sér): nótan á mánuð hennar, flokkur eftir tegund nótunnar
@@ -290,6 +353,7 @@ function manudSamantekt(x) {
   if (!x) x = tomMan();
   const sk = afr(x.kr.arsthjonusta) + afr(x.kr.brunakerfi) + afr(x.kr.slokkvikerfi);
   const t = (a, b) => ({ yfirferd: a.yfirferd + b.yfirferd, hledsla: a.hledsla + b.hledsla, nytt: a.nytt + b.nytt });
+  const tv = x.taeki_verslun || { yfirferd: 0, hledsla: 0, nytt: 0 };
   return {
     skodanir: {
       kr: sk, arsthjonusta_kr: afr(x.kr.arsthjonusta), brunakerfi_kr: afr(x.kr.brunakerfi), slokkvikerfi_kr: afr(x.kr.slokkvikerfi),
@@ -298,8 +362,9 @@ function manudSamantekt(x) {
       taeki: { ...x.taeki_skodanir },
     },
     verkstaedi: { kr: afr(x.kr.verkstaedi), aaetlad_kr: afr(x.mat.aaetlad_verk_kr), aaetlad_taeki: x.mat.aaetlad_taeki, taeki: { ...x.taeki_verkstaedi } },
-    verslun: { kr: afr(x.kr.verslun) },
-    samtals: { kr: sk + afr(x.kr.verkstaedi) + afr(x.kr.verslun), taeki: t(x.taeki_skodanir, x.taeki_verkstaedi) },
+    verslun: { kr: afr(x.kr.verslun), taeki: { ...tv } },
+    samtals: { kr: sk + afr(x.kr.verkstaedi) + afr(x.kr.verslun), taeki: t(t(x.taeki_skodanir, x.taeki_verkstaedi), tv),
+      co2_kg: Math.round((x.co2_g || 0) / 100) / 10 },          // CO₂ notað í hleðslur mánaðarins, kg með einum aukastaf
   };
 }
 // Mánuður til dags, síðasti mánuður og ár til dags (frá yfirtöku) — sömu mörk og T.tolur.
@@ -318,4 +383,4 @@ function unnidTolur(res, nuIso) {
   };
 }
 
-module.exports = { FLOKKAR, SKODUN, GLUGGI, manudNumer, skodunarManudur, skodunarManudSolu, taekiUrLinu, taekiUrVerklid, unnidManudir, manudSamantekt, unnidTolur };
+module.exports = { FLOKKAR, SKODUN, GLUGGI, manudNumer, skodunarManudur, skodunarManudSolu, taekiUrLinu, taekiUrVerklid, budTaekiUrLinu, co2Eining, unnidManudir, manudSamantekt, unnidTolur };

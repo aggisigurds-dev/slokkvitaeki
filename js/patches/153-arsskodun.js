@@ -2675,13 +2675,19 @@
     // (sy: 459 búið + 162 eftir, 91 komin á tíma 21.11). Geymt AÐEINS þegar engin sía né leit er virk (siaVirk), því þá
     // eru spjöldin allt borðið (rýni 21.11: annars flakkaði geymda talan við hverja leit/síu). „Fela slepptu" er skráð
     // með. 523 geymir aðeins þegar tölurnar breytast.
+    // 25.11.2026 (Agnar: „vill að þetta sé allt hárréttar tölur þarna og alltaf syncanlegar"): staðafjöldinn kemur úr cnt —
+    // tölum ALLS BORÐSINS, sömu og flögurnar Búið/Eftir/Á eftir áætlun (countByStatus hunsar mánuð, póstnúmer og leit) — í stað
+    // sy (síuðu raðanna). Þá má vista þótt sía sé virk: áður læsti siaVirk vistunina og röndin stóð á 24.11 (474 / „79 á eftir
+    // áætlun") meðan Ársskoðun sýndi 475 / 59, af því síur eru samstilltar milli véla. Aðeins LEIT stöðvar enn vistun, því leit
+    // breytir arsAll (feluglerið er hunsað meðan leitað er) og þar með virðinu. „aeftir" = 🔴-flagan (mánuðurinn liðinn, óbúið,
+    // ekki hafið); „komin" (sy.aTima, ⏳ komin á tíma) hét ranglega „á eftir áætlun" á röndinni og fer því ekki lengur.
     try {
-      if (window.YfirsynRond && YfirsynRond.geymaArs && !siaVirk) {
+      if (window.YfirsynRond && YfirsynRond.geymaArs && !state.search.trim()) {
         YfirsynRond.geymaArs({
           fela_slepptu: !!state.hideSkipped,
           ar: curYear, total: Math.round(totalEstimate), buid: Math.round(estDoneThisYear),
-          buidStadir: sy.done, eftirStadir: sy.pending2026, stadir: sy.done + sy.pending2026,
-          komin: sy.aTima,   // óbúið og skoðunarmánuðurinn kominn eða liðinn
+          buidStadir: cnt.done, eftirStadir: cnt.pending2026, stadir: cnt.done + cnt.pending2026,
+          aeftir: cnt.aeftir,
           raun: raunFjoldi,
         });
       }

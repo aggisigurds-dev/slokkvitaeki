@@ -1067,10 +1067,24 @@
     }
   }
 
+  /* Greining fasteignar (sýndarprófíll, patch 451) á gamla bannerinn með heimilisfangs-leitinni — nýi prófíllinn
+     felur hann (`.co-banner:not(.p2-open){display:none}`) og þá dettur leitarreiturinn út (Agnar 25.11.2026). Taka
+     yfirlagið til baka þegar `#companies-main` ber `gr-sydar`, svo 451 fái óbreytt sitt eigið útlit. Allt afturkræft. */
+  function afturkalla(m) {
+    if (!m.classList.contains('p2')) return;   // ekkert yfirlag uppi
+    m.classList.remove('p2', 'p2-gam');
+    m.removeAttribute('data-p2tab');
+    var bn = sel(m, ':scope > .co-banner'); if (bn) bn.classList.remove('p2-open');
+    ['p2-haus', 'p2-msimi', 'p2-kpi', 'p2-glugg', 'p2-athug', 'p2-samsk', 'p2-flipar', 'p2-teikn', 'p2-adrar', 'p2-bygg']
+      .forEach(function (id) { var o = document.getElementById(id); if (o && o.parentNode) o.parentNode.removeChild(o); });
+    allt(m, '[data-p2t]').forEach(function (e) { e.removeAttribute('data-p2t'); });
+  }
+
   function tikk() {
     if (document.hidden) return;
     var m = document.getElementById('companies-main');
     if (!m || !sel(m, ':scope > .co-banner') || !sel(m, '.co-banner-name')) return;
+    if (m.classList.contains('gr-sydar')) { afturkalla(m); return; }
     stilar();
     if (!m.classList.contains('p2')) m.classList.add('p2');
     byggja(m); merkja(m); samskiptaBox(m); athugasemd(m); endurteikna(m); byggStika(m);
