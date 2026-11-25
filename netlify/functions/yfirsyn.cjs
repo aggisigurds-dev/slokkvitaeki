@@ -182,7 +182,19 @@ async function osott() {
   // stimpils (óþekkt) halda gamla mælikvarðanum: innlögn/skráning.
   const l = await sbOll('verkbeidnir?select=id,verd,dropoff,created_at,klart_at&status=eq.ready&eytt_at=is.null&order=id.asc');
   const aldur = l.map(r => dagarFra(r.klart_at || r.dropoff || r.created_at)).filter(x => x != null);
-  return { n: l.length, kr: summa(l, r => r.verd), elst_dagar: aldur.length ? Math.max(...aldur) : null, yfir30: aldur.filter(x => x > 30).length };
+  // 25.11.2026 (sannreynt: flísin hét „Ósótt tæki" en taldi VERKBEIÐNIR — 60 á móti 61 tækjum): tækin talin eins og
+  // Rekstrarskýrslan gerir (_rekstur.js: eitt tæki = ein lifandi verklidur-röð á verkbeiðninni).
+  let taekiN = null;
+  try {
+    const ids = l.map(r => r.id);
+    let n = 0;
+    for (let i = 0; i < ids.length; i += 150) {
+      const lidir = await sbOll('verklidur?select=job_id,status&eytt_at=is.null&job_id=in.(' + ids.slice(i, i + 150).join(',') + ')&order=job_id.asc');
+      n += lidir.filter(x => String(x.status || '') !== 'eytt').length;
+    }
+    taekiN = n;
+  } catch (_) {}
+  return { n: l.length, taeki_n: taekiN, kr: summa(l, r => r.verd), elst_dagar: aldur.length ? Math.max(...aldur) : null, yfir30: aldur.filter(x => x > 30).length };
 }
 
 async function sidastSl() {

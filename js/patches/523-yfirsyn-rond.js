@@ -81,9 +81,10 @@
   function geymaArs(v) {
     try {
       if (!v || !fin(v.total) || v.total <= 0 || !window.AppSettings || !AppSettings.save) return;
-      const lykill = [v.ar, v.total, v.buid, v.stadir, v.buidStadir, v.eftirStadir, v.komin, v.fela_slepptu].join('|');
+      // 25.11.2026: aeftir í stað komin (153 vistar 🔴 Á eftir áætlun-flöguna, ekki ⏳ komin á tíma)
+      const lykill = [v.ar, v.total, v.buid, v.stadir, v.buidStadir, v.eftirStadir, v.aeftir, v.fela_slepptu].join('|');
       const nu = AppSettings.path ? AppSettings.path('yfirsyn_ars') : null;
-      const nuLykill = nu ? [nu.ar, nu.total, nu.buid, nu.stadir, nu.buidStadir, nu.eftirStadir, nu.komin, nu.fela_slepptu].join('|') : '';
+      const nuLykill = nu ? [nu.ar, nu.total, nu.buid, nu.stadir, nu.buidStadir, nu.eftirStadir, nu.aeftir, nu.fela_slepptu].join('|') : '';
       if (lykill === nuLykill || lykill === arsSent) return;
       arsSent = lykill;
       AppSettings.save({ yfirsyn_ars: Object.assign({}, v, { reiknad_at: new Date().toISOString() }) });
@@ -153,7 +154,9 @@
         '<div class="yr-gcap"><i></i>árið ' + Math.round(arP * 100) + ' % liðið</div></div>' +
         '<div class="yr-rt"><span class="yr-kn">' + mkr(a.total, 1) + '<small>m.kr</small></span>' +
           '<span class="yr-ks"><b>' + isk(a.buidStadir) + '</b> af ' + isk(a.stadir) + ' stöðum</span>' +
-          (fin(a.komin) && a.komin > 0 ? '<span class="yr-kp yr-r" title="Óbúið og skoðunarmánuðurinn kominn eða liðinn">' + isk(a.komin) + ' á eftir áætlun</span>' : '') +
+          // 25.11.2026: SAMA tala og „🔴 Á eftir áætlun"-flagan í Ársskoðun (aeftir: mánuðurinn liðinn, óbúið, ekki hafið).
+          // Eldri vistun bar aðeins „komin" (⏳ komin á tíma — önnur tala) og þá er pillan ekki sýnd frekar en að bera rangt heiti.
+          (fin(a.aeftir) && a.aeftir > 0 ? '<span class="yr-kp yr-r" title="Sama og „🔴 Á eftir áætlun" í Ársskoðun: skoðunarmánuðurinn liðinn, óbúið og úttekt ekki hafin">' + isk(a.aeftir) + ' á eftir áætlun</span>' : '') +
         '</div></div>' +
       '<span class="yr-sb yr-sb-l" role="img" aria-label="Búið ' + mkr(a.buid, 1) + ' m, eftir ' + mkr(eftir, 1) + ' m"><i class="yr-s-gr" style="width:' + (p * 100).toFixed(1) + '%"></i><i class="yr-s-am" style="width:' + ((1 - p) * 100).toFixed(1) + '%"></i></span>' +
       '<span class="yr-bl"><span>' + led('gr') + 'Búið <b>' + mkr(a.buid, 1) + ' m</b></span><span>' + led('am') + 'Eftir <b>' + mkr(eftir, 1) + ' m</b> · ' + isk(eftirSt) + ' st.</span></span>' +
@@ -377,11 +380,15 @@
     if (!ok(os)) return omaelt('Ósótt tæki', os && os.omaelt);
     const elst = fin(os.elst_dagar) ? '<span class="yr-kp ' + (os.elst_dagar > 60 ? 'yr-a' : 'yr-g') + '" style="margin-left:auto" title="' +
       esc('Elsta tilbúna tækið hefur beðið ' + os.elst_dagar + ' daga' + (os.yfir30 ? ' · ' + os.yfir30 + ' tilbúin lengur en 30 daga' : '')) + '">elst ' + isk(os.elst_dagar) + ' d.' + (os.yfir30 ? ' · ' + isk(os.yfir30) + ' &gt;30' : '') + '</span>' : '';
-    return '<div class="yr-k" title="Verkbeiðnir tilbúnar til afhendingar sem bíða þess að vera sóttar">' +
+    // 25.11.2026 (sannreynt): flísin heitir „Ósótt tæki" og telur því TÆKI (taeki_n, eins og Rekstrarskýrslan) — áður
+    // verkbeiðnir (60 á móti 61 tækjum). Verkbeiðnafjöldinn stendur í title. Eldra svar án taeki_n: verkbeiðnir, merkt.
+    const ostN = fin(os.taeki_n) ? os.taeki_n : os.n;
+    return '<div class="yr-k" title="' + esc((fin(os.taeki_n) ? os.taeki_n + ' tæki á ' : '') + os.n + ' verkbeiðnum, tilbúnum til afhendingar og bíða þess að vera sótt · ' + isk(os.kr) + ' kr') + '">' +
       '<span class="yr-kl">' + ic('lykill') + 'Ósótt tæki<em>' + isk(os.kr) + ' kr</em></span>' +
-      '<span class="yr-row"><span class="yr-kn">' + isk(os.n) + '</span>' + elst + '</span>' +
+      '<span class="yr-row"><span class="yr-kn">' + isk(ostN) + '</span>' + elst + '</span>' +
       // „bíða" á verkstæðinu eru sömu tækin og ósótt hér að ofan (yfirferð 21.11) — aðeins „í vinnslu" stendur hér.
-      (vk ? '<span class="yr-vks">' + ic('hus') + 'Verkstæðið<b>' + isk(vk.nu) + '</b><i>í vinnslu</i></span>' : '') +
+      // Talan er TÆKI (Rekstrarskýrslan: verkliðir á mótteknum verkbeiðnum og í vinnslu) — „tæki" aftur í merkinu 25.11.
+      (vk ? '<span class="yr-vks" title="Tæki á verkbeiðnum sem eru mótteknar eða í vinnslu (Rekstrarskýrslan)">' + ic('hus') + 'Verkstæðið<b>' + isk(vk.nu) + '</b><i>tæki</i></span>' : '') +
       taekiMan() +
       '<span class="yr-kf">' + led('gr') + 'verkbeiðnir<s>|</s>' + led(S.r ? 'gr' : 'gy') + 'sölulínur</span>' +
     '</div>';
