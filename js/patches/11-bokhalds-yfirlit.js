@@ -761,7 +761,7 @@
         + '<td class="num-col">' + fmtNum(s.vsk) + '</td>'
         + '<td class="num-col" style="font-weight:700;">' + fmtNum(s.total) + '</td>'
         + '<td class="by-teg-cell" style="white-space:nowrap"><span class="by-teg-icon" style="margin-right:7px;font-size:15px">' + _vtIcon + '</span>'
-          + '<span style="display:inline-flex;gap:8px;align-items:center;font-size:13px">' + _vtBox('uttekt', '🧯', 'Slökkvitæki') + _vtBox('brunakerfi', '🔥', 'Brunakerfi') + _vtBox('bud', '🏪', 'Almennt / búð (in-store)') + '</span></td>'
+          + '<span style="display:inline-flex;gap:8px;align-items:center;font-size:13px">' + _vtBox('uttekt', '🧯', 'Slökkvitæki') + _vtBox('brunakerfi', '🔥', 'Brunakerfi') + _vtBox('bud', '🏪', 'Verslun (keypt eða afgreitt á staðnum)') + '</span></td>'
         + '<td class="by-pay-cell"><span class="by-payment-pill ' + payClass(s.payment) + '">' + esc(s.payment || '—') + '</span>'
         + (
           // For unpaid greitt_sidar / reikningur, show a tiny pickup-status

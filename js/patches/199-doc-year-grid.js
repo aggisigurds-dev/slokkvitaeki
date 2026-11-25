@@ -1801,7 +1801,7 @@
                upph: (d.amount!=null && d.amount!=='') ? +d.amount : null };
     }).sort(function(x,y){ return String(y.dags).localeCompare(String(x.dags)); });
 
-    var HR_TEG = { uttekt:{i:'🧯',t:'Úttekt'}, bud:{i:'🏪',t:'Búð'},
+    var HR_TEG = { uttekt:{i:'🧯',t:'Slökkvitæki'}, bud:{i:'🏪',t:'Verslun'},   // 25.11.2026 (Agnar): flokkarnir heita Slökkvitæki · Brunakerfi · Verslun (allt keypt eða afgreitt á staðnum)
                    brunakerfi:{i:'🔥',t:'Brunakerfi'}, slokkvikerfi:{i:'🍳',t:'Slökkvikerfi'} };
     var hreyfHtml='';
     if(hreyf.length){
@@ -1812,7 +1812,7 @@
       var vantarUpph = hreyf.filter(function(x){ return x.upph==null; }).length;
       hreyfHtml =
         '<div class="sk-strip" style="align-items:flex-start">'+
-          '<div class="sk-strip-l" title="Allir reikningar staðarins — líka þeir sem árs-grindin sleppir viljandi (búðarsala).">📒 Hreyfingar</div>'+
+          '<div class="sk-strip-l" title="Allir reikningar staðarins — líka þeir sem árs-grindin sleppir viljandi (verslun).">📒 Hreyfingar</div>'+
           '<div class="sk-strip-r" style="flex-direction:column;align-items:stretch;gap:0">'+
             hreyf.map(function(x){
               var g = HR_TEG[x.knd] || { i:'🧾', t:'Óflokkað' };
