@@ -96,7 +96,7 @@
     const listiId = '_teikn-bru-listi';
     bar.innerHTML =
       '<span>📐 Staður:</span>' +
-      '<input list="' + listiId + '" placeholder="Veldu stað eða sláðu inn heimilisfang — t.d. Seljavegur 2" ' +
+      '<input list="' + listiId + '" placeholder="Staður eða heimilisfang" ' +
         'title="Staður úr listanum eða heimilisfang">' +
       '<datalist id="' + listiId + '"></datalist>' +
       '<button type="button" data-a="skoda" class="teikn-bru-adal" title="Forskoðun: teikningarnar opnast í glugga hér ofan á — ekkert fer inn í TurboPaint. ✕ lokar.">👁 Skoða teikningar</button>' +

@@ -34,8 +34,17 @@
   var KANTUR = 12, BIL = 10;
 
   function farsimi() { return window.innerWidth <= 768; }
+  // 528 setur þessa takka í #_simi-dock á síma (líka Tölvusíðu-ham >768).
+  function iDokk() {
+    var h = document.documentElement;
+    return h.classList.contains('slokk-phone-dev')
+      || h.getAttribute('data-viewmode') === 'mobile'
+      || (window.innerWidth || 0) <= 900
+      || !!(document.body && document.body.classList.contains('appmode'));
+  }
 
   function radaStafla() {
+    if (iDokk()) return;
     if (!farsimi()) { hreinsa(); return; }
     var bottom = KANTUR;
     for (var i = 0; i < STAFLI.length; i++) {

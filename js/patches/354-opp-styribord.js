@@ -274,6 +274,12 @@
     const kromSeg = '<div class="st-seg">' + KROM.map(([v, l]) => '<button type="button" data-krom="' + v + '" class="' + (String(v) === kromSel || (kromSel !== 'auto' && +v === +kromSel) ? 'on' : '') + '">' + l + '</button>').join('') + '</div>';
     // 04.10.2026: síðustærð er stillt fyrir HVERJA síðu (333) — litaspjaldið í app-hausnum → Stærð, eða S26-ramminn á tölvunni.
     const vist = (window.AppPageZoom && AppPageZoom.stillingar) ? Object.keys(AppPageZoom.stillingar()).length : 0;
+    let stikaNu = 'botn';
+    try { stikaNu = (JSON.parse(localStorage.getItem('slokk_stika_v1') || '{}').stadur) || 'botn'; } catch (_) {}
+    const STIKA = [['botn', 'Neðst'], ['efst', 'Efst'], ['vinstri', 'Vinstri'], ['haegri', 'Hægri']];
+    const stikaSeg = '<div class="st-sec">Botnstika (á þessu tæki)</div><div class="st-seg">'
+      + STIKA.map(([v, l]) => '<button type="button" data-stika="' + v + '" class="' + (stikaNu === v ? 'on' : '') + '">' + l + '</button>').join('')
+      + '</div><div class="st-note">Neðst eða efst. Vinstri og hægri setja flipana í dálk (hentugt á breiðum skjá). Röð flipa er stillt í <b>Stærð</b> inni í appinu og geymist á þessu tæki.</div>';
     const zoomSeg = '<div class="st-note">Hver síða á sína stærð, vistaða á þjóninn (sími og tölva hvor í sínu hólfi). '
       + 'Í appinu: <b>litaspjaldið í hausnum → Stærð</b>. Á tölvunni: <b>' + IK.simi + ' S26</b> við hvert app opnar það í S26-ramma '
       + 'sem sýnir nákvæmlega það sem síminn sýnir — það sem þú stillir þar gildir í símanum. Vistaðar síður hér: <b>' + vist + '</b>.</div>';
@@ -295,6 +301,7 @@
       '<div class="st-sec">Tæki og útgáfa</div><div class="st-chips">' + chips + '</div>' + note +
       '<div class="st-sec">Króm-stærð (haus · valmynd · botnstika · zoom-stika)</div>' + kromSeg +
       '<div class="st-sec">Síðustærð (hver síða)</div>' + zoomSeg +
+      stikaSeg +
       '<div class="st-sec">Öpp á þessu tæki</div><div class="st-apps">' + (rows || '<div class="st-msg">Engin öpp fundust á síðunni.</div>') + '</div>' + relLine +
       '<div class="st-sec">Aðgerðir</div><div class="st-row">' +
       '<button type="button" class="op-btn" data-act="reload">' + IK.endur + 'Endurhlaða</button>' +
@@ -313,7 +320,10 @@
         return;
       }
       if (b.dataset.open) { location.href = location.origin + '/app/' + b.dataset.open + '/'; return; }
-      if (b.dataset.inst) { location.href = location.origin + '/app/' + b.dataset.inst + '/?install=1'; return; }
+      if (b.dataset.inst) {
+        try { if (window.SlokkUppsetning && SlokkUppsetning.opna) { SlokkUppsetning.opna(b.dataset.inst); return; } } catch (_) {}
+        location.href = location.origin + '/app/' + b.dataset.inst + '/?install=1'; return;
+      }
       if (b.dataset.act === 'check') { checkAll(); return; }
       if (b.dataset.act === 'copy') { afrita(); return; }
       if (b.dataset.act === 'reload') { location.reload(); return; }

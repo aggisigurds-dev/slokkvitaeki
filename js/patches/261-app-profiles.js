@@ -1071,12 +1071,12 @@
     document.body.appendChild(d);
     var host = d.querySelector('#_pe-heim-host');
     host.innerHTML = hystAfOdru()
-      ? '<div style="margin:14px 0 0"><a href="' + esc(chromeHlekkur(a)) + '" target="_blank" rel="noopener" style="display:inline-block;padding:12px 16px;border-radius:10px;background:#11141c;color:#fff;font-weight:800;text-decoration:none">Opna í Chrome ›</a></div>'
+      ? '<div style="margin:14px 0 0"><a href="' + esc(chromeHlekkur(a)) + '" data-chrome="1" style="display:inline-block;padding:12px 16px;border-radius:10px;background:#11141c;color:#fff;font-weight:800;text-decoration:none">Opna í Chrome ›</a></div>'
       : '<div style="margin:12px 0 0;padding:12px 13px;border-radius:12px;background:#fef9c3;color:#713f12;font-size:13.5px;line-height:1.55">' +
       '<b>Setja upp aftur</b> (nýtt tákn/litur strax, eða táknið týnt):<ol style="margin:6px 0 8px;padding-left:20px">' +
       '<li>Ýttu á <b>Opna í Chrome</b>.</li><li>Fjarlægðu gamla appið: haltu fingri á tákninu → <b>Fjarlægja / Uninstall</b>.</li>' +
       '<li>Í Chrome: endurhlaðaðu og veldu <b>Setja upp</b> (eða ⋮ → „Setja upp app").</li></ol>' +
-      '<a href="' + esc(chromeHlekkur(a)) + '" target="_blank" rel="noopener" style="display:inline-block;padding:10px 14px;border-radius:10px;background:#11141c;color:#fff;font-weight:800;text-decoration:none">Opna í Chrome ›</a></div>';
+      '<a href="' + esc(chromeHlekkur(a)) + '" data-chrome="1" style="display:inline-block;padding:10px 14px;border-radius:10px;background:#11141c;color:#fff;font-weight:800;text-decoration:none">Opna í Chrome ›</a></div>';
     d.addEventListener('click', function (e) { if (e.target === d) d.remove(); });
     d.querySelector('#_app-inst-guide-x').addEventListener('click', function () { d.remove(); });
   }
@@ -1575,11 +1575,11 @@
     v.querySelectorAll('._op-install').forEach(function (b) { b.addEventListener('click', function () {
       // ALDREI nota deferredPrompt sem var fangaður HÉR á launcher-síðunni —
       // beforeinstallprompt er bundinn við manifestið sem gilti þegar hann
-      // kviknaði (aðal-appið á "/"), svo prompt() setti upp AÐALAPPIÐ þó
+      // kviknaði (aðal-appið), svo prompt() setti upp AÐALAPPIÐ þó
       // setManifest() skipti hlekknum eftirá (rót „Fjármál varð aðalappið").
-      // Farðu alltaf á eigin /app/<key>/ scope — þar fangar vafrinn RÉTTA
-      // manifestið og ?install=1 opnar uppsetningargluggann sjálfkrafa.
-      location.href = appLink(b.dataset.app) + '?install=1';
+      // Inni í uppsettu aðalappi opnast Chrome (intent). Í vafranum förum við
+      // á /app/<key>/?install=1 þar sem rétt manifest gildir.
+      uppsetjaApp(b.dataset.app);
     }); });
     v.querySelectorAll('._op-link').forEach(function (b) { b.addEventListener('click', function () {
       var url = appLink(b.dataset.app);
@@ -1707,9 +1707,9 @@
     setHubViewport();
     document.body.classList.add('appmode');
     document.body.setAttribute('data-app', a.key);
-    // 19.09.2026 (Agnar: „bláa sé svart og þetta appelsínugula uppi líka svart"): stöðustika símans tók litinn úr
-    // <meta theme-color> aðalsíðunnar (#C93C1D, eldrautt) í ÖLLUM öppum. Nú fylgir hún haus appsins.
-    try { var _tc = document.querySelector('meta[name="theme-color"]'); if (_tc) _tc.setAttribute('content', a.key === 'boss' ? '#0a0a0b' : (a.color || '#0b0b0d')); } catch (_) {}
+    // Rammi símans (stöðustika + Android-hnappar) er alltaf svartur. Appelsínuguli
+    // aðalliturinn (#C93C1D) mátti ekki leka í kerfisstikurnar.
+    try { var _tc = document.querySelector('meta[name="theme-color"]'); if (_tc) _tc.setAttribute('content', '#000000'); } catch (_) {}
     var pages = skelSidur(a);
     _skelSidur = pages.join('|');
 
@@ -1753,13 +1753,9 @@
 
     nav.querySelectorAll('._app-tab').forEach(function (b) { b.addEventListener('click', function () { goPage(b.dataset.k); }); });
     hdr.querySelector('#_app-inst2').addEventListener('click', function () {
-      // Uppsetning gildir aðeins innan eigin /app/<key>/ scope-s. Ef komið var
-      // inn um gamla ?app=<key> hlekkinn er síðan UTAN scope-sins og prompt-inn
-      // (ef einhver) tilheyrir aðalappinu — hoppa þá fyrst á réttu slóðina.
-      if ((location.pathname || '').indexOf('/app/' + a.key + '/') !== 0) {
-        location.href = appLink(a.key) + '?install=1'; return;
-      }
-      setManifest(a.manifest); doInstall();
+      // Uppsetning gildir aðeins innan eigin /app/<key>/ scope-s. Inni í öðru
+      // uppsettu appi fer slóðin í Chrome (WebAPK grípur annars hlekkinn).
+      uppsetjaApp(a.key);
     });
     hdr.querySelector('#_app-exit').addEventListener('click', function () { location.href = location.origin + '/'; });
     var _pgBtn = hdr.querySelector('#_app-pages');
@@ -1832,18 +1828,55 @@
     }
   }, true);
   // Táknið á HEIMASKJÁ símans er hluti af uppsetta appinu — Android uppfærir það sjálft á 1–3 dögum. Strax: setja upp aftur.
+  // Aðalappið á scope /pwa/. Sé ÞAÐ uppsett (eða eldra eintak með scope "/") grípur
+  // WebAPK hlekki á /app/<key>/ og beforeinstallprompt kemur aldrei. intent:// með
+  // package=com.android.chrome og top-level location (ekki target=_blank) opnar
+  // alvöru Chrome, þar sem hvert app fær eigið WebAPK.
+  function iOdruUppsettuAppi(key) {
+    var stand = false;
+    try { stand = !!((window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone); } catch (_) {}
+    if (!stand) return false;
+    var path = location.pathname || '/';
+    return !(key && path.indexOf('/app/' + key + '/') === 0);
+  }
+  function chromeSlod(key) { return appLink(key) + '?install=1'; }
+  function chromeIntent(httpsUrl) {
+    var bare = String(httpsUrl || '').replace(/^https?:\/\//, '');
+    return 'intent://' + bare + '#Intent;scheme=https;package=com.android.chrome;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;S.browser_fallback_url=' + encodeURIComponent(httpsUrl) + ';end';
+  }
+  function opnaIChrome(httpsUrl) {
+    if (/android/i.test(navigator.userAgent)) { location.href = chromeIntent(httpsUrl); return; }
+    location.href = httpsUrl;
+  }
+  function uppsetjaApp(key) {
+    var url = chromeSlod(key);
+    if (iOdruUppsettuAppi(key)) { opnaIChrome(url); return; }
+    if ((location.pathname || '').indexOf('/app/' + key + '/') !== 0) { location.href = url; return; }
+    var a = effectiveApp(key);
+    if (a) setManifest(a.manifest);
+    doInstall();
+  }
   function chromeHlekkur(a) {
-    var slod = appLink(a.key) + '?install=1';
-    if (/android/i.test(navigator.userAgent)) return 'intent://' + slod.replace(/^https?:[/][/]/, '') + '#Intent;scheme=https;package=com.android.chrome;end';
+    var slod = chromeSlod(a && a.key);
+    if (/android/i.test(navigator.userAgent)) return chromeIntent(slod);
     return slod;
   }
+  window.SlokkUppsetning = { opna: uppsetjaApp, iOdru: iOdruUppsettuAppi, slod: chromeSlod, intent: chromeIntent };
+  // target=_blank á intent:// helst inni í WebAPK. Top-level location fer út í Chrome.
+  document.addEventListener('click', function (e) {
+    var a = e.target && e.target.closest && e.target.closest('a[data-chrome]');
+    if (!a) return;
+    e.preventDefault();
+    var href = a.getAttribute('href');
+    if (href) location.href = href;
+  }, true);
   function heimaskjarHtml(a, vistad) {
     return '<div class="_pe-heim">' + (vistad ? '✓ <b>Táknið er vistað</b> og sést strax inni í appinu. ' : '') +
       '<b>Táknið á heimaskjá símans breytist EKKI strax.</b> Android leyfir vefappi ekki að skipta sjálft um tákn á heimaskjánum — síminn sækir nýja táknið sjálfur á 1–3 dögum. Til að fá það strax þarf að setja appið upp aftur:' +
       '<ol><li>Ýttu á <b>Opna í Chrome</b> hér fyrir neðan.</li>' +
       '<li>Fjarlægðu gamla appið: haltu fingri á tákninu (heimaskjár eða forritalisti) → <b>Fjarlægja / Uninstall</b>.</li>' +
       '<li>Í Chrome: endurhlaðaðu síðuna og veldu <b>Setja upp</b> (eða ⋮ → „Setja upp app"). Táknið lendir þá á heimaskjánum.</li></ol>' +
-      '<a href="' + esc(chromeHlekkur(a)) + '" target="_blank" rel="noopener">Opna í Chrome ›</a></div>';
+      '<a href="' + esc(chromeHlekkur(a)) + '" data-chrome="1">Opna í Chrome ›</a></div>';
   }
   function openControlPanel(key) {
     var a = effectiveApp(key); if (!a) return;

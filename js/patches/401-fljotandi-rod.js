@@ -68,6 +68,8 @@
     // 03.11.2026 (útlitsúttekt): í appi á síma er síðan 980 px breið (HUB_VP, 05.10) → innerWidth > 900 og röðin fór aldrei af stað: 💬 sat á bottom:78px
     // BAK VIÐ #_app-nav (mælt: hnit 💬 t=1993–2045, stika t=1863–2123; elementFromPoint í öllum 5 punktum = ._app-tab). Appið telst alltaf með stiku.
     if (innerWidth > 900 && !(document.body && document.body.classList.contains('appmode'))) return;   // borðtölvan á sitt eigið útlit
+    var dock = document.getElementById('_simi-dock');
+    if (dock && getComputedStyle(dock).display !== 'none') return;   // 528 á röðina neðst
     const nav = document.getElementById('_app-nav');
     const synileg = nav && getComputedStyle(nav).display !== 'none' && nav.offsetHeight > 0;
     const h = synileg ? Math.round(nav.getBoundingClientRect().height) : 0;
