@@ -193,7 +193,8 @@
     const p = pct(v, fyrr), lidid = Math.round(dagurNu / dim * 100);
     const fyrriNafn = MANUDUR[manOf(T[4].fra)] || 'fyrri mánuður';
     return '<div class="yr-k" title="Virði ' + esc(MANUDUR[mi] || '') + ' án vsk, uppsafnað dag fyrir dag: SL tekjur ' + isk(sl) + ' kr + BH áunnið ' + isk(bh) + ' kr. Strikalína = allur ' + esc(fyrriNafn) + ' (' + isk(fyrr) + ' kr). ' + lidid + ' % af mánuðinum liðið.">' +
-      '<span class="yr-kl">' + ic('virdi') + 'Virði ' + esc(MANUDUR[mi] || '') + '<em>án vsk</em></span>' +
+      // stutt mánaðarheiti (25.11: „VIRÐI NÓVEMBER án vsk" var skorið í „án vsl", 148/184 px) — fullt heiti í title flísarinnar
+      '<span class="yr-kl">' + ic('virdi') + 'Virði ' + esc(MAN[mi] ? MAN[mi] + '.' : '') + '<em>án vsk</em></span>' +
       '<span class="yr-row"><span class="yr-kn">' + mkr(v) + '<small>m</small></span>' + (p != null ? '<span class="yr-kp ' + (p >= lidid ? 'yr-g' : 'yr-o') + '" style="margin-left:auto">' + p + ' % af ' + esc(MAN[manOf(T[4].fra)] || '') + '.</span>' : '') + '</span>' +
       '<span class="yr-ks" title="SL = tekjur eftir söludegi (önnur regla en „Unnið í mánuðinum“, sem miðar við skoðunarmánuð/klart_at). BH = unnið, sama tala og í „Unnið í mánuðinum“.">SL sala <b>' + mkr(sl) + '</b> · BH <b>' + mkr(bh) + '</b></span>' +
       '<div class="yr-scr"><svg viewBox="0 0 240 66" aria-hidden="true">' + helgar +
@@ -241,7 +242,7 @@
     const h = m && m.hlutar;
     if (!h) return '';
     const got = fin(h.landspitali) && fin(h.heklureitur) ? h.landspitali + h.heklureitur : null;
-    return '<span class="yr-n" title="Brunahólf áunnið í mánuðinum, án vsk. Göt = Landspítali + Heklureitur. Rukkanlegir tímar × taxti.">BH áunnið · göt <b>' + (got == null ? 'ómælt' : mkr(got) + ' m') + '</b> · rukkanlegir tímar <b>' + (fin(h.tima) ? mkr(h.tima) + ' m' : 'ómælt') + '</b></span>';
+    return '<span class="yr-n" title="Brunahólf áunnið í mánuðinum, án vsk. Göt = Landspítali + Heklureitur. Rukkanlegir tímar × taxti.">BH áunnið · göt <b>' + (got == null ? 'ómælt' : mkr(got) + ' m') + '</b> · tímar <b>' + (fin(h.tima) ? mkr(h.tima) + ' m' : 'ómælt') + '</b></span>';   // „rukkanlegir" í title (línan var skorin um 9 px, 25.11)
   }
 
   // BH/SL hlutfallslína (Agnar 25.11.2026: „hversu mikið er á sitthvoru fyrirtækinu ógreitt … í svona hlutfallslínu, og … clicka á
