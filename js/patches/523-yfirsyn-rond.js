@@ -215,26 +215,38 @@
   const heimildLed = (rek, n) => { const h = heimildir(rek).find(x => x.n === n); return led(h ? h.lit : 'gy', h ? n + ': ' + h.t : n); };
 
   // Greitt inn MEÐ VSK (yfirsyn.cjs greittInn): Payday SL + búð SL + Payday BH + BH merkt greitt í Kröfu yfirliti.
-  function greittHtml(gi, rek) {
+  // 25.11.2026 (Agnar: „setja aukalega inn heild ógreitt,, taka burt meðaltalið,,, setja inn sirka 5 seinustu inngreiðslur,,, síðan
+  // reyna finna út teya korta inngreiðslurnar"): meðaltalið (pilla, strikalína, draugasúla) er farið; „Ógreitt alls" er sama tala og
+  // Ógreitt-línan í „Á leiðinni inn" (SL + BH ógreitt); fimm síðustu inngreiðslur úr yfirsyn.cjs sidustuInn; Teya-kortauppgjörin
+  // lesin úr pósti og borin við kortasölur búðarinnar (staðfesting, ekki viðbót við Greitt inn).
+  function greittHtml(gi, rek, D) {
     if (!ok(gi) || !Array.isArray(gi.manudir) || gi.manudir.length < 4) return omaelt('Greitt inn', gi && gi.omaelt);
     const M = gi.manudir, nu = M[3];
-    const fullir = M.slice(0, 3).map(m => m.alls).filter(fin);
-    const medal = fullir.length ? fullir.reduce((a, b) => a + b, 0) / fullir.length : null;
-    const mi = manOf(nu.fra), dim = new Date(+nu.fra.slice(0, 4), mi + 1, 0).getDate();
-    const lidid = Math.round(+nu.til.slice(8, 10) / dim * 100);
-    const p = pct(nu.alls, medal);
-    const max = Math.max(...M.map(m => m.alls || 0), medal || 0) || 1;
-    const h = val => Math.max(2, Math.round(val / max * 46));
+    const kf = (D && D.krofur) || {}, sl = kf.sl, bh = kf.bh;
+    const ogr = (ok(sl) || ok(bh)) ? (ok(sl) ? sl.ogreitt.kr : 0) + (ok(bh) ? bh.ogreitt.kr : 0) : null;
+    const ogrT = 'Ógreitt alls m. vsk — sama tala og Ógreitt í „Á leiðinni inn“.\nSL ' + (ok(sl) ? sl.ogreitt.n + ' kröfur · ' + isk(sl.ogreitt.kr) + ' kr' : 'ómælt') + '\nBH ' + (ok(bh) ? bh.ogreitt.n + ' kröfur · ' + isk(bh.ogreitt.kr) + ' kr' : 'ómælt');
+    const max = Math.max(...M.map(m => m.alls || 0)) || 1;
+    const h = val => Math.max(2, Math.round(val / max * 28));
     const sund = m => esc(MAN[manOf(m.fra)] || '') + ' ' + mkr(m.alls) + ' m (Payday SL ' + mkr(m.sl_payday) + ' · búð ' + mkr(m.sl_bud) + ' · Payday BH ' + mkr(m.bh_payday) + (m.bh_hand ? ' · merkt greitt BH ' + mkr(m.bh_hand) + ': ' + esc((m.bh_hand_reikn || []).join(', ')) : '') + ')';
-    return '<div class="yr-k" title="Greitt inn MEÐ VSK, bæði félög — peningarnir sem komu inn.\n' + M.map(sund).join('\n') + '\nStrikalína = meðaltal síðustu þriggja heilu mánaða (' + mkr(medal) + ' m). ' + lidid + ' % af mánuðinum liðið.">' +
+    const inn = gi.sidustu, listi = inn && Array.isArray(inn.listi) ? inn.listi : null;
+    const radir = listi && listi.length
+      ? listi.map(r => '<div class="yr-gr" title="' + esc(r.felag + ' · ' + r.nr + ' · ' + r.kunni + ' · ' + isk(r.kr) + ' kr · greitt ' + dd(r.dags)) + '">' +
+          '<span class="yr-gt yr-gt-' + (r.teg === 'teya' ? 'ty' : r.felag === 'BH' ? 'bh' : 'sl') + '">' + (r.teg === 'teya' ? 'Teya' : esc(r.felag)) + '</span>' +
+          '<span class="yr-gn">' + esc(r.teg === 'teya' ? 'Kortauppgjör' : r.kunni) + '</span><b>' + isk(r.kr) + '</b><span class="yr-gd">' + dd(r.dags) + '</span></div>').join('')
+      : '<div class="yr-gr"><span class="yr-gn">' + (inn && inn.omaelt ? 'ómælt' : 'Engar inngreiðslur fundust') + '</span></div>';
+    const vant = inn && Array.isArray(inn.omaelt) && inn.omaelt.length ? '<span class="yr-gv" title="Þessar heimildir svöruðu ekki: ' + esc(inn.omaelt.join(', ')) + '">' + led('or') + 'vantar: ' + esc(inn.omaelt.join(', ')) + '</span>' : '';
+    const teya = fin(nu.teya)
+      ? '<span class="yr-ks yr-gty" title="Teya-uppgjör úr pósti (reporting@teya.com, eitt á virkan dag) borin við kortasölur í búð. Teya er staðfesting á kortapeningnum, ekki viðbót: búðin er þegar talin í Greitt inn.' + (fin(nu.sl_kort) ? ' Munur ' + isk(nu.teya - nu.sl_kort) + ' kr (uppgjör berst virkum degi síðar).' : '') + '">Teya ' + esc(MAN[manOf(nu.fra)] || '') + '. <b>' + isk(nu.teya) + '</b> · ' + nu.teya_n + ' uppgj.' + (fin(nu.sl_kort) ? ' · kort í búð <b>' + isk(nu.sl_kort) + '</b>' : '') + '</span>'
+      : '<span class="yr-ks yr-gty">Teya ómælt</span>';
+    return '<div class="yr-k yr-gi" title="Greitt inn MEÐ VSK, bæði félög — peningarnir sem komu inn.\n' + M.map(sund).join('\n') + '">' +
       '<span class="yr-kl">' + ic('inn') + 'Greitt inn<em>m. vsk</em></span>' +
-      '<span class="yr-kn">' + mkr(nu.alls) + '<small>m</small></span>' +
-      (p != null ? '<span class="yr-kp ' + (p >= lidid ? 'yr-g' : 'yr-a') + '" title="' + lidid + ' % af mánuðinum liðið">' + p + ' % af meðaltali</span>' : '') +
-      '<div class="yr-bars">' + (medal ? '<span class="yr-avg" style="bottom:' + h(medal) + 'px"></span>' : '') +
-        M.map((m, i) => '<div' + (i === 3 ? ' class="yr-nu"' : '') + '>' + (i === 3 && medal && m.alls < medal ? '<span class="yr-ghost" style="bottom:' + h(m.alls) + 'px;height:' + (h(medal) - h(m.alls)) + 'px"></span>' : '') + '<i style="height:' + h(m.alls || 0) + 'px"></i></div>').join('') +
-      '</div>' +
-      '<div class="yr-mo">' + M.map((m, i) => '<span' + (i === 3 ? ' class="yr-nu"' : '') + '>' + esc(MAN[manOf(m.fra)] || '') + '<b>' + mkr(m.alls, 1) + '</b></span>').join('') + '</div>' +
-      '<span class="yr-kf" title="Payday SL og BH + BH-reikningar merktir greiddir í Kröfu yfirliti">' + heimildLed(rek, 'Payday SL') + 'Payday SL<s>|</s>' + heimildLed(rek, 'Greiðslur BH') + 'BH</span>' +
+      '<span class="yr-row"><span class="yr-kn">' + mkr(nu.alls) + '<small>m</small></span>' +
+        (ogr != null ? '<span class="yr-kp yr-r yr-gog" title="' + esc(ogrT) + '">Ógreitt alls ' + mkr(ogr) + ' m</span>' : '') + '</span>' +
+      '<div class="yr-gm"><div class="yr-bars">' + M.map((m, i) => '<div' + (i === 3 ? ' class="yr-nu"' : '') + '><i style="height:' + h(m.alls || 0) + 'px"></i></div>').join('') + '</div>' +
+      '<div class="yr-mo">' + M.map((m, i) => '<span' + (i === 3 ? ' class="yr-nu"' : '') + '>' + esc(MAN[manOf(m.fra)] || '') + ' <b>' + mkr(m.alls, 1) + '</b></span>').join('') + '</div></div>' +
+      '<div class="yr-gl"><span class="yr-gh">Síðustu inngreiðslur</span>' + radir + vant + '</div>' +
+      teya +
+      '<span class="yr-kf" title="Payday SL og BH + BH-reikningar merktir greiddir í Kröfu yfirliti + Teya-uppgjör úr pósti">' + heimildLed(rek, 'Payday SL') + 'Payday SL<s>|</s>' + heimildLed(rek, 'Greiðslur BH') + 'BH<s>|</s>' + led(fin(nu.teya) ? 'gr' : 'or', 'Teya-uppgjör úr pósti') + 'Teya</span>' +
     '</div>';
   }
 
@@ -403,13 +415,7 @@
     if (vik.length) l.push({ lit: 'or', t5: 'yr-samraemi', t: '<b>Samræmi</b> ' + vik.length + ' víkur', titill: vik.map(x => x.nafn + ': röndin ' + isk(x.rond) + ' · Kröfu yfirlit ' + isk(x.sida)).join(' · ') });
     if (ok(bh)) bh.eldri45.reikn.sort((a, b) => b.kr - a.kr).forEach(r => l.push({ lit: 'rd', t: '<b>' + esc(r.nr + ' ' + String(r.kunni).split(/\s+/)[0]) + '</b> ' + mkr(r.kr) + ' m &gt;45 d.', titill: r.nr + ' ' + r.kunni + ' · ' + isk(r.kr) + ' kr · ' + r.dagar + ' dagar frá gjalddaga' }));
     if (ok(sl) && sl.eldri45.n) l.push({ lit: 'or', t: '<b>' + sl.eldri45.n + ' kröfur SL</b> &gt;45 d. · ' + mkr(sl.eldri45.kr) + ' m', titill: 'Ógreiddar kröfur Slökkvitækja eldri en 45 daga' });
-    const gi = D.greitt;
-    if (ok(gi) && Array.isArray(gi.manudir) && gi.manudir.length === 4) {
-      const M = gi.manudir, nu = M[3], full = M.slice(0, 3).map(x => x.alls).filter(fin);
-      const m = full.length ? full.reduce((a, b) => a + b, 0) / full.length : null;
-      const mi = manOf(nu.fra), dim = new Date(+nu.fra.slice(0, 4), mi + 1, 0).getDate(), lidid = +nu.til.slice(8, 10) / dim;
-      if (m && nu.alls / m < lidid * 0.75) l.push({ lit: 'or', t: '<b>Greitt inn</b> ' + pct(nu.alls, m) + ' % af meðaltali', titill: Math.round(lidid * 100) + ' % af mánuðinum liðið · m. vsk' });
-    }
+    // „Greitt inn X % af meðaltali" fór 25.11.2026 með meðaltalinu (Agnar: „taka burt meðaltalið").
     if (ok(os) && os.yfir30) l.push({ lit: 'or', t: '<b>' + os.yfir30 + ' tæki</b> tilbúin &gt;30 d.', titill: 'Verkbeiðnir tilbúnar lengur en 30 daga' });
     if (ok(sl) && sl.a_bid.n) l.push({ lit: 'gy', t: '<b>' + sl.a_bid.n + ' á bið</b> SL · ' + mkr(sl.a_bid.kr) + ' m', titill: 'Kröfur Slökkvitækja á bið' });
     if (ok(bh) && bh.likleg_greidd && bh.likleg_greidd.n) l.push({ lit: 'bl', t: '<b>' + bh.likleg_greidd.n + ' líklega greidd</b> BH', titill: 'Fannst greitt í banka en enn ógreitt í Payday' });
@@ -559,7 +565,7 @@
     else {
       // 25.11.2026 (Agnar: „mátt setja árþjónusta 2026 aftur alveg til vinstri endann"): Ársþjónusta fremst, svo á leiðinni inn
       // og unnið; virði og greitt inn á eftir. Á síma er þetta 2 dálkar svo fleiri tölur sjást án hliðarskruns.
-      midja ='<div class="yr-grid">' + arsHtml() + leidinniHtml(D) + samtalsHtml(rek) + virdiHtml(rek) + greittHtml(D.greitt, rek) + osottHtml(D, rek) + '</div>' + footHtml(D, rek);
+      midja ='<div class="yr-grid">' + arsHtml() + leidinniHtml(D) + samtalsHtml(rek) + virdiHtml(rek) + greittHtml(D.greitt, rek, D) + osottHtml(D, rek) + '</div>' + footHtml(D, rek);
     }
     return '<div class="yr-fr">' + DEFS + '<section class="yr-mb" aria-label="Yfirsýn">' + topHtml(n, ctx, rek, D && D.timavera) +
       (S.villa && D ? '<div class="yr-villa">' + led('or') + esc(S.villa) + ' — sýni tölur frá kl. ' + esc(klukka(D.maelt_at)) + '</div>' : '') + midja + '</section></div>';
@@ -757,6 +763,17 @@
       '.yr-ghost{position:absolute;left:0;right:0;border:1px dashed rgba(255,162,94,.7);border-bottom:0;border-radius:5px 5px 0 0;background:repeating-linear-gradient(135deg,rgba(255,138,31,.12) 0 3px,transparent 3px 6px)}',
       '.yr-avg{position:absolute;left:-2px;right:-2px;border-top:1px dashed rgba(255,255,255,.6);z-index:2}',
       '.yr-mo{display:flex;gap:8px;padding:0 2px;font-size:10.5px;color:#a9b8d0}.yr-mo span{flex:1;display:flex;flex-direction:column;align-items:center;line-height:1.3}.yr-mo b{font-size:12.5px;font-weight:600;color:#fff}.yr-mo .yr-nu b{color:#ffb37a}',
+      // Greitt inn (25.11): þjappaðar mánaðarsúlur, síðustu inngreiðslur og Teya-lína
+      '.yr-gi{gap:6px}.yr-gi .yr-kn{font-size:29px}.yr-gog{max-width:58%;overflow:hidden;text-overflow:ellipsis}',
+      '.yr-gi .yr-bars{height:32px;gap:6px}.yr-gi .yr-mo{gap:6px;font-size:10px}.yr-gi .yr-mo span{flex-direction:row;justify-content:center;gap:3px;white-space:nowrap}.yr-gi .yr-mo b{font-size:11px}',
+      '.yr-gl{display:flex;flex-direction:column;gap:2px;padding:6px 8px;border-radius:10px;background:rgba(0,6,18,.38);box-shadow:inset 0 1px 3px rgba(0,0,0,.6),0 1px 0 rgba(255,255,255,.06)}',
+      '.yr-gh{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#a9b8d0;margin-bottom:1px}',
+      '.yr-gr{display:flex;align-items:center;gap:6px;min-width:0;font-size:12px;line-height:17px;color:#dfe7f4}',
+      '.yr-gr b{font-weight:600;color:#fff;white-space:nowrap}.yr-gn{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      '.yr-gd{flex:none;width:34px;text-align:right;font-size:11px;color:#a9b8d0;white-space:nowrap}',
+      '.yr-gt{flex:none;min-width:24px;padding:0 4px;border-radius:5px;font-size:9.5px;font-weight:700;line-height:15px;text-align:center;letter-spacing:.03em}',
+      '.yr-gt-sl{background:rgba(255,103,2,.22);color:#ffb37a}.yr-gt-bh{background:rgba(91,143,240,.25);color:#a9c5ff}.yr-gt-ty{background:rgba(34,197,94,.2);color:#86efac}',
+      '.yr-gv{display:flex;align-items:center;gap:5px;font-size:10.5px;color:#ffb37a}.yr-gty{font-size:11.5px}',
       // á leiðinni
       '.yr-sb{display:flex;height:9px;padding:1px;gap:2px;border-radius:999px;background:rgba(0,6,20,.6);box-shadow:inset 0 1px 3px rgba(0,0,0,.8),0 1px 0 rgba(255,255,255,.09)}.yr-sb-l{height:11px}',
       '.yr-sb i{display:block;height:100%;min-width:4px;border-radius:999px}',
@@ -823,5 +840,5 @@
     ].join('\n');
   }
 
-  window.YfirsynRond = { html, css, smellur, geymaArs, load, allsherjar, opnaKrofur, S, version: '2026-11-25' };
+  window.YfirsynRond = { html, css, smellur, geymaArs, load, allsherjar, opnaKrofur, S, version: '2026-11-25b' };
 })();

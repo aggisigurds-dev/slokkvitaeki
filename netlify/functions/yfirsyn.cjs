@@ -211,6 +211,43 @@ async function sidastBh() {
   return { nr: 'R-' + (x.tilvisun || ''), kunni: x.customer_name || '', kr: kr(x.upphaed_total), dags: x.greidsla_date || null };
 }
 
+// TEYA-KORTAUPPGJÖR (Agnar 25.11.2026: „reyna finna út teya korta inngreiðslurnar … annaðhvort tengjast vef teya.is eða lesa úr
+// póstum"). Teya sendir eitt uppgjör á virkan dag frá reporting@teya.com á bokhald@eldklar.is („Uppgjörsskýrslan þín frá Teya",
+// PDF með), og meginmálið ber dag og heildarupphæð: „uppgjörsyfirlit fyrir 2026-11-25 … Heildarupphæð Staða ISK 30.751 Greitt".
+// email_digest geymir þann texta, svo hér er lesið úr honum — engin innskráning á teya.is. teya_faerslur (færsla fyrir færslu) er
+// tóm (mælt 25.11.2026). Nóvember til 25.: Teya 16 uppgjör 460.966 kr · kortasölur í búð 453.287 kr — Teya er staðfesting á
+// kortapeningnum, EKKI viðbót: búðin (sl_bud) telur sömu krónurnar þegar.
+const TEYA_DAGS = /uppgj[öo]rsyfirlit fyrir (\d{4}-\d{2}-\d{2})/i;
+const TEYA_KR = /Heildarupph[æa]e?[ðd]\s+Sta[ðd]a\s+ISK\s+(-?[\d.]+)/i;
+async function teyaUppgjor(fra) {
+  const r = await sbOll(`email_digest?select=message_id,received_at,body_preview,snippet&sender_email=ilike.*teya*&subject=ilike.Uppgj*&received_at=gte.${fra}T00:00:00Z&order=received_at.desc,id.desc`);
+  const eftirDegi = new Map();
+  r.forEach(x => {
+    const txt = String(x.body_preview || '') + ' ' + String(x.snippet || '');
+    const d = (TEYA_DAGS.exec(txt) || [])[1], k = (TEYA_KR.exec(txt) || [])[1];
+    if (!d || k == null || eftirDegi.has(d)) return;   // nýjasti pósturinn um daginn ræður (raðað received_at desc)
+    eftirDegi.set(d, { dags: d, kr: kr(String(k).replace(/\./g, '')), barst: x.received_at });
+  });
+  return [...eftirDegi.values()].sort((a, b) => (a.dags < b.dags ? 1 : -1));
+}
+
+// SÍÐUSTU INNGREIÐSLUR (Agnar 25.11.2026: „setja inn sirka 5 seinustu inngreiðslur"): Payday SL greitt, greiðslur Brunahólfs
+// (sama heimild og „Síðast greitt") og Teya-kortauppgjörin, nýjast fyrst eftir greiðsludegi. Hver heimild sér; bregðist ein
+// stendur hún í `omaelt` og hinar birtast.
+async function sidustuInn() {
+  const N = 6, listi = [], omaelt = [];
+  const [slp, bhr, tey] = await Promise.all([
+    sb(`payday_invoices_slokk?select=number,customer_name,amount_total,paid_date&status=eq.PAID&paid_date=not.is.null&order=paid_date.desc,number.desc&limit=${N}`).catch(e => { omaelt.push('Payday SL'); return []; }),
+    fetch(`${BH}/api/krofu-greidslur?n=${N}`, { headers: await bhHausar() }).then(r => (r.ok ? r.json() : Promise.reject(new Error(r.status)))).catch(() => { omaelt.push('Greiðslur BH'); return null; }),
+    teyaUppgjor(iso(new Date(Date.now() - 40 * DAGUR))).catch(() => { omaelt.push('Teya'); return []; }),
+  ]);
+  (slp || []).forEach(x => listi.push({ felag: 'SL', teg: 'payday', nr: 'R-' + (x.number || ''), kunni: x.customer_name || '', kr: kr(x.amount_total), dags: dagur(x.paid_date) }));
+  ((bhr && Array.isArray(bhr.rows)) ? bhr.rows : []).forEach(x => listi.push({ felag: 'BH', teg: 'payday', nr: 'R-' + (x.tilvisun || ''), kunni: x.customer_name || '', kr: kr(x.upphaed_total), dags: dagur(x.greidsla_date) }));
+  tey.slice(0, N).forEach(x => listi.push({ felag: 'SL', teg: 'teya', nr: 'Teya', kunni: 'Kortauppgjör', kr: x.kr, dags: x.dags }));
+  listi.sort((a, b) => (a.dags === b.dags ? b.kr - a.kr : (a.dags < b.dags ? 1 : -1)));
+  return { listi: listi.slice(0, 5), omaelt };
+}
+
 // GREITT INN, M. VSK — peningarnir sem komu inn, mánuður fyrir mánuð (þessi mánuður til dagsins + þrír heilir á undan).
 // Rekstrarskýrslan (badir.inn) er ÁN vsk og telur aðeins Payday; Agnar 21.11: „held [talan] sé eitthvað skrítið" —
 // yfirferð sama kvöld: nóvember 6,75 m án vsk = 8,37 m með vsk, og október vantaði 4,11 m sem voru merktir greiddir
@@ -225,15 +262,16 @@ async function greittInn() {
   const manudir = [3, 2, 1, 0].map(k => ({
     fra: iso(new Date(Date.UTC(y, mo - k, 1))),
     til: k === 0 ? idag() : iso(new Date(Date.UTC(y, mo - k + 1, 0))),
-    sl_payday: 0, sl_bud: 0, bh_payday: 0, bh_hand: 0, bh_hand_reikn: [],
+    sl_payday: 0, sl_bud: 0, sl_kort: 0, bh_payday: 0, bh_hand: 0, bh_hand_reikn: [], teya: null, teya_n: 0,
   }));
   const fra0 = manudir[0].fra;
-  const [slp, bud, voidR, bhp, hand] = await Promise.all([
+  const [slp, bud, voidR, bhp, hand, tey] = await Promise.all([
     sbOll(`payday_invoices_slokk?select=id,paid_date,amount_total&status=eq.PAID&paid_date=gte.${fra0}&order=id.asc`),
-    sbOll(`solur?select=id,credit_of,samtals,paid_at,created_at&status=eq.final&greitt_med=in.(kort,reidufe)&or=(paid_at.gte.${fra0},created_at.gte.${fra0})&order=id.asc`),
+    sbOll(`solur?select=id,credit_of,samtals,paid_at,created_at,greitt_med&status=eq.final&greitt_med=in.(kort,reidufe)&or=(paid_at.gte.${fra0},created_at.gte.${fra0})&order=id.asc`),
     sbOll('solur?select=id&status=eq.void&order=id.asc'),
     sbOll(`invoices?select=id,greidsla_date,upphaed_total&source=eq.payday&status=eq.PAID&greidsla_date=gte.${fra0}&order=id.asc`),
     sbOll(`krofur_yfirlit_meta?select=inv_key,paid_at&paid=eq.true&paid_at=gte.${fra0}T00:00:00Z&order=inv_key.asc`),
+    teyaUppgjor(fra0).catch(e => { console.error('[yfirsyn] Teya', String(e && e.message || e).slice(0, 160)); return null; }),
   ]);
   const iMan = (d, f) => { const m = manudir.find(x => d >= x.fra && d <= x.til); if (m) f(m); };
   slp.forEach(r => iMan(dagur(r.paid_date), m => { m.sl_payday += kr(r.amount_total); }));
@@ -248,8 +286,10 @@ async function greittInn() {
   bud.forEach(r => {
     if (r.credit_of != null && voidIds.has(Number(r.credit_of))) return;
     const d = r.credit_of != null && frumDagur.get(Number(r.credit_of)) ? frumDagur.get(Number(r.credit_of)) : (r.paid_at || r.created_at);
-    iMan(dagur(d), m => { m.sl_bud += kr(r.samtals); });
+    iMan(dagur(d), m => { m.sl_bud += kr(r.samtals); if (r.greitt_med === 'kort') m.sl_kort += kr(r.samtals); });
   });
+  // Teya: til samanburðar við kortasölur búðarinnar (sl_kort) — ekki lagt við `alls`.
+  if (Array.isArray(tey)) { manudir.forEach(m => { m.teya = 0; }); tey.forEach(t => iMan(t.dags, m => { m.teya += t.kr; m.teya_n++; })); }
   bhp.forEach(r => iMan(dagur(r.greidsla_date), m => { m.bh_payday += kr(r.upphaed_total); }));
   // aðeins tölustafir: Payday-tilvísun er númer, og þá getur ekkert úr lyklinum brotið PostgREST-fyrirspurnina
   const handKeys = hand.map(h => ({ tilv: (/^payday\|(\d{1,12})$/.exec(h.inv_key || '') || [])[1], paid_at: h.paid_at })).filter(h => h.tilv);
@@ -268,7 +308,7 @@ async function greittInn() {
     });
   }
   manudir.forEach(m => { m.alls = m.sl_payday + m.sl_bud + m.bh_payday + m.bh_hand; });
-  return { manudir, regla: 'Með vsk: Payday SL + búð SL (kort/reiðufé) + Payday BH + BH merkt greitt í Kröfu yfirliti' };
+  return { manudir, regla: 'Með vsk: Payday SL + búð SL (kort/reiðufé) + Payday BH + BH merkt greitt í Kröfu yfirliti · Teya = uppgjör úr pósti til samanburðar, ekki lagt við' };
 }
 
 // Mæting í dag LIFANDI (Agnar 25.11.2026: „Geturðu ekki bara tengst þessu … þarna kemur allavega hvað margir eru mættir í dag“ og
@@ -333,7 +373,7 @@ exports.handler = async (event) => {
   // annar stjórnandi við vél Agnars sæi annars allt). Lota (Claude) er prófunaraðgangur lotunnar (uid 10, Admin).
   const fornafn = String(hver.nafn || '').trim().split(/\s+/)[0];
   if (!LEYFT.includes(fornafn)) return P.json(403, { error: 'Yfirsýnin er aðeins fyrir Agnar og Annþór', bannad: true });
-  const [rek, kbh, ksl, os, ssl, sbh, mt, gi, cg] = await Promise.all([
+  const [rek, kbh, ksl, os, ssl, sbh, mt, gi, cg, inn] = await Promise.all([
     mael('Rekstrarskýrslan', () => rekstur(event)),
     mael('Kröfu yfirlit Brunahólfs', krofurBh),
     mael('Kröfur Slökkvitækja', krofurSl),
@@ -343,7 +383,9 @@ exports.handler = async (event) => {
     mael('Tímavera', timavera),
     mael('Greiðslur', greittInn),
     mael('CG-gildi Kröfu yfirlita', cgSidna),
+    mael('Síðustu inngreiðslur', sidustuInn),
   ]);
+  if (gi && !gi.omaelt) gi.sidustu = inn;
   const cgOk = cg && !cg.omaelt ? cg : null;
   const te = cgOk ? timiEftirBh(cgOk) : { omaelt: 'CG-gildi Kröfu yfirlita náðust ekki' };
   return P.json(200, { rekstur: rek, krofur: { sl: ksl, bh: kbh, timi_eftir: te }, osott: os, sidast: { sl: ssl, bh: sbh }, timavera: mt, greitt: gi,
