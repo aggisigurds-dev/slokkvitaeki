@@ -100,28 +100,80 @@ async function krofurBh() {
 // „Tími eftir" Kröfu yfirlits (CG-03): óinnheimtir Tímavera-tímar × taxti m. vsk og Landspítala-viðbót. Reiknað Í VAFRANUM á
 // Kröfu yfirliti (computeTier3) og skráð í cg_entries eftir hverja FULLA hleðslu síðunnar. Röndin les sömu tölu þaðan (Agnar
 // 25.11.2026: „Þessar tölur eru ekki í samræmi þarna" — röndin sýndi ekki Tími eftir, svo BH stemmdi ekki við „Samtals í pípunni").
-async function timiEftirBh() {
-  const r = await sb('cg_entries?select=id,value,updated_at&id=eq.CG-03');
-  const t = r && r[0];
-  if (!t || t.value == null || !t.updated_at) return { omaelt: 'Kröfu yfirlit hefur ekki skráð „Tími eftir"' };
-  return { kr: kr(t.value), uppfaert: t.updated_at, aldur_klst: Math.round((Date.now() - Date.parse(t.updated_at)) / 36e5 * 10) / 10 };
+// CG-gildi Kröfu yfirlitanna: BH (CG-01 ógreitt · CG-02 ósent · CG-03 tími eftir · CG-04 samtals) og SL (CG-S01 ógreitt ·
+// CG-S02 ósent). Síðurnar skrá þau eftir hverja FULLA hleðslu. Þau eru bæði heimild „Tími eftir" og viðmið SAMRÆMISVARÐARINS.
+const CG_IDS = ['CG-01', 'CG-02', 'CG-03', 'CG-04', 'CG-S01', 'CG-S02'];
+async function cgSidna() {
+  const r = await sb('cg_entries?select=id,value,updated_at&id=in.(' + CG_IDS.join(',') + ')');
+  const m = {};
+  (r || []).forEach(x => { if (x.value != null && x.updated_at) m[x.id] = { v: kr(x.value), t: x.updated_at }; });
+  return m;
+}
+const aldurKlst = t => Math.round((Date.now() - Date.parse(t)) / 36e5 * 10) / 10;
+function timiEftirBh(cg) {
+  const t = cg && cg['CG-03'];
+  if (!t) return { omaelt: 'Kröfu yfirlit hefur ekki skráð „Tími eftir"' };
+  return { kr: t.v, uppfaert: t.t, aldur_klst: aldurKlst(t.t) };
+}
+// SAMRÆMISVÖRÐUR (Agnar 25.11.2026: „vill að þetta sé allt hárréttar tölur þarna og alltaf syncanlegar"): hver krafa-tala
+// röndarinnar borin við töluna sem Kröfu yfirlit sjálft sýndi síðast. ±1 kr = námundun. Síðutalan getur verið eldri en gögnin
+// (skráð við síðustu opnun) — aldurinn fylgir svo „víkur" á gamalli tölu lesist rétt.
+function samraemi(cg, kbh, ksl, te) {
+  const ok2 = x => x && !x.omaelt;
+  const lid = [
+    ['BH ógreitt', 'CG-01', ok2(kbh) ? kbh.ogreitt.kr : null],
+    ['BH ósent', 'CG-02', ok2(kbh) ? kbh.osent.kr : null],
+    ['BH samtals í pípunni', 'CG-04', ok2(kbh) && ok2(te) ? kbh.ogreitt.kr + kbh.osent.kr + te.kr : null],
+    ['SL ógreitt', 'CG-S01', ok2(ksl) ? ksl.ogreitt.kr : null],
+    ['SL ósent', 'CG-S02', ok2(ksl) ? ksl.osent.kr : null],
+  ];
+  return lid.map(([nafn, id, rond]) => {
+    const s = cg && cg[id];
+    if (rond == null || !s) return { nafn, id, rond, sida: s ? s.v : null, stada: 'omaelt' };
+    const munur = rond - s.v;
+    return { nafn, id, rond, sida: s.v, munur, sida_uppfaert: s.t, sida_aldur_klst: aldurKlst(s.t), stada: Math.abs(munur) <= 1 ? 'stemmir' : 'vikur' };
+  });
 }
 
+// KRÖFUR SL — SAMA REGLA OG KRÖFU YFIRLIT SLÖKKVITÆKJA (166 loadAll, CG-S01/CG-S02). Agnar 25.11.2026: „slökkvitækjatölurnar hjá
+// þér eru ekki rétt reiknaðar". Áður las röndin kröfusýnirnar (aðeins kröfur sendar í banka, flokkur „innheimta") og sýndi 3,43 m
+// á móti 4,87 m á Kröfu yfirliti. Nú, línu fyrir línu eins og 166:
+//   sölur greiddar með reikningi og ógreiddar (paid_at tómt), hvorki kreditnóta né kreditfærð sala;
+//   ógreitt (CG-S01) = með dk_invoice_id og Payday-spegillinn telur EKKI drög;  ósent (CG-S02) = ekki ógild, ekkert sendimerki.
+// Mælt 25.11 í SQL eftir þessari reglu: 51 · 4.639.884 og 7 · 229.178 = Kröfu yfirlit upp á krónu.
+// Á bið (v_krafa_ogreidd flokkur a_bid) er MERKT á röðunum, ekki dregið frá — Kröfu yfirlit telur þær með í ógreiddu.
+const sumNakv = (l, f) => Math.round(l.reduce((a, r) => a + (Number(f(r)) || 0), 0));   // eins og síðan: summa fyrst, námundað einu sinni
 async function krofurSl() {
-  const [osent, ogreidd] = await Promise.all([
-    sbOll('v_krafa_ekki_send_adgerd?select=num,customer_nafn,samtals,dagar&order=num.asc'),
-    sbOll('v_krafa_ogreidd?select=id,num,customer_nafn,samtals,dagar,flokkur&flokkur=in.(innheimta,a_bid)&order=id.asc'),
-  ]);
-  const inn = ogreidd.filter(r => r.flokkur === 'innheimta'), bid = ogreidd.filter(r => r.flokkur === 'a_bid');
-  const eldri = inn.filter(r => (Number(r.dagar) || 0) > 45);
+  const rows0 = await sbOll('solur?select=id,num,customer_nafn,samtals,status,created_at,krafa_sent_at,invoiced_at,dk_invoice_id,is_credit,credit_of&greitt_med=eq.reikningur&paid_at=is.null&order=created_at.asc,id.asc');
+  const kreditfaerdar = new Set(rows0.filter(s => s.is_credit && s.credit_of != null).map(s => String(s.credit_of)));
+  const rows = rows0.filter(s => !s.is_credit && !kreditfaerdar.has(String(s.id)));
+  const medPayday = rows.filter(s => s.dk_invoice_id);
+  const drog = new Set(); let spegillOk = true;
+  try {
+    const ids = [...new Set(medPayday.map(s => String(s.dk_invoice_id)))];
+    for (let i = 0; i < ids.length; i += 100) {
+      const listi = ids.slice(i, i + 100).map(x => '"' + x.replace(/["\\]/g, '') + '"').join(',');
+      (await sb('payday_invoices_slokk?select=payday_id,status&payday_id=in.(' + encodeURIComponent(listi) + ')') || [])
+        .forEach(p => { if (String(p.status || '').toUpperCase() === 'DRAFT') drog.add(String(p.payday_id)); });
+    }
+  } catch (e) { spegillOk = false; drog.clear(); }   // eins og 166: bregðist spegillinn telst allt í Payday ógreitt
+  const ogreidd = medPayday.filter(s => !drog.has(String(s.dk_invoice_id)));
+  const osent = rows.filter(s => s.status !== 'void' && !s.krafa_sent_at && !s.invoiced_at && !s.dk_invoice_id);
+  let bidNum = new Set();
+  try { bidNum = new Set((await sbOll('v_krafa_ogreidd?select=num&flokkur=eq.a_bid&order=num.asc')).map(r => String(r.num))); } catch (_) {}
+  const dagar = s => dagarFra(s.created_at);
+  const eldri = ogreidd.filter(s => (dagar(s) || 0) > 45);
+  const bid = ogreidd.filter(s => bidNum.has(String(s.num)));
   // Kröfulistinn sem glugginn í röndinni sýnir — sömu raðir og summan, stærst fyrst.
   const radir = (l, tegund) => l.slice().sort((a, b) => kr(b.samtals) - kr(a.samtals))
-    .map(r => ({ nr: r.num ? String(r.num) : '', kunni: r.customer_nafn || '', kr: kr(r.samtals), dagar: r.dagar == null ? null : Number(r.dagar), tegund }));
+    .map(s => ({ nr: s.num ? String(s.num) : '', kunni: s.customer_nafn || '', kr: kr(s.samtals), dagar: dagar(s), tegund, ...(bidNum.has(String(s.num)) ? { a_bid: true } : {}) }));
   return {
-    osent: { n: osent.length, kr: summa(osent, r => r.samtals), reikn: radir(osent, 'osent') },
-    ogreitt: { n: inn.length, kr: summa(inn, r => r.samtals), reikn: radir(inn, 'ogreitt') },
-    eldri45: { n: eldri.length, kr: summa(eldri, r => r.samtals) },
-    a_bid: { n: bid.length, kr: summa(bid, r => r.samtals), reikn: radir(bid, 'a_bid') },
+    osent: { n: osent.length, kr: sumNakv(osent, s => s.samtals), reikn: radir(osent, 'osent') },
+    ogreitt: { n: ogreidd.length, kr: sumNakv(ogreidd, s => s.samtals), reikn: radir(ogreidd, 'ogreitt') },
+    eldri45: { n: eldri.length, kr: sumNakv(eldri, s => s.samtals) },
+    a_bid: { n: bid.length, kr: sumNakv(bid, s => s.samtals) },          // hluti af ógreiddu, ekki viðbót
+    drog_payday: { n: medPayday.length - ogreidd.length, kr: sumNakv(medPayday.filter(s => drog.has(String(s.dk_invoice_id))), s => s.samtals) },
+    spegill_ok: spegillOk,
   };
 }
 
@@ -269,7 +321,7 @@ exports.handler = async (event) => {
   // annar stjórnandi við vél Agnars sæi annars allt). Lota (Claude) er prófunaraðgangur lotunnar (uid 10, Admin).
   const fornafn = String(hver.nafn || '').trim().split(/\s+/)[0];
   if (!LEYFT.includes(fornafn)) return P.json(403, { error: 'Yfirsýnin er aðeins fyrir Agnar og Annþór', bannad: true });
-  const [rek, kbh, ksl, os, ssl, sbh, mt, gi, te] = await Promise.all([
+  const [rek, kbh, ksl, os, ssl, sbh, mt, gi, cg] = await Promise.all([
     mael('Rekstrarskýrslan', () => rekstur(event)),
     mael('Kröfu yfirlit Brunahólfs', krofurBh),
     mael('Kröfur Slökkvitækja', krofurSl),
@@ -278,7 +330,10 @@ exports.handler = async (event) => {
     mael('Greiðslur Brunahólfs', sidastBh),
     mael('Tímavera', timavera),
     mael('Greiðslur', greittInn),
-    mael('Tími eftir', timiEftirBh),
+    mael('CG-gildi Kröfu yfirlita', cgSidna),
   ]);
-  return P.json(200, { rekstur: rek, krofur: { sl: ksl, bh: kbh, timi_eftir: te }, osott: os, sidast: { sl: ssl, bh: sbh }, timavera: mt, greitt: gi, maelt_at: new Date().toISOString() });
+  const cgOk = cg && !cg.omaelt ? cg : null;
+  const te = cgOk ? timiEftirBh(cgOk) : { omaelt: 'CG-gildi Kröfu yfirlita náðust ekki' };
+  return P.json(200, { rekstur: rek, krofur: { sl: ksl, bh: kbh, timi_eftir: te }, osott: os, sidast: { sl: ssl, bh: sbh }, timavera: mt, greitt: gi,
+    samraemi: cgOk ? samraemi(cgOk, kbh, ksl, te) : null, maelt_at: new Date().toISOString() });
 };

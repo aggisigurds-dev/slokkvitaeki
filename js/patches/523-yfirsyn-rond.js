@@ -269,7 +269,7 @@
     const eldriN = (ok(sl) ? sl.eldri45.n : 0) + (ok(bh) ? bh.eldri45.n : 0);
     const vantar = [!ok(sl) && 'SL', !ok(bh) && 'BH', !ok(os) && 'ósótt', !ok(te) && 'tími eftir'].filter(Boolean);
     const w = k => (k / alls * 100).toFixed(1) + '%';
-    return '<div class="yr-k" title="M. vsk, bæði félög. Ósent + ógreitt + ósótt tæki + tími eftir (BH). Ekki leggja saman við virðið — sama féð á leiðinni inn.' + (ok(bh) && bh.staerst ? ' Stærsta krafan: ' + esc(bh.staerst.nr + ' ' + bh.staerst.kunni + ' ' + mkr(bh.staerst.kr) + ' m') + '.' : '') + (ok(sl) && sl.a_bid.n ? ' Auk þess á bið hjá SL: ' + sl.a_bid.n + ' · ' + mkr(sl.a_bid.kr) + ' m.' : '') + '">' +
+    return '<div class="yr-k" title="M. vsk, bæði félög. Ósent + ógreitt + ósótt tæki + tími eftir (BH). Ekki leggja saman við virðið — sama féð á leiðinni inn.' + (ok(bh) && bh.staerst ? ' Stærsta krafan: ' + esc(bh.staerst.nr + ' ' + bh.staerst.kunni + ' ' + mkr(bh.staerst.kr) + ' m') + '.' : '') + (ok(sl) && sl.a_bid && sl.a_bid.n ? ' Þar af á bið hjá SL: ' + sl.a_bid.n + ' · ' + mkr(sl.a_bid.kr) + ' m (telst með, eins og á Kröfu yfirliti).' : '') + '">' +
       '<span class="yr-kl">' + ic('krafa') + 'Á leiðinni inn<em>m. vsk</em></span>' +
       '<span class="yr-row"><span class="yr-kn">' + mkr(osent + ogr + osk + tek) + '<small>m</small></span>' + (eldri > 0 ? '<span class="yr-kp yr-r" title="' + eldriN + ' ógreiddar kröfur eldri en 45 daga">' + mkr(eldri) + ' m &gt;45 d.</span>' : '') + '</span>' +
       '<span class="yr-sb"><i class="yr-s-bl" style="width:' + w(osent) + '"></i><i class="yr-s-rd" style="width:' + w(ogr) + '"></i><i class="yr-s-or" style="width:' + w(osk) + '"></i>' + (tek ? '<i class="yr-s-gy" style="width:' + w(tek) + '"></i>' : '') + '</span>' +
@@ -391,6 +391,9 @@
   function athygli(D, rek) {
     const l = [];
     const bh = D.krofur && D.krofur.bh, sl = D.krofur && D.krofur.sl, os = D.osott;
+    // frávik frá Kröfu yfirliti fremst (sést líka í síma, þar sem hausflögurnar eru faldar); smellur opnar samræmistöfluna
+    const vik = Array.isArray(D.samraemi) ? D.samraemi.filter(x => x.stada === 'vikur') : [];
+    if (vik.length) l.push({ lit: 'or', t5: 'yr-samraemi', t: '<b>Samræmi</b> ' + vik.length + ' víkur', titill: vik.map(x => x.nafn + ': röndin ' + isk(x.rond) + ' · Kröfu yfirlit ' + isk(x.sida)).join(' · ') });
     if (ok(bh)) bh.eldri45.reikn.sort((a, b) => b.kr - a.kr).forEach(r => l.push({ lit: 'rd', t: '<b>' + esc(r.nr + ' ' + String(r.kunni).split(/\s+/)[0]) + '</b> ' + mkr(r.kr) + ' m &gt;45 d.', titill: r.nr + ' ' + r.kunni + ' · ' + isk(r.kr) + ' kr · ' + r.dagar + ' dagar frá gjalddaga' }));
     if (ok(sl) && sl.eldri45.n) l.push({ lit: 'or', t: '<b>' + sl.eldri45.n + ' kröfur SL</b> &gt;45 d. · ' + mkr(sl.eldri45.kr) + ' m', titill: 'Ógreiddar kröfur Slökkvitækja eldri en 45 daga' });
     const gi = D.greitt;
@@ -405,6 +408,42 @@
     if (ok(bh) && bh.likleg_greidd && bh.likleg_greidd.n) l.push({ lit: 'bl', t: '<b>' + bh.likleg_greidd.n + ' líklega greidd</b> BH', titill: 'Fannst greitt í banka en enn ógreitt í Payday' });
     heimildir(rek).filter(h => h.lit === 'rd').forEach(h => l.push({ lit: 'rd', t: '<b>' + esc(h.n) + '</b> úrelt', titill: h.t }));
     return l;
+  }
+
+  // SAMRÆMI (Agnar 25.11.2026: „vill að þetta sé allt hárréttar tölur þarna og alltaf syncanlegar"): kröfutölur röndarinnar
+  // bornar við tölurnar sem Kröfu yfirlit BH og SL sýndu síðast (cg_entries, yfirsyn.cjs samraemi). Smellur opnar töfluna.
+  function samraemiChip() {
+    const s = S.d && S.d.samraemi;
+    if (!Array.isArray(s) || !s.length) return '';
+    const stemmir = s.filter(x => x.stada === 'stemmir').length, vikur = s.filter(x => x.stada === 'vikur');
+    const lit = vikur.length ? 'or' : stemmir === s.length ? 'gr' : 'gy';
+    const t = vikur.length ? vikur.map(x => x.nafn + ': röndin ' + isk(x.rond) + ' · Kröfu yfirlit ' + isk(x.sida)).join(' · ') : 'Allar kröfutölur röndarinnar = tölurnar á Kröfu yfirliti BH og SL';
+    return '<button type="button" class="yr-chip yr-chip-b" data-t5="yr-samraemi" title="' + esc(t + '. Smelltu til að sjá töfluna.') + '">' + led(lit) +
+      (vikur.length ? vikur.length + ' víkur' : 'Samræmi') + ' <b>' + stemmir + '/' + s.length + '</b></button>';
+  }
+  function opnaSamraemi() {
+    const s = S.d && S.d.samraemi;
+    if (!Array.isArray(s)) return;
+    document.querySelectorAll('.yrm-back').forEach(n => n.remove());
+    modalStill();
+    const tima = t => t ? dd(t) + ' kl. ' + klukka(t) : '—';
+    const rod = x => '<tr><td class="yrm-ku">' + esc(x.nafn) + '<br><small style="color:#a9b8d0">' + esc(x.id) + ' · síðan skráð ' + esc(tima(x.sida_uppfaert)) + '</small></td>' +
+      '<td class="yrm-kr">' + (x.rond == null ? 'ómælt' : isk(x.rond)) + '</td><td class="yrm-kr">' + (x.sida == null ? '—' : isk(x.sida)) + '</td>' +
+      '<td class="yrm-dg' + (x.stada === 'vikur' ? ' yrm-sein' : '') + '">' + (x.stada === 'stemmir' ? '✓' : x.stada === 'vikur' ? (x.munur > 0 ? '+' : '') + isk(x.munur) : 'ómælt') + '</td></tr>';
+    const back = document.createElement('div');
+    back.className = 'yrm-back';
+    back.innerHTML = '<div class="yrm-box" role="dialog" aria-modal="true" aria-label="Samræmi við Kröfu yfirlit">' +
+      '<div class="yrm-top"><div class="yrm-ti">Samræmi við Kröfu yfirlit<span>Röndin á móti tölunum sem síðurnar sýndu síðast · m. vsk</span></div>' +
+        '<button type="button" class="yrm-x" aria-label="Loka">✕</button></div>' +
+      '<div class="yrm-scr"><table class="yrm-t"><thead><tr><td class="yrm-ku"><small>Tala</small></td><td class="yrm-kr"><small>Röndin</small></td><td class="yrm-kr"><small>Kröfu yfirlit</small></td><td class="yrm-dg"><small>Munur</small></td></tr></thead><tbody>' +
+        s.map(rod).join('') + '</tbody></table></div>' +
+      '<div class="yrm-foot">Kröfu yfirlit BH og SL skrá tölurnar sínar í hvert sinn sem þau eru opnuð í heild. „Víkur" á tölu sem síðan skráði fyrir löngu getur þýtt að gögnin hafi breyst síðan — opnaðu þá Kröfu yfirlitið og endurnýjaðu ↻ hér. ±1 kr er námundun.</div>' +
+    '</div>';
+    const lyk = e => { if (e.key === 'Escape') loka(); };
+    const loka = () => { back.remove(); document.removeEventListener('keydown', lyk); };
+    back.addEventListener('click', e => { if (e.target === back || (e.target.closest && e.target.closest('.yrm-x'))) loka(); });
+    document.addEventListener('keydown', lyk);
+    document.body.appendChild(back);
   }
 
   // Mæting dagsins (Agnar 25.11.2026: „0 við vinnu - 8 í gær passar ekki“ → „Geturðu ekki bara tengst þessu … hvað margir eru
@@ -432,6 +471,7 @@
         (ctx && fin(ctx.master) ? '<span class="yr-chip" title="Opin mál á borðinu · þar af á þínu borði">Opin mál <b>' + isk(ctx.master) + '</b>' + (fin(ctx.mine) ? ' · þín <b>' + isk(ctx.mine) + '</b>' : '') + '</span>' : '') +
         (ok(tv) ? maetingChip(tv) : '') +
         (hm.length ? '<span class="yr-chip" title="' + esc(hm.map(h => h.n + ': ' + h.t).join(' · ')) + '">Heimildir ' + hm.map(h => led(h.lit)).join('') + '</span>' : '') +
+        samraemiChip() +
       '</div>' +
       '<div class="yr-act">' + hamRofi('rond') + rfTakki() +
         '<a class="yr-go" href="' + REKSTUR_URL + '" target="_blank" rel="noopener" title="Rekstrarskýrsla dagsins — allar tölurnar og sundurliðun">Stækka' + ic('nidur') + '</a>' +
@@ -454,7 +494,9 @@
     const pi = (felag, x) => ok(x) ? '<span class="yr-pi" title="' + esc(dd(x.dags) + ' · ' + x.nr + ' ' + x.kunni + ' · ' + isk(x.kr) + ' kr') + '"><u>' + felag + '</u><b>' + esc(String(x.kunni).split(/\s+/).slice(0, 2).join(' ')) + '</b>' + (x.kr >= 1e6 ? mkr(x.kr) + ' m' : isk(x.kr)) + '</span>' : '';
     return '<div class="yr-foot">' +
       '<div class="yr-fl"><span class="yr-kl yr-fk">' + ic('vidv', 'color:#f87171') + 'Þarf athygli' + (at.length ? ' <span class="yr-cnt">' + at.length + '</span>' : '') + '</span>' +
-        '<div class="yr-rail">' + (at.length ? at.map(a => '<span class="yr-ach" title="' + esc(a.titill || '') + '">' + led(a.lit) + a.t + '</span>').join('') : '<span class="yr-ks">Ekkert sem stendur upp úr</span>') + '</div></div>' +
+        '<div class="yr-rail">' + (at.length ? at.map(a => a.t5
+          ? '<button type="button" class="yr-ach yr-ach-b" data-t5="' + esc(a.t5) + '" title="' + esc(a.titill || '') + '">' + led(a.lit) + a.t + '</button>'
+          : '<span class="yr-ach" title="' + esc(a.titill || '') + '">' + led(a.lit) + a.t + '</span>').join('') : '<span class="yr-ks">Ekkert sem stendur upp úr</span>') + '</div></div>' +
       '<div class="yr-fl"><span class="yr-kl yr-fk">' + ic('greitt', 'color:#4ade80') + 'Síðast greitt</span>' + pi('SL', ssl) + pi('BH', sbh) + '</div>' +
     '</div>';
   }
@@ -547,6 +589,8 @@
     '.yrm-nr{color:#a9b8d0;font-size:12px}.yrm-ku{width:99%;white-space:normal!important;color:#eef3fb}',
     '.yrm-dg{text-align:right;color:#a9b8d0;font-size:12px}.yrm-sein{color:#ffaaa3}.yrm-kr{text-align:right;font-weight:600;color:#fff;font-variant-numeric:tabular-nums}',
     '.yrm-tomt{padding:28px 10px;text-align:center;color:#a9b8d0;font-size:13px}',
+    '.yrm-bid{display:inline-block;margin-left:4px;padding:0 6px;border-radius:999px;background:rgba(159,176,204,.18);border:1px solid rgba(159,176,204,.4);font-size:10.5px;color:#cdd9ec;vertical-align:1px}',
+    '.yrm-t thead td{border-bottom:1px solid rgba(255,255,255,.18);color:#a9b8d0}',
     '.yrm-foot{padding:10px 18px 12px;border-top:1px solid rgba(255,255,255,.1);font-size:11px;color:#a9b8d0;line-height:1.5}',
     '.yrm-back .yr-led{--c:#22c55e;flex:none;display:inline-block;width:8px;height:8px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff 0 16%,var(--c) 52%,#000 130%);box-shadow:0 0 5px var(--c)}',
     '.yrm-back .yr-led-rd{--c:#f87171}.yrm-back .yr-led-bl{--c:#5b8ff0}.yrm-back .yr-led-gy{--c:#9fb0cc}',
@@ -570,7 +614,7 @@
       if (!radir.length) return '';
       const sum = fin(heild) ? heild : radir.reduce((a, r) => a + (r.kr || 0), 0);
       return '<div class="yrm-sec' + (utan ? ' yrm-utan' : '') + '"><div class="yrm-sh">' + led(lit) + esc(nafn) + '<span class="yrm-sn">' + radir.length + '</span><b>' + isk(sum) + ' kr</b></div>' +
-        '<table class="yrm-t"><tbody>' + radir.map(r => '<tr><td class="yrm-nr">' + esc(r.nr || '—') + '</td><td class="yrm-ku">' + esc(r.kunni || '—') + '</td>' +
+        '<table class="yrm-t"><tbody>' + radir.map(r => '<tr><td class="yrm-nr">' + esc(r.nr || '—') + '</td><td class="yrm-ku">' + esc(r.kunni || '—') + (r.a_bid ? ' <span class="yrm-bid">á bið</span>' : '') + '</td>' +
           // neikvæður aldur = gjalddagi ekki kominn (mælt 25.11: R-390 sýndi „-7 d.") → „eftir 7 d."
           '<td class="yrm-dg' + (r.dagar > 45 ? ' yrm-sein' : '') + '"' + (r.dagar < 0 ? ' title="Ekki komin á gjalddaga"' : '') + '>' +
             (r.dagar == null ? '' : r.dagar < 0 ? 'eftir ' + esc(-r.dagar) + ' d.' : esc(r.dagar) + ' d.') + '</td><td class="yrm-kr">' + isk(r.kr) + '</td></tr>').join('') +
@@ -597,7 +641,7 @@
         (Array.isArray(bid) && bid.length ? hluti(bid, 'Á bið — ekki í samtölunni', 'gy', true) : '') + '</div>' +
       '<div class="yrm-foot">Sömu raðir og röndin leggur saman — ' + (felag === 'bh'
         ? 'Kröfu yfirlit Brunahólfs (faldar og kláraðar kröfur ekki með; ósent = drög sem eru ekki send í bókun). Samtalan = „Samtals í pípunni" á Kröfu yfirliti.'
-        : 'kröfusýnir Slökkvitækja (ósent = krafa ekki send).') + ' Dagar = aldur kröfunnar; rautt = eldri en 45 daga.</div>' +
+        : 'Kröfu yfirlit Slökkvitækja (ógreitt = í Payday og ekki greitt; ósent = ekkert sendimerki; „á bið" er merkt og telst með). Samtalan = „Heildarkröfur í sýn".') + ' Dagar = aldur kröfunnar; rautt = eldri en 45 daga.</div>' +
     '</div>';
     const lyk = e => { if (e.key === 'Escape') loka(); };
     const loka = () => { back.remove(); document.removeEventListener('keydown', lyk); };
@@ -613,6 +657,7 @@
     if (a === 'yr-fara') { try { location.hash = '#' + (el.dataset.to || ''); } catch (_) {} return true; }
     if (a === 'yr-refresh') { allsherjar(); return true; }
     if (a === 'yr-krofur') { opnaKrofur(el.dataset.felag === 'bh' ? 'bh' : 'sl'); return true; }
+    if (a === 'yr-samraemi') { opnaSamraemi(); return true; }
     return false;
   }
 
@@ -636,6 +681,8 @@
       '.yr-chips{display:flex;gap:8px;margin-left:6px;min-width:0;overflow:hidden}',
       '.yr-chip{display:inline-flex;align-items:center;gap:7px;height:31px;padding:0 13px;border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(0,8,24,.35));border:1px solid rgba(160,190,235,.28);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 3px 6px -2px rgba(0,0,0,.6);font-size:13px;font-weight:500;color:#e6edf8;white-space:nowrap}',
       '.yr-chip b{font-weight:600;color:#fff}',
+      'button.yr-ach-b{font-family:inherit;cursor:pointer}button.yr-ach-b:hover{border-color:rgba(255,176,102,.6)}',
+      'button.yr-chip{font-family:inherit;cursor:pointer}button.yr-chip:hover{border-color:rgba(190,210,245,.55);color:#fff}button.yr-chip:focus-visible{outline:2px solid #ffb066;outline-offset:2px}',
       'a.yr-chip{text-decoration:none!important;cursor:pointer}a.yr-chip:hover{border-color:rgba(190,210,245,.55);color:#fff}a.yr-chip:focus-visible{outline:2px solid #ffb066;outline-offset:2px}',
       '.yr-act{display:flex;align-items:center;gap:10px;margin-left:auto}',
       '.yr-seg{display:flex;padding:3px;border-radius:12px;background:rgba(0,6,18,.55);border:1px solid rgba(160,190,235,.22);box-shadow:inset 0 1px 3px rgba(0,0,0,.7)}',
