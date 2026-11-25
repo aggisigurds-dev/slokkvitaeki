@@ -347,17 +347,19 @@
   function taekiMan() {
     const sl = S.r && S.r.slokkvitaeki, um = sl && !sl.omaelt ? sl.unnid_manudur : null;
     const nm = MANUDUR[manOf(S.r && S.r.idag)] || 'mánuðinum';
+    // stutt heiti á flísinni (mælt 25.11: „Tæki í nóvember 875 alls" þurfti 185 px en Ósótt-dálkurinn gefur ~175); fullt í title
+    const nmS = MAN[manOf(S.r && S.r.idag)] ? MAN[manOf(S.r.idag)] + '.' : nm;
     if (!S.r) return '<span class="yr-hr"></span><span class="yr-n">' + esc(S.rVilla ? 'Tæki mánaðarins ómælt — ' + S.rVilla : 'Sæki tæki mánaðarins …') + '</span>';
     if (!um) return '<span class="yr-hr"></span><span class="yr-n" title="' + esc((sl && sl.omaelt) || '') + '">Tæki í ' + esc(nm) + ': ómælt</span>';
     const ts = um.taeki_sund;
-    if (!ts) return '<span class="yr-hr"></span><span class="yr-vks">' + ic('ars') + 'Tæki í ' + esc(nm) + '<b>' + isk(um.taeki) + '</b><i>alls</i></span>';
+    if (!ts) return '<span class="yr-hr"></span><span class="yr-vks" title="' + esc('Tæki í ' + nm + ' til dags (línur alls)') + '">' + ic('ars') + 'Tæki í ' + esc(nmS) + '<b>' + isk(um.taeki) + '</b><i>alls</i></span>';
     const allt = (ts.yfirferd || 0) + (ts.hledsla || 0) + (ts.nytt || 0);
     const c = (n, t) => '<span class="yr-tc"><b>' + isk(n) + '</b><i>' + t + '</i></span>';
     return '<span class="yr-hr"></span>' +
       '<span class="yr-vks" title="' + esc('Tæki í ' + nm + ' til dags úr úttektum og verkstæði: yfirfarin ' + isk(ts.yfirferd) + ' · hlaðin ' + isk(ts.hledsla) + ' · ný seld í úttektum ' + isk(ts.nytt) + '. Alls = summa línanna; tæki sem er bæði yfirfarið og hlaðið telst í báðum. Tæki seld í búðinni eru ekki talin (búðarsalan ber aðeins krónur).') + '">' +
-        ic('ars') + 'Tæki í ' + esc(nm) + '<b>' + isk(allt) + '</b><i>alls</i></span>' +
+        ic('ars') + 'Tæki í ' + esc(nmS) + '<b>' + isk(allt) + '</b><i>alls</i></span>' +
       '<span class="yr-tg">' + c(ts.yfirferd, 'yfirfarin') + c(ts.hledsla, 'hlaðin') + c(ts.nytt, 'ný seld') + '</span>' +
-      '<span class="yr-n yr-tn">' + led('am') + 'Búðarsala ekki talin í tækjum</span>';
+      '<span class="yr-n yr-tn" title="Tæki seld í búðinni eru ekki í tækjatölunum: búðarsalan ber aðeins krónur, engan tækjafjölda.">' + led('am') + 'búðarsala ekki talin</span>';
   }
 
   // Ósótt + verkstæði þjappað (Agnar 25.11.2026: „þjappa hinu aðeins") svo tæki mánaðarins komist fyrir.
@@ -544,7 +546,9 @@
       const sum = radir.reduce((a, r) => a + (r.kr || 0), 0);
       return '<div class="yrm-sec' + (utan ? ' yrm-utan' : '') + '"><div class="yrm-sh">' + led(lit) + esc(nafn) + '<span class="yrm-sn">' + radir.length + '</span><b>' + isk(sum) + ' kr</b></div>' +
         '<table class="yrm-t"><tbody>' + radir.map(r => '<tr><td class="yrm-nr">' + esc(r.nr || '—') + '</td><td class="yrm-ku">' + esc(r.kunni || '—') + '</td>' +
-          '<td class="yrm-dg' + (r.dagar > 45 ? ' yrm-sein' : '') + '">' + (r.dagar != null ? esc(r.dagar) + ' d.' : '') + '</td><td class="yrm-kr">' + isk(r.kr) + '</td></tr>').join('') +
+          // neikvæður aldur = gjalddagi ekki kominn (mælt 25.11: R-390 sýndi „-7 d.") → „eftir 7 d."
+          '<td class="yrm-dg' + (r.dagar > 45 ? ' yrm-sein' : '') + '"' + (r.dagar < 0 ? ' title="Ekki komin á gjalddaga"' : '') + '>' +
+            (r.dagar == null ? '' : r.dagar < 0 ? 'eftir ' + esc(-r.dagar) + ' d.' : esc(r.dagar) + ' d.') + '</td><td class="yrm-kr">' + isk(r.kr) + '</td></tr>').join('') +
         '</tbody></table></div>';
     };
     const ogr = x.ogreitt.reikn, osn = x.osent.reikn, bid = x.a_bid && x.a_bid.reikn;
@@ -608,8 +612,9 @@
       '.yr-tomt,.yr-villa{display:flex;align-items:center;gap:8px;margin:0 14px 14px;padding:12px 14px;border-radius:12px;background:rgba(0,6,18,.45);border:1px solid rgba(160,190,235,.16);font-size:13px;color:#c8d4e8}',
       '.yr-villa{margin-bottom:10px}',
       // flísar — dökkar, upphleyptar, ljós brún
-      // röð frá 25.11: Ársþjónusta · Á leiðinni inn · Unnið · Virði · Greitt inn · Ósótt/tæki
-      '.yr-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1.6fr) minmax(0,1.35fr) minmax(0,1fr) minmax(0,1.2fr) minmax(0,1.05fr);gap:10px;padding:0 14px 12px}',
+      // röð frá 25.11: Ársþjónusta · Á leiðinni inn · Unnið · Virði · Greitt inn · Ósótt/tæki. Ósótt fékk 0,1 frá Greitt inn
+      // (súlurnar þola það): mælt í 1700 px var Ósótt 185 px og fjórar línur skornar um 9–28 px.
+      '.yr-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1.6fr) minmax(0,1.35fr) minmax(0,1fr) minmax(0,1.1fr) minmax(0,1.15fr);gap:10px;padding:0 14px 12px}',
       '.yr-k{position:relative;display:flex;flex-direction:column;gap:7px;min-width:0;padding:13px 14px 10px;border-radius:15px;' +
         'background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,0) 36%),radial-gradient(90% 80% at 50% 42%,rgba(70,130,210,.32),transparent 70%),linear-gradient(180deg,#0f2b52,#081a36);' +
         'box-shadow:inset 0 1px 0 rgba(255,255,255,.24),inset 0 0 0 1px rgba(150,185,235,.22),inset 0 -1px 0 rgba(0,0,0,.55),0 0 0 1px rgba(0,0,0,.5),0 16px 26px -14px rgba(0,0,0,.95)}',
