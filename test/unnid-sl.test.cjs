@@ -117,7 +117,8 @@ test('kredit og void: bakfært telst aldrei, kreditnóta fylgir upprunasölunni 
 });
 
 test('verkstæði: V-hlutinn (verd ÷ 1,24) telst á klart_at, salan telur afganginn á söludegi — ekkert tvítalið; tæki úr verkliðum', () => {
-  const s = sala({ id: 10, vidskiptategund: 'bud', upphaed_an_vsk: 10000, created_at: '2026-10-29T10:00:00Z', linur: [lin('Hleðsla · Duft 2 kg', 1, 4000), lin('CO₂ 100 gr.', 26, 100), lin('Slökkvitæki nýtt', 1, 3400)] });
+  // „CO₂ byrjunargjald" (verð 0 hér svo V-útreikningurinn haldist) — raunverulegar patrónusölur bera það (mælt 25.11)
+  const s = sala({ id: 10, vidskiptategund: 'bud', upphaed_an_vsk: 10000, created_at: '2026-10-29T10:00:00Z', linur: [lin('Hleðsla · Duft 2 kg', 1, 4000), lin('CO₂ 100 gr.', 26, 100), lin('CO₂ byrjunargjald', 1, 0), lin('Slökkvitæki nýtt', 1, 3400)] });
   // verd m. VSK 4960 = 4000 án VSK; 3224 = 2600 án VSK → V = 6600, afgangur 3400
   const vb = [
     { id: 71, num: s.num + '-V1', status: 'collected', verd: 4960, klart_at: '2026-11-03T08:00:00Z' },
@@ -248,7 +249,7 @@ test('CO₂ (Agnar 25.11: „telja bara byrjunargjaldið … og heildarmagn af c
   assert.deepEqual(U.co2Eining('CO₂ 100 gr. × 60 (samtals)'), { g: 100, patrona: true });
   assert.deepEqual(U.co2Eining('CO₂ 2 kg. hleðsla'), { g: 2000, patrona: false });
   assert.equal(U.co2Eining('Duft 6 kg. ABC hleðsla'), null);
-  assert.deepEqual(U.taekiUrVerklid('CO₂ 100 gr. × 60 (samtals)'), { f: 'hledsla', n: 1, co2_g: 6000 }, '60 patrónur = 1 verk, 6 kg');
+  assert.deepEqual(U.taekiUrVerklid('CO₂ 100 gr. × 60 (samtals)'), { f: 'hledsla', n: 0, co2_g: 6000, patrona: true }, '60 patrónur: 0 tæki á verkliðinn (byrjunargjaldið telur), 6 kg');
   assert.deepEqual(U.taekiUrVerklid('CO₂ 5 kg. hleðsla'), { f: 'hledsla', n: 1, co2_g: 5000 });
   assert.deepEqual(U.taekiUrVerklid('Duft 2 kg. ABC hleðsla'), { f: 'hledsla', n: 1 }, 'ekkert CO₂');
   assert.deepEqual(U.taekiUrVerklid('CO₂ 5 kg. yfirferd'), { f: 'yfirferd', n: 1 }, 'yfirferð notar ekkert CO₂');
@@ -262,4 +263,19 @@ test('CO₂ (Agnar 25.11: „telja bara byrjunargjaldið … og heildarmagn af c
   assert.deepEqual(nov.skodanir.taeki, { yfirferd: 4, hledsla: 2, nytt: 0 });
   assert.equal(nov.samtals.co2_kg, 6, '3 kg patrónur − 1 kg kredit + 4 kg í tvö CO₂-tæki');
   assert.equal(heild(r), 2500, 'krónurnar óbreyttar');
+});
+
+test('CO₂-patrónur: hleðslurnar = BYRJUNARGJÖLD sölunnar (Agnar 25.11: „telja bara byrjunargjaldið") — tvö verk á einni sölu með eitt gjald = 1; patrónur án gjalds = 0 hleðslur en CO₂ telst', () => {
+  const eittGjald = sala({ id: 301, vidskiptategund: 'bud', upphaed_an_vsk: 5000, linur: [lin('CO₂ 100 gr.', 46, 100), lin('CO₂ byrjunargjald', 1, 400)] });
+  const anGjalds = sala({ id: 302, vidskiptategund: 'bud', upphaed_an_vsk: 1000, linur: [lin('CO₂ 100 gr.', 10, 100)] });
+  const vb = [
+    { id: 81, num: eittGjald.num + '-V1', status: 'ready', verd: 2480, klart_at: '2026-11-10T08:00:00Z' },
+    { id: 82, num: eittGjald.num + '-V2', status: 'collected', verd: 3224, klart_at: '2026-11-12T08:00:00Z' },
+    { id: 83, num: anGjalds.num + '-V1', status: 'ready', verd: 1240, klart_at: '2026-11-11T08:00:00Z' },
+  ];
+  const vl = [{ job_id: 81, service: 'CO₂ 100 gr. × 20 (samtals)', status: 'done' }, { job_id: 82, service: 'CO₂ 100 gr. × 26 (samtals)', status: 'done' },
+    { job_id: 83, service: 'CO₂ 100 gr. × 10 (samtals)', status: 'done' }];
+  const r = reikna({ solur: [eittGjald, anGjalds], verkbeidnir: vb, verklidir: vl });
+  assert.equal(r.man['2026-11'].taeki_verkstaedi.hledsla, 1, 'tvö patrónuverk + eitt byrjunargjald = 1 hleðsla; sala án gjalds = 0');
+  assert.equal(U.manudSamantekt(r.man['2026-11']).samtals.co2_kg, 5.6, 'CO₂ telst samt: (20 + 26 + 10) × 100 g');
 });

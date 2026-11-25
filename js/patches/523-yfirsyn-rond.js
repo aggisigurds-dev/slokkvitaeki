@@ -361,14 +361,14 @@
     return '<span class="yr-hr"></span>' +
       '<span class="yr-vks" title="' + esc('Tæki í ' + nm + ' til dags: yfirfarin ' + isk(ts.yfirferd) + ' · hlaðin ' + isk(ts.hledsla) + ' · ný seld ' + isk(ts.nytt) +
         (medBud ? ' (úttektir ' + isk(utt) + ' · búð ' + isk(bud) + ' — aðeins slökkvitæki, ekki skynjarar né teppi)' : '') +
-        '. Alls = summa línanna; tæki sem er bæði yfirfarið og hlaðið telst í báðum. CO₂-patrónur: eitt áfyllingarverk = ein hleðsla (eitt byrjunargjald), magnið sést sér í kg.') + '">' +
+        '. Alls = summa línanna; tæki sem er bæði yfirfarið og hlaðið telst í báðum. CO₂-patrónur: hleðslurnar eru byrjunargjöldin (ekki ein á hverja patrónu), magnið sést sér í kg.') + '">' +
         ic('ars') + 'Tæki í ' + esc(nmS) + '<b>' + isk(allt) + '</b><i>alls</i></span>' +
       '<span class="yr-tg">' + c(ts.yfirferd, 'yfirfarin') + c(ts.hledsla, 'hlaðin') + c(ts.nytt, 'ný seld') + '</span>' +
       (medBud
         ? '<span class="yr-n yr-tn" title="Ný slökkvitæki seld: úr úttektum og yfir borðið í búðinni">' + led('gr') + 'seld: úttektir ' + isk(utt) + ' · búð ' + isk(bud) + '</span>'
         : '<span class="yr-n yr-tn" title="Tæki seld í búðinni eru ekki í tækjatölunum í þessu svari.">' + led('am') + 'búðarsala ekki talin</span>') +
       // CO₂ (Agnar 25.11.2026: „kanski bara heildarmagn af co2 notað í mánuðnum“): kg sem fór í hleðslur — patrónur og CO₂-tæki
-      (fin(ts.co2_kg) && ts.co2_kg > 0 ? '<span class="yr-n yr-tn" title="CO₂ sem fór í hleðslur mánaðarins: patrónur (eitt áfyllingarverk = ein hleðsla, eitt byrjunargjald) og hlaðin CO₂-slökkvitæki">' +
+      (fin(ts.co2_kg) && ts.co2_kg > 0 ? '<span class="yr-n yr-tn" title="CO₂ sem fór í hleðslur mánaðarins: patrónur (hleðslurnar teljast eftir byrjunargjöldum) og hlaðin CO₂-slökkvitæki">' +
         led('bl') + 'CO₂ í hleðslur ' + String(ts.co2_kg).replace('.', ',') + ' kg</span>' : '');
   }
 

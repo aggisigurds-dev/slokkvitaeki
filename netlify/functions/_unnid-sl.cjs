@@ -141,14 +141,23 @@ function taekiUrVerklid(service) {
   const n = m ? Number(m[1]) : 1;
   if (!(n > 0)) return null;
   const co2 = co2Eining(s);
+  // Patrónuverk telur 0 tæki hér: hleðslurnar eru BYRJUNARGJÖLD sölunnar (talin í unnidManudir), magnið fer í co2_g. Mælt 25.11:
+  // 20 patrónuverk í nóvember á móti 17 byrjunargjöldum — sala sem skiptist í tvær verkbeiðnir ber eitt gjald.
   if (/hle[ðd]sl|[áa]fylling/i.test(s)) {
-    if (co2 && co2.patrona) return { f: 'hledsla', n: 1, co2_g: n * co2.g };
+    if (co2 && co2.patrona) return { f: 'hledsla', n: 0, co2_g: n * co2.g, patrona: true };
     return co2 ? { f: 'hledsla', n, co2_g: n * co2.g } : { f: 'hledsla', n };
   }
   if (/yfirfer/i.test(s)) return { f: 'yfirferd', n };
-  if (/^\s*CO[₂2]\s*[\d,.]+\s*gr/i.test(s)) return { f: 'hledsla', n: 1, co2_g: n * (co2 ? co2.g : 0) };   // patrónur fylltar: eitt verk
+  if (/^\s*CO[₂2]\s*[\d,.]+\s*gr/i.test(s)) return { f: 'hledsla', n: 0, co2_g: n * (co2 ? co2.g : 0), patrona: true };
   return null;
 }
+// „CO₂ byrjunargjald“ á sölu → fjöldi (Agnar 25.11.2026: „Kanski hægt að telja bara byrjunargjaldið“).
+const byrjunargjold = (s) => (Array.isArray(s && s.linur) ? s.linur : []).reduce((a, l) => {
+  const d = String((l && l.desc) || '');
+  if (!/byrjunargjald/i.test(d) || !/CO[₂2]/i.test(d)) return a;
+  const q = l.qty != null ? Number(l.qty) : 1;
+  return a + (Number.isFinite(q) ? q : 0);
+}, 0);
 
 // Nýtt slökkvitæki selt í búð (sjá regluna efst) → fjöldi, eða null. Kreditnóta ber neikvætt qty og lækkar töluna.
 const BUD_TAEKI = /sl[öo]kkvit[æa]ki/i;
@@ -288,6 +297,7 @@ function unnidManudir(g, nuIso) {
       for (const l of Array.isArray(s.linur) ? s.linur : []) { const n = budTaekiUrLinu(l); if (n) mm(r.grunnMan > nuMan ? nuMan : r.grunnMan).taeki_verslun.nytt += n; }
     }
     // tæki verkstæðis: verkliðir kláraðra verkbeiðna í mánuði klart_at (annars söludagur, merkt áætlað)
+    let patMan = null, patAaetlad = false;      // fyrsta patrónuverk sölunnar: þangað fara byrjunargjöldin
     for (const v of vPerSolu[s.num] || []) {
       if (!V_KLAR.has(v.status)) continue;
       const km = v.klart_at ? T.manudur(v.klart_at) : T.manudur(s.created_at);
@@ -296,7 +306,13 @@ function unnidManudir(g, nuIso) {
         mm(km > nuMan ? nuMan : km).taeki_verkstaedi[t.f] += t.n;
         if (t.co2_g) mm(km > nuMan ? nuMan : km).co2_g += t.co2_g;
         if (!v.klart_at) mm(km > nuMan ? nuMan : km).mat.aaetlad_taeki += t.n;
+        if (t.patrona && (patMan == null || km < patMan)) { patMan = km; patAaetlad = !v.klart_at; }
       }
+    }
+    // CO₂-patrónur: hleðslurnar = byrjunargjöld sölunnar (Agnar 25.11.2026: „telja bara byrjunargjaldið“), ekki ein á hverja patrónu
+    if (patMan) {
+      const bg = byrjunargjold(s), pm = patMan > nuMan ? nuMan : patMan;
+      if (bg) { mm(pm).taeki_verkstaedi.hledsla += bg; if (patAaetlad) mm(pm).mat.aaetlad_taeki += bg; }
     }
   }
   // 2) kreditnótur: fylgja upprunasölunni (hlutfallslega), annars eigin degi
