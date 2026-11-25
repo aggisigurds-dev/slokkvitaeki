@@ -172,7 +172,9 @@ test('unnid_manudur: líðandi mánuður í hlutum — skoðanir 3.000 · verkst
     verkbeidnir: [{ id: 1, num: 'R-000002-V1', status: 'collected', verd: 6200, klart_at: '2026-11-02T08:00:00Z' }],
     verklidir: [{ job_id: 1, service: 'Duft 2 kg. ABC hleðsla' }] };
   const r = Y.reksturSl(g, NU);
-  assert.deepEqual(r.unnid_manudur, { man: '2026-11', skodanir: 3000, verkstaedi: 5000, verslun: 700, samtals: 8700, taeki: 5 });
+  assert.deepEqual(r.unnid_manudur, { man: '2026-11', skodanir: 3000, verkstaedi: 5000, verslun: 700, samtals: 8700, taeki: 5,
+    taeki_sundur: { yfirferd: 4, hledsla: 1, nytt: 0 }, uttektir: { skyrslur: 1, an_skyrslu: 0 } });
+  assert.equal(r.unnid_manudur.taeki, r.unnid_manudur.taeki_sundur.yfirferd + r.unnid_manudur.taeki_sundur.hledsla + r.unnid_manudur.taeki_sundur.nytt, 'tækjatalan er summa sundurliðunarinnar');
   assert.equal(r.man[6].man, '2026-11'); assert.equal(r.man[6].unnid, r.unnid_manudur.samtals, 'ein tala fyrir sama mánuð');
   assert.equal(r.man[5].unnid, 111, 'október á sínar tölur — líðandi mánuður er ekki október');
   assert.doesNotMatch(JSON.stringify(r.unnid_manudur), /customer|nafn|kennitala|\b\d{10}\b/i);

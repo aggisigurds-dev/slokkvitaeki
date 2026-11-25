@@ -193,6 +193,9 @@ test('Yfirsýnarröndin (523): „Unnið í mánuðinum“ hjá hvoru félagi ke
   assert.match(h, /href="https:\/\/brunaholf\.netlify\.app\/rekstur#tekjulidir"/); assert.match(h, /href="https:\/\/brunaholf\.netlify\.app\/#fjarmalyfirlit"[^>]*>Fjármála-yfirlit →</);
   assert.match(h, /göt: Ajour/, 'ferskleikaflögur haldast'); assert.match(h, /Tímavera<s>\|<\/s>/);
   assert.match(h, /Þessi vika“ og „Síðasta vika/, 'ⓘ vísar vikutölunum á Rekstrarskýrsluna'); assert.match(h, /félögin eru aldrei lögð saman/);
+  assert.match(h, /data-t5="yr-uppl"/, 'upplýsingaglugginn opnast af borðinu');
+  assert.match(src, /taeki_sundur/, 'sundurliðun tækja kemur úr rekstrinum, ekki nýrri formúlu');
+  assert.match(src, /#krofu-yfirlit/, 'hlekkur á heimild Kröfu yfirlits');
   assert.doesNotMatch(h, /Vikan<em>/, 'engin VIKAN-flís'); assert.doesNotMatch(h, /9,10|9,1\d/, 'engin samlögð tala beggja félaga (2,10 + 7,00)');
   assert.match(src, /SL sala <b>' \+ mkr\(sl\)/, '„Virði“-flísin segir að SL sé eftir söludegi'); assert.match(src, /BH <b>' \+ mkr\(bh\)/, 'stutt lína — skýringin er í title'); assert.doesNotMatch(src, /aria-label="' \+ esc\('Unnið í/, 'hlekkurinn heitir eftir innihaldinu (tölunum)');
 });

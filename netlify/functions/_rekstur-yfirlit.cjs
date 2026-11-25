@@ -153,7 +153,10 @@ function reksturSl(g, nuIso) {
   // Sama samantekt og man[].unnid (samtals.kr === man[last].unnid), svo flísin og „Hvernig gengur reksturinn?“ geta aldrei sýnt tvær tölur fyrir sama mánuð.
   const nuM = mans[mans.length - 1], sm = U.manudSamantekt(un.man[nuM]), tk = sm.samtals.taeki;
   const unnid_manudur = { man: nuM, skodanir: kr(sm.skodanir.kr), verkstaedi: kr(sm.verkstaedi.kr), verslun: kr(sm.verslun.kr), samtals: kr(sm.samtals.kr),
-    taeki: (tk.yfirferd || 0) + (tk.hledsla || 0) + (tk.nytt || 0) };
+    taeki: (tk.yfirferd || 0) + (tk.hledsla || 0) + (tk.nytt || 0),
+    // Sömu teljarar og manudSamantekt reiknar þegar — engir nýir. Samtala taeki er summan af þessum þremur.
+    taeki_sundur: { yfirferd: tk.yfirferd || 0, hledsla: tk.hledsla || 0, nytt: tk.nytt || 0 },
+    uttektir: { skyrslur: sm.skodanir.skyrslur_klaradar == null ? null : sm.skodanir.skyrslur_klaradar, an_skyrslu: sm.skodanir.an_skyrslu_fjoldi == null ? null : sm.skodanir.an_skyrslu_fjoldi } };
   return { man, kredit_an_frumsolu: un.annad.kredit_an_frumsolu, un_annad: un.annad, unnid_manudur };
 }
 
