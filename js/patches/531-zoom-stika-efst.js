@@ -15,6 +15,12 @@
  * Talan á stikunni opnar gamla blaðið („Stærð og útlit", 333) fyrir sleðann, forstillingarnar,
  * festinguna og listann yfir vistaðar síður. Ekkert af því er tvítekið hér.
  *
+ * SAMANBROTIN í eina pillu þar til snert er á henni. Fyrsta útgáfan stóð alltaf opin og huldi þá
+ * efsta takkann á síðunni undir (mælt á Sölu: „Skanna" hvarf undir Vista-takkann). Pillan sýnir
+ * töluna, opnast við snertingu, og lokast aftur eftir 6 sekúndur — þó ALDREI á meðan óvistuð
+ * breyting bíður, því þá þarf Vista-takkinn að vera innan seilingar. Aa-hnappur 333 er falinn á
+ * meðan stikan er uppi: tvö tól fyrir sama hlutinn á sama stað eru verri en eitt.
+ *
  * ÞRENNT SEM ER VARIÐ:
  *   1. Forskoðun er TÍMABUNDIN. Sé farið á aðra síðu án þess að vista er hún hreinsuð strax
  *      (prufa(null)) — annars erfði næsta síða stærð sem enginn bað um.
@@ -36,6 +42,8 @@
   const SANS = "'IBM Plex Sans',-apple-system,'Segoe UI',Roboto,sans-serif";
   const DISP = "'Playfair Display',Georgia,serif";
 
+  let opin = false;         // pillan útflett (− % + Vista)
+  let lokaTif = null;
   let forskodun = null;     // stærð sem er mátuð en óvistuð
   let sidasti = null;       // lykill síðunnar sem forskoðunin á við
   let stada = '';           // '' | 'vista' | 'vistad' | 'villa'
@@ -64,6 +72,16 @@
       '#' + ID + '{position:fixed;right:8px;top:var(--zs-top,8px);z-index:2147483599;display:none;',
       'align-items:center;gap:6px;font-family:' + SANS + ';-webkit-tap-highlight-color:transparent}',
       '#' + ID + '.synt{display:flex}',
+      '#' + ID + ' .zs-pilla{min-width:46px;height:30px;padding:0 10px;border-radius:8px;border:1px solid #000;',
+      'background:' + MALMUR + ';color:#f6e7b8;font:800 13px/28px ' + DISP + ';',
+      'font-variant-numeric:lining-nums tabular-nums;position:relative;',
+      'box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 4px 12px -6px rgba(0,0,0,.6)}',
+      '#' + ID + ' .zs-pilla.omata::after{content:"";position:absolute;top:3px;right:3px;width:7px;height:7px;',
+      'border-radius:50%;background:' + GULL + '}',
+      '#' + ID + '.opin .zs-pilla{display:none}',
+      '#' + ID + ':not(.opin) .zs-hop,#' + ID + ':not(.opin) .zs-v{display:none}',
+      // Eitt tól fyrir sama hlutinn: Aa-hnappur 333 vikur a medan stikan er uppi.
+      '#_sz-aa{display:none!important}',
       '#' + ID + ' .zs-hop{display:flex;align-items:center;border-radius:8px;border:1px solid #000;',
       'background:' + MALMUR + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 4px 12px -6px rgba(0,0,0,.6);overflow:hidden}',
       '#' + ID + ' button{font-family:' + SANS + ';cursor:pointer;touch-action:manipulation;border:0;background:none}',
@@ -116,15 +134,25 @@
     stadaTif = setInterval(() => {
       let u = '';
       try { u = z.uppruni ? z.uppruni() : ''; } catch (_) {}
-      if (u === 'vistad') { clearInterval(stadaTif); stada = 'vistad'; teikna(); setTimeout(() => { if (stada === 'vistad') { stada = ''; teikna(); } }, 2200); }
+      if (u === 'vistad') { clearInterval(stadaTif); stada = 'vistad'; teikna(); setTimeout(() => { if (stada === 'vistad') { stada = ''; opin = false; teikna(); } }, 2200); }
       else if (++beid > 24) { clearInterval(stadaTif); stada = 'villa'; teikna(); }
     }, 250);
+  }
+
+  // Lokast eftir 6 sek adgerdaleysi - en ALDREI medan ovistud breyting bidur.
+  function fresta() {
+    clearTimeout(lokaTif);
+    lokaTif = setTimeout(() => {
+      if (forskodun != null || stada === 'vista') { fresta(); return; }
+      opin = false; teikna();
+    }, 6000);
   }
 
   function byggja() {
     const el = document.createElement('div');
     el.id = ID;
     el.innerHTML =
+      '<button type="button" class="zs-pilla" data-zs="opna" aria-label="Stærð síðunnar">100%</button>' +
       '<span class="zs-hop">' +
         '<button type="button" class="zs-pm" data-zs="-" aria-label="Minnka síðuna">−</button>' +
         '<button type="button" class="zs-tala" data-zs="blad" aria-label="Stærð og útlit">100%</button>' +
@@ -135,10 +163,12 @@
       const b = e.target.closest('[data-zs]'); if (!b) return;
       e.preventDefault(); e.stopPropagation();
       const a = b.getAttribute('data-zs');
+      if (a === 'opna') { opin = true; teikna(); fresta(); return; }
       if (a === '-') breyta(-1);
       else if (a === '+') breyta(1);
       else if (a === 'vista') vista();
       else { const z = Z(); if (z && z.vixla) z.vixla(); }
+      fresta();
     });
     document.body.appendChild(el);
     return el;
@@ -161,6 +191,12 @@
     const tala = Math.round(nuS() * 100) + '%';
     const t = el.querySelector('.zs-tala');
     if (t && t.textContent !== tala) t.textContent = tala;
+    const pilla = el.querySelector('.zs-pilla');
+    if (pilla) {
+      if (pilla.textContent !== tala) pilla.textContent = tala;
+      pilla.classList.toggle('omata', forskodun != null);
+    }
+    if (el.classList.contains('opin') !== opin) el.classList.toggle('opin', opin);
 
     const v = el.querySelector('.zs-v');
     if (v) {
@@ -188,7 +224,7 @@
 
   function raesa() {
     teikna();
-    addEventListener('hashchange', () => { hreinsaForskodun(); stada = ''; setTimeout(teikna, 60); });
+    addEventListener('hashchange', () => { hreinsaForskodun(); stada = ''; opin = false; setTimeout(teikna, 60); });
     document.addEventListener('slokk-viewmode', () => setTimeout(teikna, 60));
     new MutationObserver(() => teikna()).observe(document.documentElement, { attributes: true, attributeFilter: ['data-viewmode'] });
     addEventListener('resize', () => teikna());
