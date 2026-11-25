@@ -854,6 +854,12 @@
       '.yr-gv{display:flex;align-items:center;gap:5px;font-size:10.5px;color:#ffb37a}.yr-gty{display:flex;align-items:center;gap:4px;font-size:10.5px;line-height:14px}.yr-gty .yr-led{width:7px;height:7px}',
       // upprunasíður (25.11): hver tala er hlekkur. Litur og útlit reitsins halda sér; yfirstrik/hringur við snertingu, fókushringur á lyklaborði.
       'a.yr-a{color:inherit;text-decoration:none!important;cursor:pointer;-webkit-tap-highlight-color:rgba(255,138,31,.25)}',
+      // borðið setur 1 px ramma á alla hlekki (mælt 25.11: röðin hækkaði 312 → 326 px) og display:block á suma — núllað hér, reitir sem bera
+      // eigin ramma (inngreiðslur, mánaðarreitir SL/BH, Ógreitt alls) fá hann aftur
+      '.yr-mb a.yr-a{border:0!important;margin:0}.yr-mb a.yr-kn{display:inline-block}',
+      '.yr-mb a.yr-gr{border-left:2px solid #ff8a1f!important}.yr-mb a.yr-gr-bh{border-left-color:#5b8ff0!important}',
+      '.yr-mb a.yr-mc-sl{border-left:2px solid #ff8a1f!important}.yr-mb a.yr-mc-bh{border-left:2px solid #5b8ff0!important}',
+      '.yr-mb a.yr-gog{border:1px solid rgba(248,113,113,.5)!important;margin-left:auto}',
       'a.yr-a:focus-visible{outline:2px solid #ffb066;outline-offset:2px;border-radius:6px}',
       'a.yr-kn:hover,a.yr-kn:active{color:#ffd0a6;text-decoration:underline dotted rgba(255,176,102,.85)!important;text-decoration-thickness:2px!important;text-underline-offset:5px}',
       '.yr-ks a.yr-a:hover b,.yr-ks a.yr-a:active b{color:#ffd0a6}',
@@ -863,8 +869,8 @@
       '.yr-mn{display:flex;flex-direction:column;gap:3px;min-width:0}',
       '.yr-mh{display:flex;align-items:baseline;gap:6px;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;line-height:12px;color:#a9b8d0;white-space:nowrap;overflow:hidden}.yr-mh em{margin-left:auto;font-style:normal;font-weight:500;letter-spacing:0;text-transform:none}',
       '.yr-mg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}',
-      '.yr-mc{display:flex;align-items:baseline;gap:6px;min-width:0;padding:3px 8px;border-radius:8px;background:rgba(0,8,22,.45);box-shadow:inset 0 1px 3px rgba(0,0,0,.7),0 1px 0 rgba(255,255,255,.08);font-size:11px;line-height:17px;color:#b8c6dd;white-space:nowrap;overflow:hidden;cursor:default}',
-      '.yr-mc i{flex:none;font-style:normal;font-size:10px;letter-spacing:.03em;color:#a9b8d0}',
+      '.yr-mc{display:flex;align-items:baseline;gap:4px;min-width:0;padding:3px 8px;border-radius:8px;background:rgba(0,8,22,.45);box-shadow:inset 0 1px 3px rgba(0,0,0,.7),0 1px 0 rgba(255,255,255,.08);font-size:11px;line-height:17px;color:#b8c6dd;white-space:nowrap;overflow:hidden;cursor:default}',
+      '.yr-mc i{flex:none;font-style:normal;font-size:10px;letter-spacing:0;color:#a9b8d0}',
       '.yr-mc>span{margin-left:auto;min-width:0;overflow:hidden;text-overflow:ellipsis}.yr-mc b{font-size:14px;font-weight:600;color:#fff}.yr-mc small{margin-left:4px;font-size:10px;color:#f8d98d}',
       '.yr-mc-sl{border-left:2px solid #ff8a1f}.yr-mc-sl i{color:#ffb37a;font-weight:700}.yr-mc-bh{border-left:2px solid #5b8ff0}.yr-mc-bh i{color:#a9c5ff;font-weight:700}',
       // Virði: tekjur ársins, staflaðar súlur SL + BH (25.11)
