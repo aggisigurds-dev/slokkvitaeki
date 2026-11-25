@@ -683,12 +683,12 @@
       // gömlu myndina (hillur sem veggir, ekkert gólf) þar til ýtt var á „Endurteikna" og „Festa". Nú smíðast hún upp á nýtt, einu sinni
       // á lykil í lotunni, hvaðan sem veggjabreytingin kom; gamla myndin sést á meðan. „Endurteikna" er áfram til fyrir þá sem vilja
       // stilla sýnina sjálfir.
-      if (V.urelt && tilbuin(h) && !V.smidar[h.id] && !V.sjalfReynt[h.id + '|' + V.lykill]) smida(h);
-      // ÚTLITSUPPFÆRSLA: mynd með eldra útliti en UTLIT (og sjálfsmíðuð / fest úr 3D hér) endursmíðast einu sinni í lotu; gamla myndin sést á meðan
-      if (!V.urelt && (vm.utlit || 0) < UTLIT && (vm.fest === 'sjalfvirkt' || vm.fest === 'festa') && tilbuin(h) && !V.smidar[h.id] && !V.sjalfReynt[h.id + '|utlit']) {
-        V.sjalfReynt[h.id + '|utlit'] = true;
-        smida(h, { mjuk: true });
-      }
+      // Agnar 25.11.2026: „tilbúnar teikningar bara vistaðar á supabase. Ekki stöðugt vera að gera allt aftur... opna
+      // bara síðustu vistuðu mynd." Vistaða myndin opnast EINS OG HÚN ER — ekkert endurbyggt sjálfkrafa þó lykillinn hafi
+      // hliðrast (úrelt) eða útlitið sé eldra en UTLIT. „Veggjum breytt"-borðinn (#fp-vm-urelt, l.195) + „Endurteikna" /
+      // „Festa" standa eftir fyrir þann sem vill teikna upp á nýtt, og „Sjálfvirkt" smíðar allt verkferlið. V.urelt er
+      // áfram reiknað (l.680) svo borðinn sjáist. Áður endursmíðaðist úrelt mynd (var l.686) og eldra útlit sjálfkrafa —
+      // það olli „stöðugt gera allt aftur", því lykillinn hliðrast við sjálfvirkan skurð/PDF-vegglestur hverrar opnunar.
       const til = V.myndir[key]; if (til) return til;
       if (!V.brotin[key]) {
         if (V.sokn[key]) { V.stadaTexti = 'Opna vinnumynd…'; return null; }
