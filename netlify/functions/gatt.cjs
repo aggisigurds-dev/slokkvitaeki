@@ -1337,7 +1337,7 @@ exports.handler = async (event) => {
     // þjónustutegundin (vidskiptategund) væri þekkt. Lýsing = tegundin (Úttekt / Brunakerfi / Búð); vanti hana,
     // „Vegna"-línan úr reikningslestri. Eign úr reikningslestri þegar skjalið sjálft er ekki tengt byggingu.
     // 18.11.2026 (Agnar: „ekkert tómt að óþörfu"): „ovisst" er líka tegund — reitur sem segir „Óvíst" er sannari en auður reitur.
-    const TEG_L = { uttekt: 'Úttekt', brunakerfi: 'Brunakerfi', bud: 'Búð', ovisst: 'Óvíst' };
+    const TEG_L = { uttekt: 'Úttekt', brunakerfi: 'Brunakerfi', bud: 'Verslun', ovisst: 'Óvíst' };   // 25.11.2026 (Agnar): búðarkaup heita Verslun
     invoices.forEach((i) => { if (!i.lysing && i.tegund && TEG_L[i.tegund]) i.lysing = TEG_L[i.tegund]; });
     // 26.10.2026 (hraði): solur-fyllingin hér að neðan fer af stað NÚNA, samhliða reikningslestrinum. Mengið er
     //    yfirmengi þess sem stæði eftir (lesturinn fyllir aðeins lýsingu/byggingu, fyllingin aðeins tóma reiti) → sama svar.

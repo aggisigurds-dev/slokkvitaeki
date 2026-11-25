@@ -67,7 +67,7 @@
     if (/sl[öo]kkvit|uttekt|úttekt/i.test(s)) return '<span class="tb sl">' + svgIc('Slökkvitæki', 1.9) + esc(s) + '</span>';
     return '<span class="tb plain">' + esc(s) + '</span>';
   }
-  var INV_TEG = { uttekt: 'Slökkvitæki', brunakerfi: 'Brunakerfi', bud: 'Búð', ovisst: 'Óvíst' };
+  var INV_TEG = { uttekt: 'Slökkvitæki', brunakerfi: 'Brunakerfi', bud: 'Verslun', ovisst: 'Óvíst' };
 
   /* ── SÝNISHORN (úr v3 Steel hönnun) ── */
   var DEMO = {
