@@ -231,10 +231,22 @@
     const erApp = !!(document.body && document.body.classList.contains('appmode'));
     const hdr = document.getElementById('_app-hdr');
     const top = (erApp && synilegt(hdr)) ? Math.round(hdr.getBoundingClientRect().bottom + 6) : 8;
-      // Litli samanbrots-takkinn (.bb-mini, "▴") a bordanum situr lengst til haegri uppi.
-    // Maelt: an thessa lenti pillan ofan a honum. Hun vikur til vinstri fyrir honum.
-    const mini = document.querySelector('.bb-mini');
-    const haegri = synilegt(mini) ? Math.round(innerWidth - mini.getBoundingClientRect().left + 6) : 8;
+      // Stikan reiknar sjalf hvar hun ma sitja: hun leitar ad OLLUM smellanlegum hlutum sem
+    // skera bandid hennar (hausinn) og sest vinstra megin vid thann sem er lengst til vinstri
+    // af theim. Thannig hylur hun hvorki samanbrots-takkann ("▴"), birtuskilatakkann ne
+    // synhnappana - hun endar thar sem Aa-hnappurinn sat. Maelt 25.11.2026: fast gildi (8 px)
+    // la ofan a tveimur theirra, hvoru a faetur odru.
+    const band = { t: top, b: top + 32 };
+    let min = innerWidth - 8;
+    document.querySelectorAll('button,a[href],[role="button"]').forEach(e => {
+      if (el.contains(e)) return;
+      const r = e.getBoundingClientRect();
+      if (!r.width || !r.height) return;
+      if (r.bottom < band.t || r.top > band.b) return;
+      if (r.left < 120) return;                     // hamborgarinn og logoid vinstra megin
+      if (r.left < min) min = r.left;
+    });
+    const haegri = Math.max(8, Math.round(innerWidth - min + 6));
     const stilla = (n, v2) => { if (el.style.getPropertyValue(n) !== v2) el.style.setProperty(n, v2); };
     stilla('--zs-top', top + 'px');
     stilla('right', haegri + 'px');
