@@ -39,7 +39,11 @@
       await sida.render({ canvasContext: x, viewport: vp }).promise;
       return c;
     }
-    const bm = await createImageBitmap(file);
+    // B-6 (25.11.2026): símamyndir (JPEG) geyma snúninginn í EXIF-Orientation — raw-dílarnir eru ósnúnir. Án
+    // imageOrientation:'from-image' kom teikningin á hlið. Vafri sem þekkir ekki valkostinn fær ósnúna mynd (eins og áður).
+    let bm;
+    try { bm = await createImageBitmap(file, { imageOrientation: 'from-image' }); }
+    catch (_) { bm = await createImageBitmap(file); }
     const k = Math.min(1, MAX / Math.max(bm.width, bm.height));
     const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(bm.width * k)); c.height = Math.max(1, Math.round(bm.height * k));
     const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(bm, 0, 0, c.width, c.height);

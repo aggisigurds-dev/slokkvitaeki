@@ -591,7 +591,8 @@
     const hid = h.id, lyk = V.lykill, t0 = performance.now();
     V.smidar[hid] = true; V.sjalfReynt[hid + '|' + lyk] = true;
     try {
-      const r = await TB().smidaVinnumynd(hid, { hamark: HAMARK });
+      // Hraði: gagnvirk fyrsta smíði styttir OCR-biðina (383 heitiThak) nema bakgrunns-forsmíð (o.bak) — þar bíður enginn.
+      const r = await TB().smidaVinnumynd(hid, Object.assign({ hamark: HAMARK }, (o && o.bak) ? {} : { heitiThak: 5000 }));
       V.smidadMs = Math.round(performance.now() - t0); V.tima = r.tima || null;
       delete V.smidar[hid];
       const hNu = (TB().haedir() || []).find(x => x && x.id === hid) || h;
@@ -601,6 +602,52 @@
       if (o && o.mjuk) { console.warn('[445] útlitsuppfærsla vinnumyndar tókst ekki — gamla myndin er áfram', e); return; }   // gamla myndin stendur
       if (!V.nyjar[hid]) { V.villa[hid + '|' + lyk] = (e && e.message) || String(e); console.warn('[445] vinnumynd', e); segja('Vinnumyndin tókst ekki (' + V.villa[hid + '|' + lyk] + ') — 2D sýnd.'); }
     }
+  }
+  /* ── BAKGRUNNS-FORSMÍÐ (Agnar 25.11.2026, „Bæði") ──────────────────────────────
+   * Vandinn var ~15 s frost við FYRSTU sýn hæðar sem á enga vistaða vinnumynd (huldi 3D-smiðurinn keyrir þá á staðnum).
+   * Hér forsmíðum við tilbúnar hæðir sem eiga ENGA mynd í bakgrunni (requestIdleCallback), eina í einu, á meðan glugginn
+   * er opinn — svo þær opnist strax (0 ms) þegar flett er á þær, og vistist á þjóninn svo aðrar vélar og síminn fái þær
+   * tilbúnar. Reglur:
+   *   • ALDREI úrelt mynd endursmíðuð (það var tekið út 25.11) — aðeins hæðir ÁN myndar (vmFyrir falskt).
+   *   • Keyrir EKKI á síma (.fp-simi): þung WebGL-bygging á að koma frá tölvunum/skrifstofuvélinni, síminn les tilbúið.
+   *   • Ein í einu, aldrei samhliða gagnvirkri smíði (V.smidar/V.festir) — einn WebGL-gámur í einu.
+   *   • Hættir strax ef glugginn lokast eða skipt er um félag; byggð hæð er ekki vistuð á annað félag.
+   * lykillHaedar(h) gefur lykil HVERRAR hæðar (smida() keyrir á V.lykill virku hæðar — því sér fall hér). */
+  let _bakId = 0, _bakVirkt = false;
+  async function bakSmida(h, cid) {
+    const hid = h.id, lyk = lykillHaedar(h);
+    if (V.smidar[hid] || V.sjalfReynt[hid + '|' + lyk] || V.villa[hid + '|' + lyk]) return;
+    V.smidar[hid] = true; V.sjalfReynt[hid + '|' + lyk] = true;
+    try {
+      const r = await TB().smidaVinnumynd(hid, { hamark: HAMARK });   // fullt OCR-þak — enginn bíður í bakgrunni
+      delete V.smidar[hid];
+      if (!modalOpid() || FP().companyId !== cid) return;             // gluggi lokaður eða annað félag á meðan → ekki vista
+      const hNu = (TB().haedir() || []).find(x => x && x.id === hid) || h;
+      await nyFestMynd(hNu, r, 'sjalfvirkt');
+      try { V.teiknad = ''; } catch (_) {}                            // næsta tikk sýnir hana sé notandinn kominn á hæðina
+    } catch (e) {
+      delete V.smidar[hid];
+      V.villa[hid + '|' + lyk] = (e && e.message) || String(e); console.warn('[445] bakgrunns-forsmíð', e);
+    }
+  }
+  function bakgrunnsForsmidRadi() {
+    if (_bakId || _bakVirkt) return;
+    const idle = window.requestIdleCallback || (f => setTimeout(() => f(), 1200));
+    _bakId = idle(async () => {
+      _bakId = 0;
+      const m = modalOpid(); if (!m || m.classList.contains('fp-simi')) return;
+      const T = TB(), F = FP(); if (!T || !T.haedir || !F || !F.companyId) return;
+      const cid = F.companyId;
+      if (T.rodKomin && T.rodKomin() !== cid) { bakgrunnsForsmidRadi(); return; }       // bíða eftir röð þjónsins
+      if (_bakVirkt || V.festir || Object.keys(V.smidar).length) return;                 // eitthvað að byggjast — tikk ræsir aftur
+      const hs = T.haedir() || [], virkId = (virkHaed() || {}).id;
+      const h = hs.find(x => x && x.id && x.id !== virkId && tilbuin(x) && !vmFyrir(x) &&
+        !V.smidar[x.id] && !V.sjalfReynt[x.id + '|' + lykillHaedar(x)] && !V.villa[x.id + '|' + lykillHaedar(x)]);
+      if (!h) return;                                                                    // ekkert eftir að forsmíða
+      _bakVirkt = true;
+      try { await bakSmida(h, cid); } finally { _bakVirkt = false; }
+      if (modalOpid() && FP().companyId === cid) bakgrunnsForsmidRadi();                 // næsta hæð
+    }, { timeout: 4000 });
   }
   // „FESTA" í 3D-sýninni: hæðin sem er sýnd (ein), annars virka hæðin, annars sú neðsta — ofan frá, án tækja.
   async function festa(hid) {
@@ -790,6 +837,7 @@
     const vb = sv.querySelector('#fp-vm-vista'), vbSyn = synilegur && V.mynd && !opid3d ? 'inline-flex' : 'none';
     if (vb.style.display !== vbSyn) { vb.style.setProperty('display', vbSyn); vb.style.setProperty('align-items', 'center'); }
     if (synilegur) teikna(strax);
+    bakgrunnsForsmidRadi();   // Hraði: forsmíða óbyggðar hæðir í bakgrunni (desktop) svo þær opnist strax — sjá bakSmida
   }
   function ramma() {
     V.raf = 0;
@@ -845,6 +893,22 @@
     endurteikna,
     lykill: h => lykillHaedar(h),
     tilbuin,
+    // Hraði (25.11.2026, „Bæði" — Part 2): forsmíða ALLAR tilbúnar hæðir þessa félags sem eiga enga vistaða mynd, eina í
+    // einu, og vista á þjóninn. Köllun fyrir sjálfvirkni (luna-bridge headless harness: opna félag → forsmidaAllar → næsta)
+    // og handvirkt. Byggir aldrei úrelta mynd. Skilar { smidad, eftir, cid }. Glugginn verður að vera opinn á félaginu.
+    forsmidaAllar: async () => {
+      const T = TB(), F = FP(); if (!T || !T.haedir || !F || !F.companyId) return { smidad: 0, eftir: 0, villa: 'enginn gluggi' };
+      const cid = F.companyId; let smidad = 0;
+      const eftir = () => (T.haedir() || []).filter(h => h && h.id && tilbuin(h) && !vmFyrir(h) && !V.villa[h.id + '|' + lykillHaedar(h)]);
+      for (let varnagli = 0; varnagli < 60; varnagli++) {
+        if (!modalOpid() || FP().companyId !== cid) break;
+        if (V.festir || Object.keys(V.smidar).length) { await new Promise(r => setTimeout(r, 400)); continue; }
+        const h = eftir()[0]; if (!h) break;
+        await bakSmida(h, cid);
+        if (vmFyrir(h)) smidad++; else break;   // villa á hæðinni → hætta svo lykkjan festist ekki
+      }
+      return { smidad, eftir: eftir().length, cid };
+    },
     // prófanir: staðan eins og hún er
     stada: () => ({
       ham: V.modal ? hamur() : null, opid3d: !!document.getElementById('fp-3d'), haedId: V.haedId, lykill: V.lykill, tilbuin: V.tilbuin,

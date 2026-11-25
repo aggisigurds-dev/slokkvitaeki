@@ -4363,9 +4363,15 @@
     const vp = (window.TeiknGaedi && TeiknGaedi.vinnuPx) ? TeiknGaedi.vinnuPx() : 2200;
     const hl = l + '|' + (val.thykkt || 0) + '|' + (val.fylla ? 1 : 0) + '|' + vp;
     if (G.hrein && G.hreinLykill === hl) return G.hrein;
+    // D-1 (25.11.2026): hl ber upplausnina (vp) og alla aðra forsendu, svo útreikningur fyrir hverja upplausn er einkenndur
+    // að fullu. Áður var þetta eins-sæta skyndiminni — gæðaskipti (Forskoðun↔Full) og til baka hreinsuðu því alla myndina
+    // upp á nýtt í hvert sinn þótt hún hefði verið reiknuð sekúndu áður. Nú geymum við síðustu fáu útreikninga og endurnotum.
+    G.hreinMinni = G.hreinMinni || {};
+    if (G.hreinMinni[hl]) { G.hrein = G.hreinMinni[hl]; G.hreinLykill = hl; return G.hrein; }
     const t0 = performance.now(), r = hreinsa(stig1, { thykkt: val.thykkt || 0, fylla: !!val.fylla });
     r.ms = Math.round(performance.now() - t0);
-    G.hrein = r; G.hreinLykill = hl;
+    G.hrein = r; G.hreinLykill = hl; G.hreinMinni[hl] = r;
+    const lyklar = Object.keys(G.hreinMinni); if (lyklar.length > 6) delete G.hreinMinni[lyklar[0]];
     return r;
   }
   // Undir þessu er niðurstaða myndgreiningarinnar slitrur, ekki veggjanet — þá er hún ekki sýnd og fer ekki í 3D.
@@ -5527,7 +5533,10 @@
     }
     einingar.sort((p, q) => p.i - q.i);
     const allarU = einingar.map(e => e.u), pdfKort = {};
-    await fyllaHeitiOgStiga(allarU, hs, einingar.map(e => e.hl), pdfKort, { thak: 20000 });
+    // Hraði (25.11.2026): heitiThak er biðþakið á OCR/PDF-textalestri. Gagnvirk fyrsta smíði (notandinn bíður) sendir stutt
+    // þak (445 smida) svo myndin birtist strax — skyndiminni og vigur-PDF-texti klárast langt innan þess, aðeins dauð bið
+    // eftir ólesinni OCR styttist. Bakgrunns-forsmíð og Sjálfvirkt halda fulla þakinu (20 s) því þar bíður enginn.
+    await fyllaHeitiOgStiga(allarU, hs, einingar.map(e => e.hl), pdfKort, { thak: (o && o.heitiThak) || 20000 });
     tima.heiti = Math.round(t() - t0); t0 = t();
     const gamur = document.createElement('div');
     gamur.style.cssText = 'position:fixed;left:-30000px;top:0;width:1200px;height:900px;pointer-events:none;opacity:0';
@@ -7088,7 +7097,7 @@
 
     FP.open = function () {
       loka3d(); cancelAnimationFrame(G.raf);
-      Object.assign(G, { frum: null, stig1: null, stig1Lykill: '', synd: null, lykill: '', hrein: null, hreinLykill: '', rymi: { x: 0, y: 0 }, virk: 0, hamur: null, kedja: null, bendill: null, drag: null, teiknad: '', soknKom: 0, rodKomin: 0, _haedirCid: 0, _haedirBid: 0, _festCid: 0, _festModal: null, minni: {}, skipti: (G.skipti || 0) + 1, pdfBid: false, opnadi: Date.now() });
+      Object.assign(G, { frum: null, stig1: null, stig1Lykill: '', synd: null, lykill: '', hrein: null, hreinLykill: '', rymi: { x: 0, y: 0 }, virk: 0, hamur: null, kedja: null, bendill: null, drag: null, teiknad: '', soknKom: 0, rodKomin: 0, _haedirCid: 0, _haedirBid: 0, _festCid: 0, _festModal: null, minni: {}, hreinMinni: {}, skipti: (G.skipti || 0) + 1, pdfBid: false, opnadi: Date.now() });
       const r = opna.apply(this, arguments);
       Z.s = 1; Z.x = 0; Z.y = 0; Z.sjalf = true; Z.gs = 1;
       try { tikk(); } catch (_) {}
