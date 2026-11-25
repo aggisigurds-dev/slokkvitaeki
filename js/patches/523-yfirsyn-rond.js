@@ -231,24 +231,25 @@
     const inn = gi.sidustu, listi = inn && Array.isArray(inn.listi) ? inn.listi : null;
     const radir = listi && listi.length
       // tvær línur á röð (1700 px: flísin er ~194 px og ein lína gaf nafninu 16–37 px): nafn + upphæð, svo félag · nr · dagur
-      ? listi.map(r => { const t = r.teg === 'teya' ? 'ty' : r.felag === 'BH' ? 'bh' : 'sl';
-          return '<div class="yr-gr yr-gr-' + t + '" title="' + esc(r.felag + ' · ' + r.nr + ' · ' + r.kunni + ' · ' + isk(r.kr) + ' kr · greitt ' + dd(r.dags)) + '">' +
-            '<span class="yr-g1"><span class="yr-gn">' + esc(r.teg === 'teya' ? 'Teya kortauppgjör' : r.kunni) + '</span><b>' + stutt(r.kr) + '</b></span>' +
-            '<span class="yr-g2"><i class="yr-gt-' + t + '">' + (r.teg === 'teya' ? 'Teya' : esc(r.felag)) + '</i>' + (r.teg === 'teya' ? 'kort' : esc(r.nr)) + ' · ' + dd(r.dags) + '</span></div>'; }).join('')
+      // Teya er ekki í listanum (Agnar 25.11.2026: „Mátt sleppa að sýna teya inngreiðslurnar inní síðustu inngreiðslur")
+      ? listi.map(r => { const t = r.felag === 'BH' ? 'bh' : 'sl';
+          return '<div class="yr-gr yr-gr-' + t + '" title="Inngreiðsla · ' + esc(r.felag + ' · ' + r.nr + ' · ' + r.kunni + ' · ' + isk(r.kr) + ' kr · greitt ' + dd(r.dags)) + '">' +
+            '<span class="yr-g1"><span class="yr-gn">' + esc(r.kunni) + '</span><b>' + stutt(r.kr) + '</b></span>' +
+            '<span class="yr-g2"><i class="yr-gt-' + t + '">' + esc(r.felag) + '</i>' + esc(r.nr) + ' · ' + dd(r.dags) + '</span></div>'; }).join('')
       : '<div class="yr-gr"><span class="yr-gn">' + (inn && inn.omaelt ? 'ómælt' : 'Engar inngreiðslur fundust') + '</span></div>';
     const vant = inn && Array.isArray(inn.omaelt) && inn.omaelt.length ? '<span class="yr-gv" title="Þessar heimildir svöruðu ekki: ' + esc(inn.omaelt.join(', ')) + '">' + led('or') + 'vantar: ' + esc(inn.omaelt.join(', ')) + '</span>' : '';
     const teya = fin(nu.teya)
-      ? '<span class="yr-ks yr-gty" title="Teya-uppgjör úr pósti (reporting@teya.com, eitt á virkan dag) borin við kortasölur í búð. Teya er staðfesting á kortapeningnum, ekki viðbót: búðin er þegar talin í Greitt inn.' + (fin(nu.sl_kort) ? ' Munur ' + isk(nu.teya - nu.sl_kort) + ' kr (uppgjör berst virkum degi síðar).' : '') + '">Teya ' + esc(MAN[manOf(nu.fra)] || '') + '. <b>' + isk(nu.teya) + '</b> · ' + nu.teya_n + ' uppgj.' + (fin(nu.sl_kort) ? '<br>kort í búð <b>' + isk(nu.sl_kort) + '</b>' : '') + '</span>'
+      ? '<span class="yr-ks yr-gty" title="Teya-uppgjör úr pósti (reporting@teya.com, eitt á virkan dag) borin við kortasölur í búð. Teya er staðfesting á kortapeningnum, ekki viðbót: búðin er þegar talin í Greitt inn.' + (fin(nu.sl_kort) ? ' Munur ' + isk(nu.teya - nu.sl_kort) + ' kr (uppgjör berst virkum degi síðar).' : '') + ' ' + nu.teya_n + ' uppgjör í ' + esc(MAN[manOf(nu.fra)] || '') + '.">' + led('gr') + 'Teya <b>' + isk(nu.teya) + '</b>' + (fin(nu.sl_kort) ? ' · búð <b>' + isk(nu.sl_kort) + '</b>' : '') + '</span>'
       : '<span class="yr-ks yr-gty">Teya ómælt</span>';
     return '<div class="yr-k yr-gi" title="Greitt inn MEÐ VSK, bæði félög — peningarnir sem komu inn.\n' + M.map(sund).join('\n') + '">' +
       '<span class="yr-kl">' + ic('inn') + 'Greitt inn<em>m. vsk</em></span>' +
-      '<span class="yr-kn">' + mkr(nu.alls) + '<small>m</small></span>' +
-      (ogr != null ? '<span class="yr-kp yr-r yr-gog" title="' + esc(ogrT) + '">Ógreitt alls <b>' + mkr(ogr) + ' m</b></span>' : '') +
+      '<span class="yr-row"><span class="yr-kn">' + mkr(nu.alls) + '<small>m</small></span>' +
+        (ogr != null ? '<span class="yr-gog" title="' + esc(ogrT) + '">Ógreitt alls<b>' + mkr(ogr) + ' m</b></span>' : '') + '</span>' +
       // mánuðirnir: tala + mjó súla undir (breidd eftir hlutfalli af stærsta mánuði)
       '<div class="yr-gm">' + M.map((m, i) => '<span' + (i === 3 ? ' class="yr-nu"' : '') + '>' + esc(MAN[manOf(m.fra)] || '') + '<b>' + mkr(m.alls, 1) + '</b><i style="width:' + Math.max(4, Math.round((m.alls || 0) / max * 100)) + '%"></i></span>').join('') + '</div>' +
-      '<div class="yr-gl"><span class="yr-gh">Síðustu inngreiðslur</span>' + radir + vant + '</div>' +
+      '<div class="yr-gl" title="Síðustu inngreiðslur — Payday SL og greiðslur Brunahólfs, nýjast fyrst">' + radir + vant + '</div>' +
       teya +
-      '<span class="yr-kf" title="Payday SL og BH + BH-reikningar merktir greiddir í Kröfu yfirliti + Teya-uppgjör úr pósti">' + heimildLed(rek, 'Payday SL') + 'Payday SL<s>|</s>' + heimildLed(rek, 'Greiðslur BH') + 'BH<s>|</s>' + led(fin(nu.teya) ? 'gr' : 'or', 'Teya-uppgjör úr pósti') + 'Teya</span>' +
+      '<span class="yr-kf" title="Payday SL og BH + BH-reikningar merktir greiddir í Kröfu yfirliti + Teya-uppgjör úr pósti">' + heimildLed(rek, 'Payday SL') + 'Payday SL<s>|</s>' + heimildLed(rek, 'Greiðslur BH') + 'BH</span>' +
     '</div>';
   }
 
@@ -766,12 +767,14 @@
       '.yr-avg{position:absolute;left:-2px;right:-2px;border-top:1px dashed rgba(255,255,255,.6);z-index:2}',
       '.yr-mo{display:flex;gap:8px;padding:0 2px;font-size:10.5px;color:#a9b8d0}.yr-mo span{flex:1;display:flex;flex-direction:column;align-items:center;line-height:1.3}.yr-mo b{font-size:12.5px;font-weight:600;color:#fff}.yr-mo .yr-nu b{color:#ffb37a}',
       // Greitt inn (25.11): þjappaðar mánaðarsúlur, síðustu inngreiðslur og Teya-lína
-      '.yr-gi{gap:6px}.yr-gi .yr-kn{font-size:29px}.yr-gog{max-width:100%;overflow:hidden;text-overflow:ellipsis}.yr-gog b{margin-left:3px;font-weight:700;color:#fff}',
-      '.yr-gm{display:flex;gap:6px}.yr-gm span{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:0 3px;font-size:10px;color:#a9b8d0;white-space:nowrap}',
-      '.yr-gm b{font-size:11.5px;font-weight:600;color:#fff}.yr-gm .yr-nu b{color:#ffb37a}',
+      '.yr-gi{gap:5px}.yr-gi .yr-kn{font-size:28px}',
+      '.yr-gog{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;min-width:0;padding:2px 8px;border-radius:8px;background:rgba(220,38,38,.16);border:1px solid rgba(248,113,113,.5);font-size:10px;line-height:12px;color:#ffaaa3;white-space:nowrap;cursor:default}',
+      '.yr-gog b{font-size:13.5px;line-height:16px;font-weight:700;color:#fff}',
+      '.yr-gm{display:flex;gap:4px}.yr-gm span{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:0 2px;font-size:9.5px;line-height:13px;color:#a9b8d0;white-space:nowrap}',
+      '.yr-gm b{font-size:11px;font-weight:600;color:#fff}.yr-gm .yr-nu b{color:#ffb37a}',
       '.yr-gm i{flex:0 0 auto;display:block;height:4px;margin-top:3px;border-radius:2px;background:linear-gradient(90deg,#6f86ab,#a9bbd8);box-shadow:inset 0 1px 0 rgba(255,255,255,.4)}',
       '.yr-gm .yr-nu i{background:linear-gradient(90deg,#c94400,#ffb066);box-shadow:0 0 8px -1px rgba(255,103,2,.9)}',
-      '.yr-gl{display:flex;flex-direction:column;gap:4px;padding:6px 8px;border-radius:10px;background:rgba(0,6,18,.38);box-shadow:inset 0 1px 3px rgba(0,0,0,.6),0 1px 0 rgba(255,255,255,.06)}',
+      '.yr-gl{display:flex;flex-direction:column;gap:3px;padding:5px 8px;border-radius:10px;background:rgba(0,6,18,.38);box-shadow:inset 0 1px 3px rgba(0,0,0,.6),0 1px 0 rgba(255,255,255,.06)}',
       '.yr-gh{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#a9b8d0}',
       '.yr-gr{display:flex;flex-direction:column;min-width:0;padding-left:6px;border-left:2px solid #ff8a1f;color:#dfe7f4}',
       '.yr-gr-bh{border-left-color:#5b8ff0}.yr-gr-ty{border-left-color:#22c55e}',
@@ -779,7 +782,7 @@
       '.yr-gn{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
       '.yr-g2{font-size:10.5px;line-height:13px;color:#a9b8d0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
       '.yr-g2 i{font-style:normal;font-weight:700;margin-right:5px}.yr-gt-sl{color:#ffb37a}.yr-gt-bh{color:#a9c5ff}.yr-gt-ty{color:#86efac}',
-      '.yr-gv{display:flex;align-items:center;gap:5px;font-size:10.5px;color:#ffb37a}.yr-gty{font-size:11.5px;line-height:15px;white-space:normal}',
+      '.yr-gv{display:flex;align-items:center;gap:5px;font-size:10.5px;color:#ffb37a}.yr-gty{display:flex;align-items:center;gap:5px;font-size:11px;line-height:14px}.yr-gty .yr-led{width:7px;height:7px}',
       // á leiðinni
       '.yr-sb{display:flex;height:9px;padding:1px;gap:2px;border-radius:999px;background:rgba(0,6,20,.6);box-shadow:inset 0 1px 3px rgba(0,0,0,.8),0 1px 0 rgba(255,255,255,.09)}.yr-sb-l{height:11px}',
       '.yr-sb i{display:block;height:100%;min-width:4px;border-radius:999px}',

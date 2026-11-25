@@ -232,18 +232,17 @@ async function teyaUppgjor(fra) {
 }
 
 // SÍÐUSTU INNGREIÐSLUR (Agnar 25.11.2026: „setja inn sirka 5 seinustu inngreiðslur"): Payday SL greitt, greiðslur Brunahólfs
-// (sama heimild og „Síðast greitt") og Teya-kortauppgjörin, nýjast fyrst eftir greiðsludegi. Hver heimild sér; bregðist ein
-// stendur hún í `omaelt` og hinar birtast.
+// (sama heimild og „Síðast greitt"), nýjast fyrst eftir greiðsludegi. Teya-uppgjörin voru hér fyrst en Agnar 25.11.2026: „Mátt
+// sleppa að sýna teya inngreiðslurnar inní síðustu inngreiðslur" — Teya stendur aðeins sem mánaðartala (greittInn). Hver heimild
+// sér; bregðist ein stendur hún í `omaelt` og hin birtist.
 async function sidustuInn() {
   const N = 6, listi = [], omaelt = [];
-  const [slp, bhr, tey] = await Promise.all([
+  const [slp, bhr] = await Promise.all([
     sb(`payday_invoices_slokk?select=number,customer_name,amount_total,paid_date&status=eq.PAID&paid_date=not.is.null&order=paid_date.desc,number.desc&limit=${N}`).catch(e => { omaelt.push('Payday SL'); return []; }),
     fetch(`${BH}/api/krofu-greidslur?n=${N}`, { headers: await bhHausar() }).then(r => (r.ok ? r.json() : Promise.reject(new Error(r.status)))).catch(() => { omaelt.push('Greiðslur BH'); return null; }),
-    teyaUppgjor(iso(new Date(Date.now() - 40 * DAGUR))).catch(() => { omaelt.push('Teya'); return []; }),
   ]);
   (slp || []).forEach(x => listi.push({ felag: 'SL', teg: 'payday', nr: 'R-' + (x.number || ''), kunni: x.customer_name || '', kr: kr(x.amount_total), dags: dagur(x.paid_date) }));
   ((bhr && Array.isArray(bhr.rows)) ? bhr.rows : []).forEach(x => listi.push({ felag: 'BH', teg: 'payday', nr: 'R-' + (x.tilvisun || ''), kunni: x.customer_name || '', kr: kr(x.upphaed_total), dags: dagur(x.greidsla_date) }));
-  tey.slice(0, N).forEach(x => listi.push({ felag: 'SL', teg: 'teya', nr: 'Teya', kunni: 'Kortauppgjör', kr: x.kr, dags: x.dags }));
   listi.sort((a, b) => (a.dags === b.dags ? b.kr - a.kr : (a.dags < b.dags ? 1 : -1)));
   return { listi: listi.slice(0, 5), omaelt };
 }
