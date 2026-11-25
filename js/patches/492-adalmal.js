@@ -371,7 +371,7 @@
       V + ' .ad-tala{font-variant-numeric:tabular-nums;font-weight:700;color:#1f2530}',
       V + ' .ad-ald{font-variant-numeric:tabular-nums;color:#6b7380}',
       V + ' .ad-rok li .ad-adili{font-weight:800;color:#11141c}',
-      V + ' .ad-plata{flex:none;display:inline-flex;align-items:center;height:21px;padding:0 7px;border-radius:3px;border:1px solid rgba(20,24,34,.14);background:linear-gradient(180deg,#fdfdfe,#e3e7ee);font:700 10px ' + MONO + ';letter-spacing:.06em;text-transform:uppercase;color:#1f2530}',
+      V + ' .ad-plata{flex:none;display:inline-flex;align-items:center;height:21px;padding:0 7px;border-radius:3px;border:1px solid rgba(20,24,34,.14);background:linear-gradient(180deg,#fdfdfe,#e3e7ee);font:700 11.5px ' + MONO + ';letter-spacing:.06em;text-transform:uppercase;color:#1f2530}',
       V + ' .ad-afk{padding:4px 14px 12px}' + V + ' .ad-afk h4{margin:10px 0 5px;font:700 10.5px ' + MONO + ';letter-spacing:.12em;text-transform:uppercase;color:#3a4250}',
       V + ' .ad-gerist{font:600 15px/1.4 ' + SANS + ';background:#f4f6f9;border:1px solid rgba(20,24,34,.14);border-left:4px solid #7a0b0e;border-radius:8px;padding:9px 11px}',
       // 18.11.2026 — rökin fá loft (4 px -> 8 px, línubil 1,55) svo málsgreinarnar renni ekki saman,
