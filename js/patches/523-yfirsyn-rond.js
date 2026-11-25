@@ -564,10 +564,11 @@
     if (!ok(x)) return;
     modalStill();
     const heiti = felag === 'bh' ? 'Brunahólf' : 'Slökkvitæki';
-    const hluti = (radir, nafn, lit, utan) => {
+    // heild = summa endapunktsins (sama og Kröfu yfirlit); raðasumman getur munað krónu vegna námundunar hverrar raðar (mælt 25.11: 4.558.794 á móti 4.558.795)
+    const hluti = (radir, nafn, lit, utan, heild) => {
       if (!Array.isArray(radir)) return '<div class="yrm-sec"><div class="yrm-sh">' + led(lit) + esc(nafn) + '<b>listinn barst ekki — endurnýjaðu ↻</b></div></div>';
       if (!radir.length) return '';
-      const sum = radir.reduce((a, r) => a + (r.kr || 0), 0);
+      const sum = fin(heild) ? heild : radir.reduce((a, r) => a + (r.kr || 0), 0);
       return '<div class="yrm-sec' + (utan ? ' yrm-utan' : '') + '"><div class="yrm-sh">' + led(lit) + esc(nafn) + '<span class="yrm-sn">' + radir.length + '</span><b>' + isk(sum) + ' kr</b></div>' +
         '<table class="yrm-t"><tbody>' + radir.map(r => '<tr><td class="yrm-nr">' + esc(r.nr || '—') + '</td><td class="yrm-ku">' + esc(r.kunni || '—') + '</td>' +
           // neikvæður aldur = gjalddagi ekki kominn (mælt 25.11: R-390 sýndi „-7 d.") → „eftir 7 d."
@@ -592,7 +593,7 @@
       '<div class="yrm-sum"><span>' + led('rd') + 'Ógreitt <b>' + isk(x.ogreitt.kr) + ' kr</b><span class="yrm-sn">' + isk(x.ogreitt.n) + '</span></span>' +
         '<span>' + led('bl') + 'Ósent <b>' + isk(x.osent.kr) + ' kr</b><span class="yrm-sn">' + isk(x.osent.n) + '</span></span>' +
         (ok(te) ? '<span>' + led('gy') + 'Tími eftir <b>' + isk(tek) + ' kr</b></span>' : '') + '</div>' +
-      '<div class="yrm-scr">' + (tomt ? '<div class="yrm-tomt">Engar ógreiddar eða ósendar kröfur.</div>' : hluti(ogr, 'Ógreitt', 'rd') + hluti(osn, 'Ósent', 'bl')) + teKafli +
+      '<div class="yrm-scr">' + (tomt ? '<div class="yrm-tomt">Engar ógreiddar eða ósendar kröfur.</div>' : hluti(ogr, 'Ógreitt', 'rd', false, x.ogreitt.kr) + hluti(osn, 'Ósent', 'bl', false, x.osent.kr)) + teKafli +
         (Array.isArray(bid) && bid.length ? hluti(bid, 'Á bið — ekki í samtölunni', 'gy', true) : '') + '</div>' +
       '<div class="yrm-foot">Sömu raðir og röndin leggur saman — ' + (felag === 'bh'
         ? 'Kröfu yfirlit Brunahólfs (faldar og kláraðar kröfur ekki með; ósent = drög sem eru ekki send í bókun). Samtalan = „Samtals í pípunni" á Kröfu yfirliti.'
