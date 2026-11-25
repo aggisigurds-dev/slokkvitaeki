@@ -568,7 +568,7 @@
         allt(bl, '.sk-svc-card').forEach(function (c) {
           var nr = sel(c, 'a.sk-doc.inv'); if (!nr) return;
           var u = txt(sel(c, '.sk-svc-amt')).replace(/[^\d]/g, '');
-          d.hreyf.push({ teg: /brunakerfi/i.test(txt(sel(c, '.sk-svc-hd'))) ? 'Brunakerfi' : 'Úttekt', dags: ar || '', nr: txt(nr).replace(/[^\w-]/g, ''), upph: u ? parseInt(u, 10) : 0, greitt: !!sel(c, '.s-greitt'), kredit: !!sel(c, '.sk-doc.inv.kredit'), hluti: kreditHluti(allt(c, '.s-kredit')) });
+          d.hreyf.push({ teg: /brunakerfi/i.test(txt(sel(c, '.sk-svc-hd'))) ? 'Brunakerfi' : 'Slökkvitæki', dags: ar || '', nr: txt(nr).replace(/[^\w-]/g, ''), upph: u ? parseInt(u, 10) : 0, greitt: !!sel(c, '.s-greitt'), kredit: !!sel(c, '.sk-doc.inv.kredit'), hluti: kreditHluti(allt(c, '.s-kredit')) });
         });
       });
     }
@@ -715,7 +715,7 @@
     var buidS = /(\d{4})$/.test(d.sidast || '') && +/(\d{4})$/.exec(d.sidast)[1] === Ys;
     var stS = manStada(Ms, buidS) || (d.utrunnin ? 'r' : 'g');
     var dagS = 0; if (stS === 'r' && Ms) { var idS = new Date(); idS.setHours(0, 0, 0, 0); dagS = Math.max(1, Math.round((idS - new Date(Ys, Ms, 0)) / 864e5)); }
-    var su = d.hreyf.filter(function (r) { return /úttekt/i.test(r.teg) && r.upph && !r.kredit; })[0] || d.hreyf.filter(function (r) { return r.upph && !r.kredit; })[0];
+    var su = d.hreyf.filter(function (r) { return /úttekt|slökkvitæk/i.test(r.teg) && r.upph && !r.kredit; })[0] || d.hreyf.filter(function (r) { return r.upph && !r.kredit; })[0];
     if (nT) {
       var storS = stS === 'r' ? (dagS ? '<div><span class="big">+' + dagS + '</span> <span class="bigl">dagar yfir</span></div>' : '<div><span class="big">' + d.utrunnin + '</span> <span class="bigl">útrunnin</span></div>')
         : stS === 'y' ? '<div><span class="big ord">Á dagskrá</span></div>'

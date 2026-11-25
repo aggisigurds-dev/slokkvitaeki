@@ -212,8 +212,8 @@
     const CHIP = 'font:inherit;font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;border:1px solid #cbd5e1;background:#fff;color:#475569;cursor:pointer';
     const tegChips = '<div id="_sch-teg" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">' +
       '<button data-teg="allt" style="' + CHIP + ';background:#0f172a;color:#fff;border-color:#0f172a">Allt (' + rows.length + ')</button>' +
-      '<button data-teg="uttekt" style="' + CHIP + '">🧯 Úttektir (' + nUt + ')</button>' +
-      '<button data-teg="bud" style="' + CHIP + '">🛒 Búð (' + nBud + ')</button>' +
+      '<button data-teg="uttekt" style="' + CHIP + '">🧯 Slökkvitæki (' + nUt + ')</button>' +
+      '<button data-teg="bud" style="' + CHIP + '">🛒 Verslun (' + nBud + ')</button>' +
       (nOv ? '<button data-teg="ovisst" style="' + CHIP + '">❓ Óvíst (' + nOv + ')</button>' : '') +
     '</div>';
     body.innerHTML =
@@ -779,7 +779,7 @@
     // strax hvort færslan tilheyrir árlegu úttektinni eða lausasölu.
     const vt = s.vidskiptategund === 'uttekt' ? 'uttekt' : (s.vidskiptategund === 'bud' ? 'bud' : 'ovisst');
     const vtBadge = vt === 'uttekt' ? '<span title="Árleg úttekt" style="margin-left:5px">🧯</span>'
-      : vt === 'bud' ? '<span title="Búðarsala / lausasala" style="margin-left:5px">🛒</span>'
+      : vt === 'bud' ? '<span title="Verslun: keypt eða afgreitt á staðnum" style="margin-left:5px">🛒</span>'
       : '<span title="Óvíst — hvorki greint sem úttekt né búð (þarf yfirferð)" style="margin-left:5px">❓</span>';
     return '<tr data-vt="' + vt + '" style="border-bottom:1px solid #f1f5f9' +
       (((isVoid && !s.paid_at) || isDrog) ? ';opacity:.6' : '') + (paired ? ';background:#fafbfc' : '') + '">' +
