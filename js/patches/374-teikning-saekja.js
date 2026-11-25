@@ -452,7 +452,31 @@
       var nrm = function (t) { return String(t || '').normalize('NFC').toLowerCase().replace(/\s+/g, ' ').trim(); };
       var gata = nrm(addr.split(',')[0]);
       var rvk = results.filter(function (x) { return x.heimild === 'reykjavik'; });
-      var eign = rvk.find(function (x) { return nrm(String(x.label || '').split('(')[0]) === gata; }) || rvk[0];
+      var eign = rvk.find(function (x) { return nrm(String(x.label || '').split('(')[0]) === gata; });
+      if (!eign && rvk.length === 1) eign = rvk[0];   // ótvíræð: aðeins ein Reykjavíkureign kom til baka
+      // B-2 (25.11.2026): engin NÁKVÆM gata+húsnúmer-samsvörun og fleiri en ein Reykjavíkureign → ALDREI þegjandi rvk[0].
+      // Áður var „Skútuvogur 4" sóttur sem 4A (spennistöð, 1 blað) í stað hússins (66 teikningar) án viðvörunar. Nú velur
+      // Agnar rétta húsið úr lista; aðeins varaleiðin breytist, nákvæm samsvörun (og ein ótvíræð eign) ræður áfram sjálf.
+      if (!eign && rvk.length > 1) {
+        var hlekkir = rvk.map(function (x, i) {
+          return '<button type="button" class="fp-teikn-velja btn btn-outline btn-sm" data-idx="' + i + '" style="display:block;width:100%;margin:4px 0;color:#ffd27a;border-color:rgba(255,210,122,.4);text-align:left">' + esc(x.label || ('Eign ' + (i + 1))) + '</button>';
+        }).join('');
+        synaVillu('Fann fleiri en eitt hús á „' + esc(addr.split(',')[0]) + '" — veldu rétta teikningasafnið:', hlekkir);
+        document.querySelectorAll('#modal-floorplan .fp-teikn-velja').forEach(function (b) {
+          b.onclick = async function () {
+            var val = rvk[+b.getAttribute('data-idx')];
+            if (!val) return;
+            spinna('Sæki teikningar hússins…');
+            try {
+              var dx = await (await fetch(LISTI + '?landnr=' + encodeURIComponent(val.landnr), { signal: AbortSignal.timeout(28000) })).json();
+              var drx = (dx && dx.results) || [];
+              if (!drx.length) { synaVillu('Engar teikningar fundust fyrir ' + esc(val.label || addr) + '.'); return; }
+              ui.listi(drx, val);
+            } catch (_) { synaVillu('Villa við að sækja teikningar. Reyndu aftur eða notaðu „Hlaða upp".'); }
+          };
+        });
+        return;
+      }
       // 04.10.2026: Hafnarfjörður / Kópavogur / Garðabær (map.is) eru með rafrænt teikningasafn — teikn-listi sækir það
       // á landnr + heitinr + svf og 435 teiknar PDF-ið í mynd. Áður stoppaði glugginn hér með „ekki rafrænt safn".
       var mapisEign = !eign && (results.find(function (x) { return x.heimild === 'map.is' && x.svf && x.heitinr && nrm(String(x.label || '').split('(')[0]) === gata; })

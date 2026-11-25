@@ -6230,10 +6230,21 @@
       // skipting miðast við ALLAR hæðir blaðsins, líka þær sem fengu nákvæmara blað (Laugavegur 18: „Grunnmynd 1. hæð,
       // 2. hæð" þegar 2. hæð á sitt eigið blað — 1. hæð er samt fyrsta grunnmyndin á blaðinu, ekki sú stærsta)
       const allir = x.lyklar.slice().sort((a, b) => fahRod(a) - fahRod(b));
-      const samsett = !x.f.bil && allir.length > 1 && rammar.length >= allir.length;
       const staerst = rammar.slice().sort((a, b) => b.w * b.h - a.w * a.h)[0] || null;
+      // B-1 (25.11.2026): samsett blað skiptist aðeins með vísitölu (rammar[allir.indexOf(k)]) þegar fjöldi RAMMA passar
+      // nákvæmlega við fjölda hæða — annars hliðraðist pörunin (aukarammi: afstöðumynd, snið eða stór skýring sem komst í
+      // gegnum stærðarsíuna) og hæð var skorin á ranga grunnmynd (vísitöluskekkja). Finnist FLEIRI rammar en hæðir veljum
+      // við stærstu `allir.length` (grunnmyndir eru stærstu teikningar blaðsins) og röðum þeim aftur í lesröð (efst→neðst,
+      // vinstri→hægri — sama og husRammar) áður en vísitölupörun á við. Færri rammar en hæðir → dæmigerð hæð (stærsta mynd).
+      let husr = rammar;
+      if (!x.f.bil && allir.length > 1 && rammar.length > allir.length) {
+        husr = rammar.slice().sort((a, b) => b.w * b.h - a.w * a.h).slice(0, allir.length);
+        const hh = Math.min.apply(null, husr.map(r => r.h));
+        husr.sort((a, b) => (Math.abs(a.y + a.h / 2 - (b.y + b.h / 2)) > hh * 0.5 ? (a.y + a.h / 2) - (b.y + b.h / 2) : a.x - b.x));
+      }
+      const samsett = !x.f.bil && allir.length > 1 && husr.length === allir.length;
       lyklar.forEach(k => tillaga.push({
-        k, nafn: fahNafn(k), image_url: url, skurdur: samsett ? rammar[allir.indexOf(k)] : staerst,
+        k, nafn: fahNafn(k), image_url: url, skurdur: samsett ? husr[allir.indexOf(k)] : staerst,
         leid: samsett ? 'samsett' : allir.length > 1 ? 'daemigerd' : 'eitt', blad: { lysing: x.d.lysing || x.d.tegund || '', dags: x.d.dags || '', tegund: x.d.tegund || '' }, mynd
       }));
       lokid++;
@@ -6949,6 +6960,17 @@
       const r = await DB.sb.from('teikning_bord').select('markers,image_url,haedir,updated_at,updated_by').eq('company_id', cid).limit(1);
       if (r.error || !r.data || !r.data.length) throw new Error((r.error && r.error.message) || 'engin röð');
       const row = r.data[0], virkId = virkHaed().id;
+      // A-1 (25.11.2026): sjálfvirka endurlesan (focus/visibility í allt að 2 klst eftir „Opna í TurboPaint") má ALDREI
+      // yfirskrifa óvistaðar merkjabreytingar í ritlinum þegjandi. Hún er til í einum tilgangi: að sækja staðsetningar sem
+      // TurboPaint vistaði. Því sækjum við aðeins þegar röðin er RAUNVERULEGA nýrri en það sem þessi vafri sá síðast
+      // (TeiknVistun.sidast, sett þegar við vistuðum fyrir TurboPaint) OG kemur frá TurboPaint. Samanburður á server-gildum
+      // er ónæmur fyrir klukkuskekkju milli véla. Breyting annarrar vélar fléttast inn við næstu vistun hér
+      // (375 sameinaVidFerska) — henni þröngvum við ekki yfir opinn ritil. Handvirka ↻ (a==='saekja') sækir áfram alltaf.
+      if (hljodlatt) {
+        const nytt = Date.parse(row.updated_at) || 0;
+        const sed = (window.TeiknVistun && TeiknVistun.sidast) ? (TeiknVistun.sidast(cid) || 0) : 0;
+        if (row.updated_by !== 'TurboPaint' || !(nytt > sed)) return;
+      }
       faeraMerki(0, 0);
       FP.__eftirSokn(cid, row);
       const i = Math.max(0, haedir().findIndex(x => x.id === virkId));

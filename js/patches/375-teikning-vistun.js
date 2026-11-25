@@ -161,7 +161,10 @@
       }, function () { senda(false); });
     });
   }
-  window.TeiknVistun = { skrifa: skrifa, sja: sja, sameinaVidFerska: sameinaVidFerska, einkvaemAudkenni: einkvaemAudkenni };
+  // 25.11.2026 (A-1): tími (ms) sem ÞESSI vafri sá röðina síðast — sókn eða eigin skrif. 383 notar þetta til að vita hvort
+  // þjónninn hafi raunverulega eitthvað nýtt (t.d. frá TurboPaint) áður en sjálfvirk endurlesa yfirskrifar opinn ritil.
+  function sidast(cid) { return _sed[cid] ? _sed[cid].t : 0; }
+  window.TeiknVistun = { skrifa: skrifa, sja: sja, sameinaVidFerska: sameinaVidFerska, einkvaemAudkenni: einkvaemAudkenni, sidast: sidast };
 
   function serverUpsert(cid, plan) {
     if (!cid || !plan || !window.DB || !DB.sb) return;

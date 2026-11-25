@@ -134,7 +134,7 @@
     const stm = fmLesa(), kort = sec.querySelectorAll('#co-fp-hdir > .cfh-k').length;
     const l3 = o && kort ? '<div class="l l3"><span class="lb">Merki á myndum</span>' +
       '<button type="button" class="tg" data-a="lag" data-lag="raun" aria-pressed="' + (stm.nu && !stm.gr) + '" title="Aðeins búnaðurinn sem er á borðinu núna (vistaður í Teikningu) — skráð tæki eru sett á teikninguna í Teikningar-glugganum" ' + (fmN.nu ? '' : 'style="opacity:.6"') + '><span class="pt nu"></span>Raunveruleg tæki <i>' + fmN.nu + '</i></button>' +
-      '<button type="button" class="tg" data-a="lag" data-lag="gr" aria-pressed="' + (stm.gr && !stm.nu) + '" title="Aðeins búnaður sbr. búnaðargreiningu — sömu merki og í greiningunni"><span class="pt gr"></span>Greining <i>' + (d.tx.length ? d.tx.join(' · ') + (fmN.gr ? ' · ' + fmN.gr + ' óteiknuð' : '') : fmN.gr) + '</i></button>' +
+      '<button type="button" class="tg" data-a="lag" data-lag="gr" aria-pressed="' + (stm.gr && !stm.nu) + '" title="Aðeins búnaður sbr. búnaðargreiningu — sömu merki og í greiningunni. Tillögur (Arnold) eru taldar sér."><span class="pt gr"></span>Greining <i>' + (d.tx.length ? d.tx.join(' · ') + (fmN.gr ? ' · ' + fmN.gr + ' óteiknuð' : '') : fmN.gr) + (fmN.till ? ' · +' + fmN.till + ' tillaga' : '') + '</i></button>' +
       '<button type="button" class="tg" data-a="lag" data-lag="bada" aria-pressed="' + (stm.nu && stm.gr) + '" title="Bæði — greiningin hálfgagnsæ undir raunverulegu tækjunum"><span class="pt bada"></span>Bæði</button></div>' : '';
     const h = l1 + l2 + l3 + '|' + o;
     if (bar._h !== h) { bar._h = h; bar.innerHTML = l1 + l2 + l3; }
@@ -320,7 +320,10 @@
     ((row.tillogur && row.tillogur.tki) || []).forEach(t => {
       if (!t || (t.blad !== h.id && t.haed !== h.nafn)) return;
       const x = +(t.x != null ? t.x : t.bx), y = +(t.y != null ? t.y : t.by);
-      if (isFinite(x) && isFinite(y)) ut.push({ x, y, k: t.flokkur === 'bs' ? 'bs' : 'sl', tg: t.tegund, ik: t.flokkur === 'bs' ? 'slanga_rod' : (ikonTexta(t.tegund) || 'l') });
+      // C (25.11.2026): tillaga (Arnold) er merkt till:true svo hún teljist EKKI sem greind/skráð tæki. Áður blönduðust
+      // tillögur inn í greiningartöluna og hún varð einum hærri en vistaða samantektin (474) — „26 vs 27". Þær teiknast áfram
+      // undir „Greining"-laginu en eru taldar sér („+N tillaga"), svo talan ber saman við skráðan búnað.
+      if (isFinite(x) && isFinite(y)) ut.push({ x, y, k: t.flokkur === 'bs' ? 'bs' : 'sl', tg: t.tegund, ik: t.flokkur === 'bs' ? 'slanga_rod' : (ikonTexta(t.tegund) || 'l'), till: true });
     });
     return ut;
   }
@@ -344,12 +347,13 @@
     });
     const sig = [ham, st.nu, st.gr, nu.length, grm.length, d.tk ? 1 : 0, vm ? vm.t : '', h.skurdur ? h.skurdur.x + ',' + h.skurdur.w : '', d.tick].join('|');
     let cv = mk.querySelector(':scope > canvas.t485-ov');
-    if (!ham) { if (cv) cv.remove(); return { nu: nu.length, gr: grm.length }; }
-    if (cv && cv._sig === sig) return { nu: nu.length, gr: grm.length };
+    const grTala = grm.filter(p => !p.till).length, tillTala = grm.filter(p => p.till).length;   // C: tillögur taldar sér
+    if (!ham) { if (cv) cv.remove(); return { nu: nu.length, gr: grTala, till: tillTala }; }
+    if (cv && cv._sig === sig) return { nu: nu.length, gr: grTala, till: tillTala };
     let W, H, P;
     if (ham === '3d') { W = vm.b || (vm.rammi && vm.rammi[2]) || 0; H = vm.h || (vm.rammi && vm.rammi[3]) || 0; P = p => { try { const q = V.varpa(vm, p.x, p.y); return q && isFinite(q[0]) && isFinite(q[1]) ? q : null; } catch (_) { return null; } }; }
     else { const sk = h.skurdur && h.skurdur.w > 8 && h.skurdur.h > 8 ? h.skurdur : { x: 0, y: 0, w: frum.b, h: frum.h }; W = sk.w; H = sk.h; P = p => [p.x - sk.x, p.y - sk.y]; }
-    if (!(W > 0 && H > 0)) return { nu: nu.length, gr: grm.length };
+    if (!(W > 0 && H > 0)) return { nu: nu.length, gr: grTala, till: tillTala };
     if (!cv) { cv = document.createElement('canvas'); cv.className = 't485-ov'; cv.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;z-index:3'; mk.appendChild(cv); }
     const f = Math.min(1, 1800 / Math.max(W, H)), cw = Math.max(1, Math.round(W * f)), ch = Math.max(1, Math.round(H * f));
     if (cv.width !== cw || cv.height !== ch) { cv.width = cw; cv.height = ch; } else cv.getContext('2d').clearRect(0, 0, cw, ch);
@@ -367,7 +371,7 @@
     if (st.nu && ham === '3d') nu.forEach(p => teikna(p, p.m, 1));
     cv._sig = sig;
     if (!d.tick) setTimeout(() => { fmTick++; seinka(); }, 900);   // raunsæju myndirnar hlaðast ósamstillt (434) — teiknað aftur þegar þær eru komnar
-    return { nu: nu.length, gr: grm.length };
+    return { nu: nu.length, gr: grTala, till: tillTala };
   }
   let fmTick = 0;
   function teiknaYfirlag(sec) {
@@ -377,13 +381,13 @@
     const st2 = document.querySelector('#cfh-stort .cfh-s-k');
     if (st2 && st2._cfh) { const m2 = st2.querySelector('.cfh-s-m'); if (m2) yfirlagKort(st2, m2, st2._cfh, d); }
     const g = sec.querySelector(':scope > #co-fp-hdir'); if (!g) return;
-    let nN = 0, gN = 0;
+    let nN = 0, gN = 0, tN = 0;
     g.querySelectorAll(':scope > .cfh-k').forEach(k => {
       const c = k._cfh; if (!c || !c.h) return;
       const mk = k.querySelector('.cfh-m'); if (!mk) return;
-      const r = yfirlagKort(k, mk, c, d); nN += r.nu; gN += r.gr;
+      const r = yfirlagKort(k, mk, c, d); nN += r.nu; gN += r.gr; tN += (r.till || 0);
     });
-    if (fmN.nu !== nN || fmN.gr !== gN) { fmN = { nu: nN, gr: gN }; const bar = sec.querySelector(':scope > #t485-sam'); if (bar) { bar._h = ''; fylla(sec, bar); } }
+    if (fmN.nu !== nN || fmN.gr !== gN || fmN.till !== tN) { fmN = { nu: nN, gr: gN, till: tN }; const bar = sec.querySelector(':scope > #t485-sam'); if (bar) { bar._h = ''; fylla(sec, bar); } }
   }
 
   function tikk() {
