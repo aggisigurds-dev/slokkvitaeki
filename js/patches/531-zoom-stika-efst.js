@@ -221,9 +221,14 @@
       else if (!syna && nuna) aaBtn.style.removeProperty('display');
     }
 
+    // Sama stadsetningarregla og Aa-hnappur 333 notadi: i appham undir app-hausnum, annars
+    // undir bordanum, annars 8 px fra toppi - thar sem hann sat adur og Agnar er vanur ad
+    // leita ad honum. (Fyrri utgafa setti hana undir haus appsins lika i vafra og hun lenti
+    // tha ofan a efstu rod sidunnar - "Skanna" a Solu.)
+    const erApp = !!(document.body && document.body.classList.contains('appmode'));
     const b = document.getElementById('bstal-banner');
     const hdr = document.getElementById('_app-hdr');
-    const efst = synilegt(hdr) ? hdr : (synilegt(b) ? b : null);
+    const efst = (erApp && synilegt(hdr)) ? hdr : (synilegt(b) ? b : null);
     const top = efst ? Math.round(efst.getBoundingClientRect().bottom + 6) : 8;
       const haegri = 8;
     const stilla = (n, v2) => { if (el.style.getPropertyValue(n) !== v2) el.style.setProperty(n, v2); };
