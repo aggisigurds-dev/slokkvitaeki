@@ -184,9 +184,11 @@
   function raemaHtml(g, listi) {
     const Fk = F(), f = g.flokkun;
     const plotur = [];
-    if (f.notkunarflokkur) plotur.push('<span class="ssp-plata" title="Notkunarflokkur">Fl. ' + esc(f.notkunarflokkur) + '</span>');
-    plotur.push('<span class="ssp-plata' + (f.vissa === 'handval' ? ' kt-dokk' : '') + '" title="Vissa flokkunar">' + esc(f.vissa === 'handval' ? 'Handval' : 'Vissa ' + (Fk.VISSA[f.vissa] || f.vissa || '—').toLowerCase()) + '</span>');
-    plotur.push('<span class="kt-bil"></span>');
+    if (f) {   // óflokkaður staður: engar flokkunarplötur, aðeins kerfaplöturnar (sem eru líka tómar þar)
+      if (f.notkunarflokkur) plotur.push('<span class="ssp-plata" title="Notkunarflokkur">Fl. ' + esc(f.notkunarflokkur) + '</span>');
+      plotur.push('<span class="ssp-plata' + (f.vissa === 'handval' ? ' kt-dokk' : '') + '" title="Vissa flokkunar">' + esc(f.vissa === 'handval' ? 'Handval' : 'Vissa ' + (Fk.VISSA[f.vissa] || f.vissa || '—').toLowerCase()) + '</span>');
+      plotur.push('<span class="kt-bil"></span>');
+    }
     listi.filter((x) => x.synt && x.taek).forEach((x) => {
       plotur.push('<span class="ssp-plata kt-k" title="' + esc(x.k.heiti + ' · ' + (Fk.SKYLT[x.skylt] || 'krafa óþekkt') + ' · ' + Fk.TAEKIFAERI[x.taek].heiti) + '">' + ledHtml(x.taek) + esc(x.k.stutt) + '</span>');
     });
@@ -302,6 +304,13 @@
       '<div class="kt-stada' + (r.villa ? ' villa' : '') + '" style="flex:1 1 100%" aria-live="polite">' + esc(r.stada || '') + '</div>' +
     '</div>';
   }
+  // Óflokkaður staður: engin tegund/kröfur, en þjónustu má samt skrá. Sýnir ÖLL kerfin (ekki synt-síuð) með til-staðar
+  // hnöppum og þjónustureitunum — sama rodHtml og annars, sem ræður við x.kr/x.skylt = null (plata „Krafa óþekkt").
+  function bukOflokkadur(fid, listi) {
+    return '<div class="kt-tomt" style="margin-bottom:10px">Staðurinn er ekki flokkaður enn, svo kröfur og tækifæri liggja ekki fyrir. Þú getur samt skráð hvaða kerfi eru til staðar og þjónustuna á þeim — flokkunin raðar þeim þegar hún nær staðnum.</div>' +
+      '<div class="ssp-skilti">Kerfi · til staðar · þjónusta</div>' +
+      '<div class="kt-kerfi">' + listi.map((x) => rodHtml(fid, x)).join('') + '</div>';
+  }
   function bukHtml(fid, g, listi) {
     const Fk = F(), f = g.flokkun;
     const synd = _ollKerfi.get(fid) ? listi : listi.filter((x) => x.synt);
@@ -354,12 +363,28 @@
       return;
     }
     if (!g.flokkun) {
+      // Óflokkaður: áður dauð leið (Opna falin, ekkert hægt að skrá). Nú má opna og skrá þjónustu samt — „+ Bæta við
+      // þjónustu" á prófílnum (500) smellir á þessa Opna, svo hún verður að vera sýnileg og virk.
+      const listi = kerfiStadar(g);
       setja(undir, 'Ekki flokkaður');
-      setja(raema, '<span class="kt-texti">Staðurinn er ekki í flokkunartöflunni — sjálfvirka flokkunin hefur ekki náð honum enn.</span>');
+      setja(raema, '<span class="kt-texti">Staðurinn er ekki í flokkunartöflunni — sjálfvirka flokkunin hefur ekki náð honum enn. Opnaðu til að skrá þjónustu samt.</span>');
       setjaSamtals(kort, '');
-      if (opna) opna.hidden = true;
-      buk.hidden = true;
-      kort.classList.toggle('kt-opid', false);
+      if (opna) {
+        opna.hidden = false; opna.disabled = false;
+        const t = opid ? 'Loka' : 'Opna';
+        if (opna.textContent !== t) opna.textContent = t;
+        if (opna.getAttribute('aria-expanded') !== String(opid)) opna.setAttribute('aria-expanded', String(opid));
+      }
+      if (kort.classList.contains('kt-opid') !== opid) kort.classList.toggle('kt-opid', opid);
+      if (buk.hidden !== !opid) buk.hidden = !opid;
+      if (opid) {
+        const html = bukOflokkadur(fid, listi);
+        if (buk._kt !== html) {
+          const aftur = (window.Stodugt && Stodugt.vernda) ? Stodugt.vernda(buk) : null;
+          buk._kt = html; buk.innerHTML = html;
+          if (aftur) aftur();
+        }
+      }
       return;
     }
     const listi = kerfiStadar(g);
@@ -397,8 +422,10 @@
       rod.querySelectorAll('[data-kt="til"]').forEach((b) => { const a = String(b.dataset.v === x.til); if (b.getAttribute('aria-pressed') !== a) b.setAttribute('aria-pressed', a); });
       const fot = rod.querySelector('[data-kt-fot]'); const fh = rodStadaHtml(fid, kerfi); if (fot && fot._kt !== fh) { fot._kt = fh; fot.innerHTML = fh; }
     }
-    const raema = kort.querySelector('[data-kt-raema]'); const rh = raemaHtml(m.gogn, listi); if (raema && raema._kt !== rh) { raema._kt = rh; raema.innerHTML = rh; }
-    setjaSamtals(kort, samtala(listi));
+    if (m.gogn.flokkun) {   // óflokkaður: raeman er skýringarnóta, ekki flokkunarsamantekt — ekki yfirskrifa hana
+      const raema = kort.querySelector('[data-kt-raema]'); const rh = raemaHtml(m.gogn, listi); if (raema && raema._kt !== rh) { raema._kt = rh; raema.innerHTML = rh; }
+      setjaSamtals(kort, samtala(listi));
+    }
     // Hnútamynd bukHtml er orðin úrelt — næsta fulla fylling ber saman við nýtt
     const buk = kort.querySelector('[data-kt-buk]'); if (buk) buk._kt = null;
   }
