@@ -9,6 +9,12 @@
 //   • svar-vörnin    → afgreidsla.cjs athuga() Regla 1: er komið NÝRRA skeyti í þráðinn (líka frá öðrum starfsmanni)?
 //                      Við skönnun HÉR er það forsíað (sleppt ef sent-skeyti er nýrra en pósturinn) svo ekki fari AI-kall í
 //                      þráð sem einhver svaraði þegar. Lendir svar á milli smíði og sýningar merkir GET spjaldið 'urelt'.
+//
+// HVAÐA PÓSTUR (mælt 26.11.2026): is_question er HÁVÆRT — það merkir svartan-föstudag-pósta, kannanir og kerfistilkynningar
+// sem „spurningar". Því er reglan ÞRENGRI en „spurning sem bíður": aðeins póstur í SAMTALI SEM VIÐ EIGUM — til er eldra
+// SENT-skeyti frá okkur í sama þræði (`sendum_adur`) og ekkert nýrra svar. Það merki (raunveruleg þátttaka okkar, ekki
+// efnislínan) skildi hreint að kúnnann frá markaðspóstinum í mælingunni: Benna/PMT inn, allir fjórir auglýsingapóstar úti.
+// Splunkunýtt erindi frá félagi sem hefur aldrei skrifað fær EKKI sjálfvirkt spjald — Agnar svarar því handvirkt (óbreytt).
 //   • tvítökuvörnin  → _postsvar-rod.bua: einkvæmur lykill 'svar:<message_id>' (409 → sleppt).
 //   • sendingin      → 515 rauði takkinn → afgreidsla.cjs framkvaema → sendaPost.
 //
@@ -52,17 +58,17 @@ async function skanna(budget = NY_I_KEYRSLU) {
     `&order=received_at.desc&limit=40`);
   const postar = raw.filter((e) => POSTHOLF.test(String(e.account || '')));
 
-  const sleppt = { sjalfvirkt: 0, svarad: 0, spjald: 0 };
+  const sleppt = { sjalfvirkt: 0, svarad: 0, ekki_i_samtali: 0, spjald: 0 };
   const virkir = postar.filter((e) => { const s = CL.erSjalfvirkt(e.sender_email); if (s) sleppt.sjalfvirkt++; return !s; });
   if (!virkir.length) return { budget: budgetRaun, opin, candidates: [], sleppt };
 
-  // Svarað þegar? Nýjasta SENT-skeyti í hverjum þræði (frá okkur eða öðrum starfsmanni). Ein fyrirspurn fyrir alla þræði.
+  // Öll SENT-skeyti okkar í þessum þráðum (frá okkur EÐA öðrum starfsmanni). Ein fyrirspurn fyrir alla þræði.
   const threads = [...new Set(virkir.map((e) => e.thread_id))];
   const sent = threads.length
-    ? await lesa(`email_digest?select=thread_id,received_at&thread_id=in.(${threads.map(q).join(',')})&folder=ilike.*sent*&order=received_at.desc`)
+    ? await lesa(`email_digest?select=thread_id,received_at&thread_id=in.(${threads.map(q).join(',')})&folder=ilike.*sent*`)
     : [];
-  const sidastaSvar = {};
-  for (const s of sent) { const t = s.thread_id; if (!sidastaSvar[t] || s.received_at > sidastaSvar[t]) sidastaSvar[t] = s.received_at; }
+  const sentEftirThraedi = {};
+  for (const s of sent) { (sentEftirThraedi[s.thread_id] || (sentEftirThraedi[s.thread_id] = [])).push(s.received_at); }
 
   // Á spjald þegar (eða var afgreitt)? Einkvæmur lykill 'svar:<message_id>'. Ein fyrirspurn fyrir alla.
   const lyklar = virkir.map((e) => 'svar:' + e.message_id);
@@ -74,8 +80,9 @@ async function skanna(budget = NY_I_KEYRSLU) {
   const candidates = [];
   for (const e of virkir) {
     if (candidates.length >= budgetRaun) break;
-    const svarad = sidastaSvar[e.thread_id];
-    if (svarad && svarad > e.received_at) { sleppt.svarad++; continue; }   // einhver svaraði þegar — ekkert spjald
+    const ts = sentEftirThraedi[e.thread_id] || [];
+    if (ts.some((x) => x > e.received_at)) { sleppt.svarad++; continue; }        // einhver svaraði þegar nýrra en þessum — ekkert spjald
+    if (!ts.some((x) => x <= e.received_at)) { sleppt.ekki_i_samtali++; continue; }  // við eigum ekki þetta samtal (nýtt/markaðspóstur) — handvirkt
     if (erSpjald.has('svar:' + e.message_id)) { sleppt.spjald++; continue; }
     candidates.push(e);
   }
