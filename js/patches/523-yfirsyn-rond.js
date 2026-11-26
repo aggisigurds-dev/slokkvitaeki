@@ -24,7 +24,8 @@
 (() => {
   if (window.YfirsynRond) return;
 
-  const EIGENDUR = ['Agnar', 'Anni'];
+  // 26.11.2026 (Agnar: „Geturðu látið þetta yfirlit líka vera á borðinu hjá Bjarndísi“) — Bjarndís bætist við (hub_adgangar id 6, Admin).
+  const EIGENDUR = ['Agnar', 'Anni', 'Bjarndís'];
   const HAM_LYKILL = 'bord.yfirsyn';
   const NYTT = 10 * 60000;              // sótt aftur eftir 10 mín. þegar borðið teiknast
   const REKSTUR_URL = 'https://brunaholf.netlify.app/rekstur';
@@ -962,5 +963,5 @@
     ].join('\n');
   }
 
-  window.YfirsynRond = { html, css, smellur, geymaArs, load, allsherjar, opnaKrofur, S, version: '2026-11-25f' };
+  window.YfirsynRond = { html, css, smellur, geymaArs, load, allsherjar, opnaKrofur, S, version: '2026-11-26a' };
 })();

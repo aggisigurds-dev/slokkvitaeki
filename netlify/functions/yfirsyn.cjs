@@ -20,7 +20,8 @@ const HUB = require('./hub-adgangar.cjs');
 
 const BH = (process.env.BRUNAHOLF_URL || 'https://brunaholf.netlify.app').replace(/\/$/, '');
 const DAGUR = 86400000;
-const LEYFT = ['Agnar', 'Annþór', 'Lota'];   // fornöfn í notendaskránni (hub_adgangar): Agnar Sigurðsson, Annþór Kristján Karlsson, Lota (Claude)
+// 26.11.2026 (Agnar: „Geturðu látið þetta yfirlit líka vera á borðinu hjá Bjarndísi“): Bjarndís (id 6, Admin) bætist við.
+const LEYFT = ['Agnar', 'Annþór', 'Bjarndís', 'Lota'];   // fornöfn í notendaskránni (hub_adgangar): Agnar Sigurðsson, Annþór Kristján Karlsson, Lota (Claude)
 // Föll Brunahólfs sem verða lokuð óinnskráðum (lota 13): þjónninn sendir tóka eins og tekjur-beint gerir.
 async function bhHausar() {
   const headers = { accept: 'application/json' };
@@ -447,7 +448,7 @@ exports.handler = async (event) => {
   // Röndin er Agnars og Annþórs (beiðni Agnars) — sá sem er INNSKRÁÐUR ræður, ekki „Ég er"-valið á tölvunni (rýni 21.11:
   // annar stjórnandi við vél Agnars sæi annars allt). Lota (Claude) er prófunaraðgangur lotunnar (uid 10, Admin).
   const fornafn = String(hver.nafn || '').trim().split(/\s+/)[0];
-  if (!LEYFT.includes(fornafn)) return P.json(403, { error: 'Yfirsýnin er aðeins fyrir Agnar og Annþór', bannad: true });
+  if (!LEYFT.includes(fornafn)) return P.json(403, { error: 'Yfirsýnin er aðeins fyrir Agnar, Annþór og Bjarndísi', bannad: true });
   const [rek, kbh, ksl, os, ssl, sbh, mt, gi, cg, inn, tar, man] = await Promise.all([
     mael('Rekstrarskýrslan', () => rekstur(event)),
     mael('Kröfu yfirlit Brunahólfs', krofurBh),
