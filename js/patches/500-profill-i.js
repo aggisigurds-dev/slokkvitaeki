@@ -111,6 +111,19 @@
     G + ' > div:first-child{display:none!important}' +
     G + ' > .co-banner:not(.p2-open){display:none!important}' +
     G + ' > .p2-gomul{display:none!important}' +
+    /* 26.11.2026 (Agnar: „neðra fyrirtækjaboxið … átti að breyta útlitinu í það sem er fyrir ofan … sameina … svo öll sjáist og sé í dökkgráa stílnum"):
+       „Allir reitir" afhjúpaði gamla bannerinn í LJÓSUM stíl sem stakt box með tvíteknum NE-haus. Nú fær hann sama dökkgráa
+       málmstíl og rennur sem framhald af spjaldinu fyrir ofan. Tvítekni hausinn (nafn/kt — þegar í p2-haus) er falinn, en ALLT
+       annað stendur eftir (tengiliðir, byggingartölur, götusýn m/upphleðslu, fasteignaskrá, Hreyfingaryfirlit — sem eru hvergi
+       annars staðar) — texti ljós, reitir/raðir dökkir. */
+    G + ' > .co-banner.p2-open{background:' + METAL + '!important;color:#e8eaee!important;border:0!important;border-radius:14px!important;margin:8px 0 0!important;padding:16px 18px 18px!important;box-shadow:0 14px 34px -20px rgba(0,0,0,.7),0 0 0 1px rgba(20,24,34,.45)!important;overflow:hidden}' +
+    G + ' > .co-banner.p2-open > .co-banner-id{display:none!important}' +
+    G + ' > .co-banner.p2-open [class*="_bupp"],' + G + ' > .co-banner.p2-open [class*="_fasteign"],' + G + ' > .co-banner.p2-open .co-banner-right,' + G + ' > .co-banner.p2-open .co-banner-right *,' + G + ' > .co-banner.p2-open .b405-facts,' + G + ' > .co-banner.p2-open .co-bupp,' + G + ' > .co-banner.p2-open .co-mynd,' + G + ' > .co-banner.p2-open label,' + G + ' > .co-banner.p2-open small{color:#d6dce7!important}' +
+    G + ' > .co-banner.p2-open ._bupp-lina{background:rgba(255,255,255,.05)!important;border:1px solid rgba(255,255,255,.1)!important;box-shadow:none!important}' +
+    G + ' > .co-banner.p2-open .co-bupp-reitur,' + G + ' > .co-banner.p2-open .co-banner-note,' + G + ' > .co-banner.p2-open input,' + G + ' > .co-banner.p2-open textarea{background:rgba(0,0,0,.28)!important;color:#e8eaee!important;border-color:rgba(255,255,255,.14)!important}' +
+    G + ' > .co-banner.p2-open .btn-outline,' + G + ' > .co-banner.p2-open ._bupp-flis,' + G + ' > .co-banner.p2-open ._anf-takki,' + G + ' > .co-banner.p2-open ._bupp-vixl,' + G + ' > .co-banner.p2-open .co-mynd-upp{background-image:none!important;background:rgba(255,255,255,.08)!important;color:#e8eaee!important;border-color:rgba(255,255,255,.24)!important}' +
+    G + ' > .co-banner.p2-open .b405-facts span{background:rgba(255,255,255,.08)!important;color:#eef1f5!important;border:1px solid rgba(255,255,255,.16)!important}' +
+    G + ' > .co-banner.p2-open .co-mynd-vefja,' + G + ' > .co-banner.p2-open .co-mynd-flis{background:#0d0d10!important;border-color:rgba(255,255,255,.12)!important}' +
     G + ' > [data-p2t]{margin-top:10px!important}' +
     G + '[data-p2tab="skjol"] > [data-p2t]:not([data-p2t~="skjol"]),' +
     G + '[data-p2tab="slt"] > [data-p2t]:not([data-p2t~="slt"]),' +
