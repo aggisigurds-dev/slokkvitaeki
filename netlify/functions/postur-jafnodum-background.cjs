@@ -1,0 +1,147 @@
+// postur-jafnodum-background.cjs — JAFNÓÐUM (26.11.2026).
+//
+// Agnar 26.11.2026: „nýjustu postana jafnóðum … tilbúið spjald sem ég sendi úr símanum."
+// Nýr póstur sem bíður svars → Claude semur drög → „Tilbúið verk"-spjald í Afgreiðslu (515/511). HÉR ER EKKERT SENT:
+// spjaldið er drög sem Agnar sendir sjálfur með rauða takkanum, eftir sömu athuganir og allt annað (afgreidsla.cjs athuga()).
+//
+// Þetta er AÐEINS sjálfvirka smíðin á spjaldinu. Allt hitt er þegar til og óbreytt:
+//   • drögin        → /api/postur-reply (Sonnet, rétt íslenska, finnur aldrei upp tölur). Innri tóki (x-sl-toki) í stað köku.
+//   • svar-vörnin    → afgreidsla.cjs athuga() Regla 1: er komið NÝRRA skeyti í þráðinn (líka frá öðrum starfsmanni)?
+//                      Við skönnun HÉR er það forsíað (sleppt ef sent-skeyti er nýrra en pósturinn) svo ekki fari AI-kall í
+//                      þráð sem einhver svaraði þegar. Lendir svar á milli smíði og sýningar merkir GET spjaldið 'urelt'.
+//   • tvítökuvörnin  → _postsvar-rod.bua: einkvæmur lykill 'svar:<message_id>' (409 → sleppt).
+//   • sendingin      → 515 rauði takkinn → afgreidsla.cjs framkvaema → sendaPost.
+//
+// ÞAK (lærdómur 26.11: ekki búa til nýtt flóð): mest NY_I_KEYRSLU ný spjöld á keyrslu, og aldrei meira en THAK_OPIN opin
+// jafnóðum-spjöld í einu. Aðeins eldklar@/bokhald@eldklar.is (Gmail-þráður til); is_question=true; síðustu DAGAR daga.
+'use strict';
+
+const P = require('./_portal.cjs');
+const PSV = require('./_postsvar-rod.cjs');        // bua(t, afh, createdBy) → röð í afgreidsla (dedup + pósthólf-/þráðar-krafa)
+const CL = require('./_adalmal-claude.cjs');        // erSjalfvirkt(netfang)
+const HUB = require('./hub-adgangar.cjs');          // innriHausar() → { 'x-sl-toki': <tóki> } fyrir /api/postur-reply
+
+const POSTHOLF = /^(eldklar|bokhald)@eldklar\.is$/i;
+const DAGAR = 14;              // hversu langt aftur er leitað að ósvöruðum spurningum
+const NY_I_KEYRSLU = 5;        // mest ný spjöld á hverja keyrslu (þak á AI-köllum líka)
+const THAK_OPIN = 12;          // aldrei fleiri en þetta opin jafnóðum-spjöld í einu
+const CREATED_BY = 'claude-jafnodum';
+
+const p2 = (n) => String(n).padStart(2, '0');
+const dagsIs = (d) => { const x = new Date(d); return p2(x.getDate()) + '.' + p2(x.getMonth() + 1) + '.' + x.getFullYear(); };
+const dagsTimi = (d) => { const x = new Date(d); return dagsIs(x) + ' ' + p2(x.getHours()) + ':' + p2(x.getMinutes()); };
+const grunnur = () => String(process.env.URL || 'https://slokkvitaeki.netlify.app').replace(/\/+$/, '');
+
+async function sbJson(r) { if (!r.ok) throw new Error(`Supabase ${r.status}: ${(await r.text()).slice(0, 160)}`); return r.json(); }
+const lesa = (qs) => P.sbGet(qs).then(sbJson);
+const q = (s) => encodeURIComponent(String(s));
+
+// Finnur ný skeyti sem bíða svars og eiga EKKERT opið spjald og EKKERT nýrra svar í þræðinum. Les aðeins — engin skrif.
+// Skilar { budget, opin, candidates:[…], sleppt:{ sjalfvirkt, svarad, spjald } }.
+async function skanna(budget = NY_I_KEYRSLU) {
+  // Hve mörg jafnóðum-spjöld eru þegar opin? Þakið er á heildinni, ekki bara þessari keyrslu.
+  const opnir = await lesa(`afgreidsla?select=id&created_by=eq.${q(CREATED_BY)}&stada=eq.tilbuid`);
+  const opin = opnir.length;
+  const budgetRaun = Math.max(0, Math.min(Number(budget) || 0, THAK_OPIN - opin));
+
+  // Nýjustu innkomnu spurningarnar í pósthólfum félagsins, með þráð og message_id.
+  const raw = await lesa(
+    `email_digest?select=id,message_id,account,folder,sender_name,sender_email,subject,snippet,body_preview,received_at,thread_id` +
+    `&account=ilike.*@eldklar.is&folder=not.ilike.*sent*&thread_id=not.is.null&message_id=not.is.null` +
+    `&is_question=is.true&received_at=gt.${q(new Date(Date.now() - DAGAR * 864e5).toISOString())}` +
+    `&order=received_at.desc&limit=40`);
+  const postar = raw.filter((e) => POSTHOLF.test(String(e.account || '')));
+
+  const sleppt = { sjalfvirkt: 0, svarad: 0, spjald: 0 };
+  const virkir = postar.filter((e) => { const s = CL.erSjalfvirkt(e.sender_email); if (s) sleppt.sjalfvirkt++; return !s; });
+  if (!virkir.length) return { budget: budgetRaun, opin, candidates: [], sleppt };
+
+  // Svarað þegar? Nýjasta SENT-skeyti í hverjum þræði (frá okkur eða öðrum starfsmanni). Ein fyrirspurn fyrir alla þræði.
+  const threads = [...new Set(virkir.map((e) => e.thread_id))];
+  const sent = threads.length
+    ? await lesa(`email_digest?select=thread_id,received_at&thread_id=in.(${threads.map(q).join(',')})&folder=ilike.*sent*&order=received_at.desc`)
+    : [];
+  const sidastaSvar = {};
+  for (const s of sent) { const t = s.thread_id; if (!sidastaSvar[t] || s.received_at > sidastaSvar[t]) sidastaSvar[t] = s.received_at; }
+
+  // Á spjald þegar (eða var afgreitt)? Einkvæmur lykill 'svar:<message_id>'. Ein fyrirspurn fyrir alla.
+  const lyklar = virkir.map((e) => 'svar:' + e.message_id);
+  const til = lyklar.length
+    ? await lesa(`afgreidsla?select=lykill&lykill=in.(${lyklar.map(q).join(',')})`)
+    : [];
+  const erSpjald = new Set(til.map((x) => x.lykill));
+
+  const candidates = [];
+  for (const e of virkir) {
+    if (candidates.length >= budgetRaun) break;
+    const svarad = sidastaSvar[e.thread_id];
+    if (svarad && svarad > e.received_at) { sleppt.svarad++; continue; }   // einhver svaraði þegar — ekkert spjald
+    if (erSpjald.has('svar:' + e.message_id)) { sleppt.spjald++; continue; }
+    candidates.push(e);
+  }
+  return { budget: budgetRaun, opin, candidates, sleppt };
+}
+
+// Léttur kúnna-uppfletting: fyrirtæki með þetta netfang skráð. Aðeins nafn + kt (postur-reply notar það, finnur ekki upp neitt).
+async function kunni(netfang) {
+  try {
+    const f = await lesa(`fyrirtaeki?select=nafn,kennitala&deleted_at=is.null&netfang=ilike.*${q(netfang)}*&limit=1`);
+    return f[0] ? { name: f[0].nafn || '', kt: f[0].kennitala || '' } : null;
+  } catch (_) { return null; }
+}
+
+// Semja drög með sömu vél og „Reikninga-póstur" (/api/postur-reply) — innri tóki í stað köku. Skilar { subject, body, summary }.
+async function semjaDrog(e) {
+  const hausar = Object.assign({ 'Content-Type': 'application/json' }, await HUB.innriHausar());
+  const r = await fetch(grunnur() + '/api/postur-reply', {
+    method: 'POST', headers: hausar, signal: AbortSignal.timeout(22000),
+    body: JSON.stringify({
+      email: { sender_name: e.sender_name || '', sender_email: e.sender_email || '', subject: e.subject || '', body: e.body_preview || e.snippet || '' },
+      customer: await kunni(e.sender_email), invoices: [],
+    }),
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j || !String(j.body || '').trim()) throw new Error('postur-reply: ' + (j && (j.error || j.detail) || ('HTTP ' + r.status)));
+  return { subject: j.subject || '', body: String(j.body), summary: j.summary || '' };
+}
+
+function afHverju(e, summary) {
+  return [
+    { texti: 'Claude samdi þessi drög sjálfkrafa úr nýjum pósti sem beið svars — lestu og lagaðu áður en þú sendir. Ekkert fer fyrr en þú ýtir á rauða takkann.', heimild: 'postur-jafnodum · ' + dagsIs(Date.now()) },
+    { texti: 'Pósturinn: „' + (e.subject || '(efnislaust)') + '" frá ' + (e.sender_name || e.sender_email || '?') + ', ' + dagsTimi(e.received_at), heimild: 'email_digest #' + e.id, opna: { tegund: 'post', id: e.id } },
+  ].concat(summary ? [{ texti: 'Erindi: ' + summary, heimild: 'Claude' }] : []);
+}
+
+// Keyrsla: semur drög og býr til spjald fyrir hvern frambjóðanda. Hvert skref sér um sig — ein bilun stöðvar ekki hin.
+async function vinna({ budget = NY_I_KEYRSLU } = {}) {
+  const s = await skanna(budget);
+  const bjo_til = [], villur = [];
+  for (const e of s.candidates) {
+    try {
+      const drog = await semjaDrog(e);
+      const id = await PSV.bua({ tegund: 'tolvupostur', texti: drog.body, post: { digest_id: e.id } }, afHverju(e, drog.summary), CREATED_BY);
+      bjo_til.push({ afgreidsla_id: id, digest_id: e.id, fra: e.sender_email, efni: e.subject });
+    } catch (err) {
+      if (err && err.kodi === 409) { s.sleppt.spjald++; continue; }   // varð til hjá annarri keyrslu á milli — allt í lagi
+      villur.push({ digest_id: e.id, villa: String((err && err.message) || err).slice(0, 200) });
+    }
+  }
+  return { opin_fyrir: s.opin, budget: s.budget, skodad: s.candidates.length, bjo_til, sleppt: s.sleppt, villur };
+}
+
+// Bakgrunnsfall: ræst af cron (postur-jafnodum-cron) eða handvirkt (postur-jafnodum?keyra=1). Skilar 202 strax; 15 mín. þak.
+exports.handler = async () => {
+  try {
+    const r = await vinna({ budget: NY_I_KEYRSLU });
+    return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ ok: true }, r)) };
+  } catch (e) {
+    return { statusCode: 500, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ok: false, error: String((e && e.message) || e).slice(0, 300) }) };
+  }
+};
+
+module.exports.skanna = skanna;
+module.exports.vinna = vinna;
+module.exports._semjaDrog = semjaDrog;
+module.exports.THAK_OPIN = THAK_OPIN;
+module.exports.NY_I_KEYRSLU = NY_I_KEYRSLU;
+module.exports.CREATED_BY = CREATED_BY;

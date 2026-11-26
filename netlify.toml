@@ -333,6 +333,12 @@
 [functions."trio-cron"]
   schedule = "0 6 * * *"
 
+# Jafnóðum (26.11.2026) — nýr póstur sem bíður svars → Claude semur drög → „Tilbúið verk"-spjald í Afgreiðslu, tilbúið svo
+# Agnar sendi úr símanum. Á 30 mín. fresti (eins og verkefnalisti-vision); kveikir á postur-jafnodum-background. Engin ný
+# spurning → ekkert gert (ein til tvær SQL-fyrirspurnir). EKKERT er sent — spjaldið er drög sem Agnar sendir sjálfur.
+[functions."postur-jafnodum-cron"]
+  schedule = "*/30 * * * *"
+
 # Einkaritarinn (16.11.2026) — morgunyfirlit á Þjónustuborði Agnars: vikan í tölum, samningar, forgangsröðun, áminningar.
 # Sama mynstur og Ráðgjafinn: 30 sek. áætlunarkall sem ræsir einkaritari-background (15 mín.).
 [functions."einkaritari-cron"]
