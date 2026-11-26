@@ -412,6 +412,13 @@
       P+'._rf_samskipti_slot>*+*{border-top:1px solid rgba(20,24,34,.14)!important}',
       // byggingakaflinn (síðasti div-inn) er ber markup → sömu hliðar og hausar
       P+'._rf_body>div:last-child{padding:12px 16px 2px!important}',
+      // ── FLÖT SPJALDALÍNA (26.11.2026, Agnar „Já, þétta" — Þjónustusumma 288 + Samskiptasaga 286):
+      //    boxuðu .ssp-lina tiles (hvít plata + skuggi + radíus + ~38px hæð) átu ~80% plássið
+      //    með örlitlu innihaldi. Flöt lína í staðinn — gegnsæ, enginn skuggi, þétt lóðrétt bil —
+      //    svo þessir kaflar lesist sem ein samfella eins og EINN KASSI. Label|gildi grindin heldur
+      //    (Næsta skref getur verið setning, svo ENGIN inline-þvingun hér). Bundið við summu+samskipti.
+      P+'._rf_summa .ssp-lina,'+P+'._samskipti-rf .ssp-lina{background:transparent!important;box-shadow:none!important;border-radius:0!important;padding:2px 0!important;min-height:0!important}',
+      P+'._rf_summa .ssp-reitir,'+P+'._samskipti-rf .ssp-reitir{gap:2px 16px!important}',
       // ── ÞÉTT SAMBAND (26.11.2026): inline-lína í stað boxaðra tiles, flæðir yfir breiddina
       P+'._rf_samband{display:flex!important;flex-wrap:wrap;align-items:baseline;gap:5px 24px;padding:2px 0}',
       P+'._rf_fld{display:inline-flex;align-items:baseline;gap:6px;min-width:0;max-width:100%}',
