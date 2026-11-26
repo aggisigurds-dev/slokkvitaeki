@@ -11,15 +11,20 @@
  * :host([data-thema="bh2"]), svo án merkisins sést nákvæmlega sama borð og áður.
  *
  * GÖGN (regla 15.10.2026 — val notandans fer á þjóninn, eins á öllum vélum):
- *   thjonustubord5.by_staff.<nafn>.thema = 'bh2' | 'boss'   (vantar = Boss)
- * Rofinn [Boss | V2] aftast í meta-línunni undir fyrirsögninni skrifar það á nafn þess sem er við borðið.
+ *   thjonustubord5.by_staff.<nafn>.thema = 'bh2' | 'v4' | 'boss'   (vantar = Boss)
+ * Rofinn [Boss | V2 | V4] aftast í meta-línunni undir fyrirsögninni skrifar það á nafn þess sem er við borðið.
+ *
+ * V4 (26.11.2026, Agnar: „Já, smíða V4"): dökka útgáfan, „Brunahólf V4 (Dökkt)". Hún er V2-UPPSETNINGIN (sama hetja með
+ * húsamyndinni, sama grind) með dökku glerskinni ofan á: hýsillinn fær data-thema="bh2" EINS OG V2 og að auki data-v4.
+ * Allt V4-útlitið er í 535-bord-thema-v4.js undir :host([data-thema="bh2"][data-v4]), svo Boss og V2 eru ósnert.
  *
  * API (368 kallar, allt varið með `window.ThbThemaBh2 &&`):
- *   css()                 yfirlagið, bætt aftast í cssText()
- *   stilla(host, nafn)    í render(): setur/tekur data-thema á #view-bord
+ *   css()                 yfirlagið, bætt aftast í cssText() (+ ThbThemaV4.css() sé 535 hlaðinn)
+ *   stilla(host, nafn)    í render(): setur/tekur data-thema (og data-v4) á #view-bord
  *   rofi(nafn)            HTML rofans (í .meta)
- *   skipta(nafn, gildi, render) → Promise<bool>   smellur á rofann; vistar á þjón
- *   thema(nafn)           'bh2' | ''
+ *   skipta(nafn, gildi, render) → Promise<bool>   smellur á rofann; vistar á þjón ('boss' | 'bh2' | 'v4')
+ *   thema(nafn)           'bh2' | ''        — 'bh2' bæði fyrir V2 og V4 (V4 ER V2-uppsetning), svo eldri kallarar haldast
+ *   utgafa(nafn)          'v4' | 'bh2' | '' — hvor útgáfan, fyrir þá sem þurfa að greina á milli
  */
 (() => {
   if (window.ThbThemaBh2) return;
@@ -30,13 +35,21 @@
   // Val sem er smellt en þjónninn hefur ekki enn skilað — svo rofinn skipti strax, ekki eftir svar.
   const bid = {};
 
-  function thema(nafn) {
+  // Gild útgáfugildi; allt annað (vantar, 'boss', rusl) = Boss.
+  const UTG = { bh2: 'bh2', v4: 'v4' };
+
+  function utgafa(nafn) {
     const v = P(LYKILL + '.by_staff.' + nafn + '.thema');
     if (bid[nafn] != null) {
       if (v === bid[nafn]) delete bid[nafn];
-      else return bid[nafn] === 'bh2' ? 'bh2' : '';
+      else return UTG[bid[nafn]] || '';
     }
-    return v === 'bh2' ? 'bh2' : '';
+    return UTG[v] || '';
+  }
+
+  // V4 er V2-uppsetningin með dökku skinni, svo hún telst 'bh2' hér — kallarar sem spyrja „er V2-útlitið á?" fá já.
+  function thema(nafn) {
+    return utgafa(nafn) ? 'bh2' : '';
   }
 
   function letur() {
@@ -51,23 +64,29 @@
   function stilla(host, nafn) {
     if (!host) return;
     host.toggleAttribute('data-agnar-dagskra', nafn === 'Agnar');
-    if (thema(nafn) === 'bh2') {
+    const u = utgafa(nafn);
+    if (u) {
       letur();
       if (host.getAttribute('data-thema') !== 'bh2') host.setAttribute('data-thema', 'bh2');
     } else if (host.hasAttribute('data-thema')) host.removeAttribute('data-thema');
+    // V4 = sama uppsetning og V2 + dökka skinnið (535). Merkið fer líka af þegar skipt er í V2 eða Boss.
+    if ((u === 'v4') !== host.hasAttribute('data-v4')) host.toggleAttribute('data-v4', u === 'v4');
   }
 
   function rofi(nafn) {
-    const v2 = thema(nafn) === 'bh2';
+    const u = utgafa(nafn);
+    const takki = (v, a, titill, texti) =>
+      '<button type="button" data-t5="thema" data-v="' + v + '" aria-pressed="' + a + '" title="' + titill + '">' + texti + '</button>';
     return '<span class="seg sm t5-thema" role="group" aria-label="Útlit borðsins">' +
-      '<button type="button" data-t5="thema" data-v="boss" aria-pressed="' + !v2 + '" title="Boss-útlitið (svart stál og gull)">Boss</button>' +
-      '<button type="button" data-t5="thema" data-v="bh2" aria-pressed="' + v2 + '" title="Brunahólf V2 (navy og appelsínugult)">V2</button>' +
+      takki('boss', !u, 'Boss-útlitið (svart stál og gull)', 'Boss') +
+      takki('bh2', u === 'bh2', 'Brunahólf V2 (ljóst: navy og appelsínugult)', 'V2') +
+      takki('v4', u === 'v4', 'Brunahólf V4 (dökkt: navy-gler og appelsínugult)', 'V4') +
     '</span>';
   }
 
   async function skipta(nafn, gildi, render) {
-    const nyt = gildi === 'bh2' ? 'bh2' : 'boss';
-    if ((thema(nafn) === 'bh2') === (nyt === 'bh2')) return true;
+    const nyt = UTG[gildi] || 'boss';
+    if ((utgafa(nafn) || 'boss') === nyt) return true;
     bid[nafn] = nyt;
     if (render) render();
     let ok = false;
@@ -523,9 +542,11 @@
         H + ' .acts>.btn:nth-of-type(3){grid-column:3}' +
         H + ' .col::before{grid-row:2/4}' +
       '}',
-      '@media (prefers-reduced-motion: reduce){' + H + ' .btn{transition:none}' + H + ' .btn:active{transform:none}}'
+      '@media (prefers-reduced-motion: reduce){' + H + ' .btn{transition:none}' + H + ' .btn:active{transform:none}}',
+      // V4 (535): dökka skinnið ofan á V2 — aftast svo það gangi framar V2-reglum með sömu sértækni.
+      (window.ThbThemaV4 ? window.ThbThemaV4.css() : '')
     ].join('\n');
   }
 
-  window.ThbThemaBh2 = { css, stilla, rofi, skipta, thema };
+  window.ThbThemaBh2 = { css, stilla, rofi, skipta, thema, utgafa };
 })();
