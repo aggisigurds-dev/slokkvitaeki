@@ -360,7 +360,7 @@
     const seg = (felag, nafn, v, cls) => v == null
       ? '<span class="yr-cseg yr-cseg-om" title="' + esc(nafn + ': ómælt') + '"><span>' + nafn + '</span><b>ómælt</b></span>'
       : '<button type="button" class="yr-cseg ' + cls + '" data-t5="yr-krofur" data-felag="' + felag + '" style="flex-grow:' + Math.max(v / alls, 0.22).toFixed(3) + '" title="' +
-        esc((felag === 'bh' ? 'Brunahólf — ógreitt + ósent + tími eftir (= „Samtals í pípunni" á Kröfu yfirliti) ' : 'Slökkvitæki — ósent + ógreitt ') + isk(v) + ' kr m. vsk (' + Math.round(v / alls * 100) + ' %). Smelltu til að sjá allar kröfurnar.') + '">' +
+        esc((felag === 'bh' ? 'Brunahólf — ógreitt + ósent + áunnið í mánuðinum (= „Samtals í pípunni" á Kröfu yfirliti) ' : 'Slökkvitæki — ósent + ógreitt ') + isk(v) + ' kr m. vsk (' + Math.round(v / alls * 100) + ' %). Smelltu til að sjá allar kröfurnar.') + '">' +
         '<span>' + nafn + ' · ' + Math.round(v / alls * 100) + ' %</span><b>' + mkr(v) + '<small>m</small></b></button>';
     return '<div class="yr-cbar" role="group" aria-label="Ósent og ógreitt eftir félagi">' + seg('bh', 'BH', b, 'yr-cbh') + seg('sl', 'SL', s, 'yr-csl') + '</div>';
   }
@@ -374,14 +374,14 @@
     // „Tími eftir" (CG-03 af Kröfu yfirliti, 25.11.2026) — gömul tala (> sólarhringur) merkt, ekki falin
     const te = D.krofur && D.krofur.timi_eftir, tek = ok(te) ? te.kr : 0;
     const teGamalt = ok(te) && te.aldur_klst > 24;
-    const teTitill = ok(te) ? 'Óinnheimt vinna Brunahólfs (Tímavera-tímar × taxti m. vsk + Landspítala-viðbót) — sama tala og „Tími eftir" á Kröfu yfirliti, skráð ' +
-      dd(te.uppfaert) + ' kl. ' + klukka(te.uppfaert) + (teGamalt ? '. ATH: meira en sólarhrings gömul — opnaðu Kröfu yfirlit til að uppfæra hana.' : '.') : ('Tími eftir: ' + ((te && te.omaelt) || 'ómælt'));
+    const teTitill = ok(te) ? 'Áunnið í mánuðinum hjá Brunahólfi — vinna líðandi mánaðar sem er unnin en ekki enn send í bókun né komin í Payday (drög líðandi mánaðar + óinnheimtir Tímavera-tímar × taxti m. vsk + Landspítala-viðbót) — sama tala og „Áunnið í mánuðinum" (CG-03) á Kröfu yfirliti, skráð ' +
+      dd(te.uppfaert) + ' kl. ' + klukka(te.uppfaert) + (teGamalt ? '. ATH: meira en sólarhrings gömul — opnaðu Kröfu yfirlit til að uppfæra hana.' : '.') : ('Áunnið: ' + ((te && te.omaelt) || 'ómælt'));
     const alls = osent + ogr + osk + tek || 1;
     const eldri = (ok(sl) ? sl.eldri45.kr : 0) + (ok(bh) ? bh.eldri45.kr : 0);
     const eldriN = (ok(sl) ? sl.eldri45.n : 0) + (ok(bh) ? bh.eldri45.n : 0);
-    const vantar = [!ok(sl) && 'SL', !ok(bh) && 'BH', !ok(os) && 'ósótt', !ok(te) && 'tími eftir'].filter(Boolean);
+    const vantar = [!ok(sl) && 'SL', !ok(bh) && 'BH', !ok(os) && 'ósótt', !ok(te) && 'áunnið'].filter(Boolean);
     const w = k => (k / alls * 100).toFixed(1) + '%';
-    return '<div class="yr-k" title="M. vsk, bæði félög. Ósent + ógreitt + ósótt tæki + tími eftir (BH). Ekki leggja saman við virðið — sama féð á leiðinni inn.' + (ok(bh) && bh.staerst ? ' Stærsta krafan: ' + esc(bh.staerst.nr + ' ' + bh.staerst.kunni + ' ' + mkr(bh.staerst.kr) + ' m') + '.' : '') + (ok(sl) && sl.a_bid && sl.a_bid.n ? ' Þar af á bið hjá SL: ' + sl.a_bid.n + ' · ' + mkr(sl.a_bid.kr) + ' m (telst með, eins og á Kröfu yfirliti).' : '') + '">' +
+    return '<div class="yr-k" title="M. vsk, bæði félög. Ósent + ógreitt + ósótt tæki + áunnið í mánuðinum (BH). Ekki leggja saman við virðið — sama féð á leiðinni inn.' + (ok(bh) && bh.staerst ? ' Stærsta krafan: ' + esc(bh.staerst.nr + ' ' + bh.staerst.kunni + ' ' + mkr(bh.staerst.kr) + ' m') + '.' : '') + (ok(sl) && sl.a_bid && sl.a_bid.n ? ' Þar af á bið hjá SL: ' + sl.a_bid.n + ' · ' + mkr(sl.a_bid.kr) + ' m (telst með, eins og á Kröfu yfirliti).' : '') + '">' +
       '<span class="yr-kl">' + ic('krafa') + 'Á leiðinni inn<em>m. vsk</em></span>' +
       '<span class="yr-row">' + lk('fjarm', mkr(osent + ogr + osk + tek) + '<small>m</small>', 'yr-kn', 'Á leiðinni inn: ' + isk(osent + ogr + osk + tek) + ' kr m. vsk') + (eldri > 0 ? lk('fjarm', mkr(eldri) + ' m &gt;45 d.', 'yr-kp yr-r', eldriN + ' ógreiddar kröfur eldri en 45 daga') : '') + '</span>' +
       '<span class="yr-sb"><i class="yr-s-bl" style="width:' + w(osent) + '"></i><i class="yr-s-rd" style="width:' + w(ogr) + '"></i><i class="yr-s-or" style="width:' + w(osk) + '"></i>' + (tek ? '<i class="yr-s-gy" style="width:' + w(tek) + '"></i>' : '') + '</span>' +
@@ -389,7 +389,7 @@
         lk('fjarm', led('bl') + 'Ósent<b>' + mkr(osent) + '<small>m</small></b>', 'yr-lr', 'SL ' + (ok(sl) ? sl.osent.n + ' · ' + isk(sl.osent.kr) + ' kr' : 'ómælt') + ' · BH ' + (ok(bh) ? bh.osent.n + ' · ' + isk(bh.osent.kr) + ' kr' : 'ómælt')) +
         lk('fjarm', led('rd') + 'Ógreitt<b>' + mkr(ogr) + '<small>m</small></b>', 'yr-lr', 'SL ' + (ok(sl) ? sl.ogreitt.n + ' · ' + isk(sl.ogreitt.kr) + ' kr' : 'ómælt') + ' · BH ' + (ok(bh) ? bh.ogreitt.n + ' · ' + isk(bh.ogreitt.kr) + ' kr' : 'ómælt')) +
         lk('verkst', led('or') + 'Ósótt<b>' + mkr(osk) + '<small>m</small></b>', 'yr-lr', ok(os) ? os.n + ' verkbeiðnir tilbúnar · ' + isk(os.kr) + ' kr' : 'ómælt') +
-        lk('kBh', led(teGamalt || !ok(te) ? 'or' : 'gy') + 'Tími eftir' + (teGamalt ? ' <small class="yr-e">(' + esc(dd(te.uppfaert)) + ')</small>' : '') +
+        lk('kBh', led(teGamalt || !ok(te) ? 'or' : 'gy') + 'Áunnið' + (teGamalt ? ' <small class="yr-e">(' + esc(dd(te.uppfaert)) + ')</small>' : '') +
           '<b>' + (ok(te) ? mkr(tek) + '<small>m</small>' : '<small>ómælt</small>') + '</b>', 'yr-lr', teTitill) +
       '</div>' +
       // „BH áunnið · göt · tímar" fór héðan 25.11 (sama tala stendur á Unnið-flísinni) svo „Tími eftir" kæmist fyrir
@@ -737,18 +737,18 @@
     // BH: „Tími eftir" (CG-03) í samtölunni og sem sérkafli — sundurliðunin sjálf er á Kröfu yfirliti (reiknuð þar í vafranum)
     const te = felag === 'bh' && D.krofur && D.krofur.timi_eftir, tek = ok(te) ? te.kr : 0;
     const teKafli = !te ? '' : ok(te)
-      ? '<div class="yrm-sec"><div class="yrm-sh">' + led('gy') + 'Tími eftir — áætlun<b>' + isk(tek) + ' kr</b></div><table class="yrm-t"><tbody><tr><td class="yrm-ku">' +
-        'Óinnheimt vinna (Tímavera-tímar × taxti + Landspítala-viðbót). Sundurliðun: <a href="https://brunaholf.netlify.app/#krofuyfirlit" target="_blank" rel="noopener" style="color:#ffb37a">Kröfu yfirlit →</a>' +
+      ? '<div class="yrm-sec"><div class="yrm-sh">' + led('gy') + 'Áunnið í mánuðinum<b>' + isk(tek) + ' kr</b></div><table class="yrm-t"><tbody><tr><td class="yrm-ku">' +
+        'Vinna líðandi mánaðar, unnin en ekki send í bókun né komin í Payday (drög líðandi mánaðar + óinnheimtir Tímavera-tímar × taxti + Landspítala-viðbót). Sundurliðun: <a href="https://brunaholf.netlify.app/#krofuyfirlit" target="_blank" rel="noopener" style="color:#ffb37a">Kröfu yfirlit →</a>' +
         '</td><td class="yrm-dg">' + esc(dd(te.uppfaert)) + ' ' + esc(klukka(te.uppfaert)) + '</td></tr></tbody></table></div>'
-      : '<div class="yrm-sec"><div class="yrm-sh">' + led('or') + 'Tími eftir<b>ómælt</b></div></div>';
+      : '<div class="yrm-sec"><div class="yrm-sh">' + led('or') + 'Áunnið í mánuðinum<b>ómælt</b></div></div>';
     const back = document.createElement('div');
     back.className = 'yrm-back';
     back.innerHTML = '<div class="yrm-box" role="dialog" aria-modal="true" aria-label="' + esc('Kröfur ' + heiti) + '">' +
-      '<div class="yrm-top"><div class="yrm-ti">' + esc(heiti) + '<span>' + (felag === 'bh' ? 'Ógreitt, ósent og tími eftir' : 'Ógreitt og ósent') + ' · m. vsk · tölur frá kl. ' + esc(klukka(D.maelt_at)) + '</span></div>' +
+      '<div class="yrm-top"><div class="yrm-ti">' + esc(heiti) + '<span>' + (felag === 'bh' ? 'Ógreitt, ósent og áunnið í mánuðinum' : 'Ógreitt og ósent') + ' · m. vsk · tölur frá kl. ' + esc(klukka(D.maelt_at)) + '</span></div>' +
         '<b class="yrm-tot">' + isk(x.osent.kr + x.ogreitt.kr + tek) + ' kr</b><button type="button" class="yrm-x" aria-label="Loka">✕</button></div>' +
       '<div class="yrm-sum"><span>' + led('rd') + 'Ógreitt <b>' + isk(x.ogreitt.kr) + ' kr</b><span class="yrm-sn">' + isk(x.ogreitt.n) + '</span></span>' +
         '<span>' + led('bl') + 'Ósent <b>' + isk(x.osent.kr) + ' kr</b><span class="yrm-sn">' + isk(x.osent.n) + '</span></span>' +
-        (ok(te) ? '<span>' + led('gy') + 'Tími eftir <b>' + isk(tek) + ' kr</b></span>' : '') + '</div>' +
+        (ok(te) ? '<span>' + led('gy') + 'Áunnið <b>' + isk(tek) + ' kr</b></span>' : '') + '</div>' +
       '<div class="yrm-scr">' + (tomt ? '<div class="yrm-tomt">Engar ógreiddar eða ósendar kröfur.</div>' : hluti(ogr, 'Ógreitt', 'rd', false, x.ogreitt.kr) + hluti(osn, 'Ósent', 'bl', false, x.osent.kr)) + teKafli +
         (Array.isArray(bid) && bid.length ? hluti(bid, 'Á bið — ekki í samtölunni', 'gy', true) : '') + '</div>' +
       '<div class="yrm-foot">Sömu raðir og röndin leggur saman — ' + (felag === 'bh'

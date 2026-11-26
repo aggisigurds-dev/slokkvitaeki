@@ -79,9 +79,15 @@ async function krofurBh() {
   const t1 = d && d.tier1, t2 = d && d.tier2;
   if (!t1 || !t2) return { omaelt: 'Kröfu yfirlit Brunahólfs: óvænt snið' };
   const ogr = [], osentL = [];
+  // Áunnið í mánuðinum (Agnar 26.11.2026): Kröfu yfirlit færði drög LÍÐANDI mánaðar úr Ósent (CG-02) yfir í „Áunnið í
+  // mánuðinum" (CG-03) — ósent er nú aðeins fyrri mánuðir. Röndin verður að flokka EINS, annars tvíteljast drög líðandi
+  // mánaðar (bakenda-tier2 ber þau enn sem ósend, og CG-03 telur þau líka). Svo: BH-ósent = tier2 án líðandi mánaðar = CG-02;
+  // áunnið = CG-03 (timi_eftir). Síuð EINS og síðan: `work_month >= líðandi mánuður` fer úr ósent.
+  const CM = idag().slice(0, 7);
+  const osentNu = i => i.work_month && String(i.work_month) >= CM;   // drag líðandi mánaðar → áunnið (CG-03), ekki ósent
   // sama mengi og samtala Kröfu yfirlits: hvorki faldar né kláraðar (done) kröfur
   (t1.debtors || []).forEach(db => (db.invoices || []).forEach(i => { if (!i.hidden && !i.done) ogr.push(i); }));
-  (t2.debtors || []).forEach(db => (db.invoices || []).forEach(i => { if (!i.hidden && !i.done) osentL.push(i); }));
+  (t2.debtors || []).forEach(db => (db.invoices || []).forEach(i => { if (!i.hidden && !i.done && !osentNu(i)) osentL.push(i); }));
   // Kröfulistinn sem glugginn í röndinni sýnir (Agnar 25.11.2026: „sjá alla ógreiddu kröfurnar") — sömu raðir og summan.
   const radir = (l, tegund) => l.slice().sort((a, b) => kr(b.amount) - kr(a.amount))
     .map(i => ({ nr: i.tilvisun ? 'R-' + i.tilvisun : '', kunni: i.customer || '', kr: kr(i.amount), dagar: dagarFra(i.gjalddagi), tegund }));
@@ -90,7 +96,7 @@ async function krofurBh() {
   const medNr = ogr.filter(i => i.tilvisun && !i.bidur_porun);
   const staerst = (medNr.length ? medNr : ogr.filter(i => !i.bidur_porun)).slice().sort((a, b) => kr(b.amount) - kr(a.amount))[0] || null;
   return {
-    osent: { n: Number(t2.n) || 0, kr: kr(t2.total), reikn: radir(osentL, 'osent') },
+    osent: { n: osentL.length, kr: summa(osentL, i => i.amount), reikn: radir(osentL, 'osent') },   // án líðandi mánaðar → = CG-02
     ogreitt: { n: Number(t1.n) || 0, kr: kr(t1.total), reikn: radir(ogr, 'ogreitt') },
     eldri45: { n: eldri.length, kr: summa(eldri, i => i.amount), reikn: eldri.map(i => ({ nr: 'R-' + (i.tilvisun || ''), kunni: i.customer || '', kr: kr(i.amount), dagar: dagarFra(i.gjalddagi) })) },
     staerst: staerst ? { nr: 'R-' + (staerst.tilvisun || ''), kunni: staerst.customer || '', kr: kr(staerst.amount) } : null,
