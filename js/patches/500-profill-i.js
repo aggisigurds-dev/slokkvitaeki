@@ -490,6 +490,25 @@
       else if (/^[+\d][\d\s\-+]{5,}$/.test(t)) d.simi = t;
       else if (t && !d.heimilisfang) d.heimilisfang = t;
     });
+    /* 26.11.2026 (Agnar: „komin öll upplýsingar og virkni úr gráa boxinu upp í svarta") — allt LESIÐ, ekkert skrifað:
+       Netfangs-takki (+N) getur verið til þótt aðalnetfang sé „Ekkert skráð"; Google-Maps hlekkur á heimilisfangi;
+       götusýn (Google/Já) + 📷 á myndinni; aðkoma + aðkoma nánar + kóði úr banner_upplysingar. */
+    if (!d.fleiri) { var _anf = sel(m, '._anf-takki'); if (_anf) d.fleiri = txt(_anf); }
+    var _addrA = sel(m, '.co-banner-facts > span a[href*="maps"], .co-banner-facts > span a[href*="ja.is"]');
+    d.heimilisfangHref = _addrA ? _addrA.getAttribute('href') : '';
+    d.myndGoogle = ''; d.myndJa = '';
+    allt(m, '.co-mynd a').forEach(function (a) { var h = a.getAttribute('href') || ''; if (/google\.[^/]+\/maps/.test(h) && !d.myndGoogle) d.myndGoogle = h; else if (/ja\.is\/kort/.test(h) && !d.myndJa) d.myndJa = h; });
+    d.hreyf_til = !!sel(m, '._hy-takki');
+    d.mynd_upp = !!sel(m, '.co-mynd-upp');
+    (function () {
+      var _cid = window._currentCompanyId || ((String(location.hash || '').match(/#(?:company|companies)\/(\d+)/) || [])[1]);
+      var _bu = (_cid && window.AppSettings && AppSettings.get) ? (AppSettings.get('banner_upplysingar') || {}) : {};
+      var _f = (_bu && _bu[String(_cid)] && typeof _bu[String(_cid)] === 'object') ? _bu[String(_cid)] : {};
+      var ADK = { maeta: 'Má mæta', hringja_boka: 'Bóka tíma', fastur_timi: 'Fastur tími' };
+      d.adkoma = ADK[_f.adkoma] || '';
+      d.adkomaAth = String(_f.adkoma_ath || '').trim();
+      d.kodi = String(_f.kodi || '').trim();
+    })();
     /* húsið og einingar: reitirnir í 363 (inputs) */
     d.hus = {};
     allt(m, '.co-bupp ._bupp-talapar').forEach(function (tp) {
@@ -803,7 +822,7 @@
     var h = d.hus || {};
     var bs = d.bs || {};
     var dalkur1 = '<div class="p2-sec">Staður og samband</div>' +
-      kv('Heimilisfang', esc(d.heimilisfang)) + kv('Sími', esc(d.simi), ' n') +
+      kv('Heimilisfang', d.heimilisfangHref ? '<a href="' + esc(d.heimilisfangHref) + '" target="_blank" rel="noopener" title="Opna heimilisfangið í korti">' + esc(d.heimilisfang) + '</a>' : esc(d.heimilisfang)) + kv('Sími', esc(d.simi), ' n') +
       kv('Netfang', esc((d.netfang || '').split(/\s*,\s*/)[0]) + (d.fleiri ? ' <button type="button" class="p2-meira" data-p2="fleiri">' + esc(d.fleiri) + '</button>' : '')) +
       kv('Tengiliður', esc(d.tengilidur || (d.sam && d.sam.tengi.nafn) || '')) +
       (d.rf ? kv('Rekstrarfélag', '<a href="#rekstrarfelog" data-p2="rf">' + esc(d.rf) + '</a>') : '') +
@@ -818,11 +837,18 @@
       kv('Teikningar', d.teiknN ? d.teiknN + (d.teiknN === 1 ? ' hæð' : ' hæðir') : '') +
       kv('Búnaðargr.', esc(d.bgm)) +
       kv('Brunakerfi', d.bk ? esc((d.bk.undir || '').split(' · ')[0]) : '') +
-      kv('Séruppdr.', d.seruppN ? tugir(d.seruppN) + ' blöð' : '', ' n');
+      kv('Séruppdr.', d.seruppN ? tugir(d.seruppN) + ' blöð' : '', ' n') +
+      kv('Aðkoma', esc(d.adkoma) + (d.adkomaAth ? (d.adkoma ? ' · ' : '') + esc(d.adkomaAth) : '')) +
+      kv('Kóði', esc(d.kodi), ' n');
     var dalkur3 = '<div class="p2-sec">Á staðnum</div>' + stad;
     var chips = (d.teiknN ? '<span>' + d.teiknN + ' HÆÐIR</span>' : '') + (d.bgm ? '<span>' + esc(d.bgm.split(' · ').slice(1).join(' · ').toUpperCase()) + '</span>' : '');
     var mynd = '<div class="p2-mynd"><div class="ram" ' + (d.mynd ? 'style="background-image:url(\'' + esc(d.mynd) + '\')"' : '') + '><span class="lbl">' + esc(d.heimilisfang || 'Mynd') + '</span>' + (chips ? '<span class="chips">' + chips + '</span>' : '') + '</div>' +
-      '<div class="tak"><button type="button" class="p2-til p2-gr" data-p2="bgr">Búnaðargreining</button><button type="button" class="p2-til p2-rd" data-p2="opna-teikn">Teikningar</button></div></div>';
+      '<div class="tak"><button type="button" class="p2-til p2-gr" data-p2="bgr">Búnaðargreining</button><button type="button" class="p2-til p2-rd" data-p2="opna-teikn">Teikningar</button>' +
+      (d.hreyf_til ? '<button type="button" class="p2-til p2-silf" data-p2="hrey" title="Hreyfingaryfirlit — reikningar og greiðslur">Hreyfingar</button>' : '') +
+      (d.myndGoogle ? '<a class="p2-til p2-silf" href="' + esc(d.myndGoogle) + '" target="_blank" rel="noopener" title="Götusýn í Google Maps">Götusýn</a>' : '') +
+      (d.myndJa ? '<a class="p2-til p2-silf" href="' + esc(d.myndJa) + '" target="_blank" rel="noopener" title="Mynd af húsinu á Já-korti">Já-kort</a>' : '') +
+      (d.mynd_upp ? '<button type="button" class="p2-til p2-silf" data-p2="mynd-upp" title="Setja inn mynd — taka mynd eða velja úr safni">📷</button>' : '') +
+      '</div></div>';
     return '<div class="p2-dalk p2-d1">' + dalkur1 + '</div><div class="p2-dalk p2-d2">' + dalkur2 + '</div><div class="p2-dalk p2-d3">' + dalkur3 + '</div>' + mynd;
   }
 
@@ -1064,6 +1090,7 @@
     else if (a === 'rf') { e.preventDefault(); umbod(m, '.co-banner-name [data-rf-opna]'); }
     else if (a === 'bgr') umbod(m, '#bgr-takki');
     else if (a === 'hrey') umbod(m, '._hy-takki');
+    else if (a === 'mynd-upp') umbod(m, '.co-mynd-upp');
     else if (a === 'opna-teikn') umbod(m, '.b405-knappar button', /Teikning/);
     else if (a === 'grein-fast') umbod(m, '._gr-profil-takki');
     else if (a === 'rymingar') umbod(m, '._ba-lina-takki');
