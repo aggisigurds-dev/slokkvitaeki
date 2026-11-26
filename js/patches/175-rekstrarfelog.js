@@ -385,6 +385,39 @@
         P+'._rf_info{margin-bottom:7px!important}'+
         P+'._samskipti-rf{margin-bottom:7px!important}'+
       '}',
+      // ── EINN KASSI (26.11.2026, Agnar „betri heild — allt saman í EINUM kassa
+      //    sem er skipt niður að innan ... ENGIN bil milli kafla, ENGIR margir
+      //    rammar/skuggar, kaflarnir aðgreindir bara með línu"): ytri kassinn er
+      //    .rfa (á þegar einn ramma + radíus + skugga, og dökki HERO-hausinn =
+      //    kafli 1 · logo/nafn/chips). Innri Stálspjöldin (._rf_info / ._rf_summa /
+      //    ._samskipti-rf — öll .ssp) missa EIGIN ramma, radíus, skugga og bil og
+      //    verða flöt, samliggjandi kafli; málmhausinn fletst í ljósan kaflatitil
+      //    (engir hnoðar, enginn 3D-málmur) og 1px hairline aðgreinir kaflana.
+      //    Scoped við #view-rekstrarfelog EINGÖNGU — snertir hvorki sameiginlega
+      //    442-stálspjaldið annars staðar né fyrirtækjaprófílinn. Aðeins útlit.
+      P+'.rfa__pad{padding:0!important}',
+      P+'.ssp{background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;margin:0!important;overflow:visible!important}',
+      // málmhaus → flatur ljós kaflatitill; hnoðar af; hairline undir
+      P+'.ssp-haus{background:linear-gradient(180deg,#f2f4f8,#e4e8ef)!important;box-shadow:none!important;border-bottom:1px solid rgba(20,24,34,.12)!important;border-radius:0!important;min-height:30px!important;padding:4px 16px!important;gap:8px!important}',
+      P+'.ssp-haus::before,'+P+'.ssp-haus::after{display:none!important}',
+      // titlar/undirtitlar voru ljósir á málmi — dökka á ljósan titil (442 K = 4 ID, þarf að yfirvinna)
+      P+'.ssp-titill:not(#_rf1):not(#_rf2):not(#_rf3):not(#_rf4){color:#2b323e!important;text-shadow:none!important}',
+      P+'.ssp-undir:not(#_rf1):not(#_rf2):not(#_rf3):not(#_rf4){color:#5b6472!important}',
+      // búkur flatur á hvítu (ekki steel-gradient) svo kassinn sé ein samfella
+      P+'.ssp-buk{background:transparent!important;padding:9px 16px 11px!important}',
+      // athugasemdin = efsti kaflinn: flöt lína með hairline undir, ekki boxuð
+      P+'._rf_note{margin:0!important;border:0!important;border-radius:0!important;background:transparent!important;border-bottom:1px solid rgba(20,24,34,.14)!important;padding:9px 16px!important;height:36px!important;min-height:36px!important}',
+      // hairline milli beinna kafla (nóta→info→slot→byggingar) OG milli summa/samskipti í slotinu
+      P+'._rf_body>*+*{border-top:1px solid rgba(20,24,34,.14)!important}',
+      P+'._rf_samskipti_slot>*+*{border-top:1px solid rgba(20,24,34,.14)!important}',
+      // byggingakaflinn (síðasti div-inn) er ber markup → sömu hliðar og hausar
+      P+'._rf_body>div:last-child{padding:12px 16px 2px!important}',
+      '@media(max-width:640px){'+
+        P+'.ssp-haus{padding:4px 12px!important;min-height:28px!important}'+
+        P+'.ssp-buk{padding:8px 12px 9px!important}'+
+        P+'._rf_note{padding:8px 12px!important}'+
+        P+'._rf_body>div:last-child{padding:10px 12px 2px!important}'+
+      '}',
       // ── BRUNAKERFI Í SAMA YFIRLITI (2026-07-27, Claude Design „Brunayfirlit-v2") ──
       // Þjónusturofi (Bæði / 🧯 Slökkvitæki / 🚨 Brunakerfi), tölfluspjöld og
       // tvískiptar frumur — efri lína = slökkvitæki, neðri = brunakerfi.
