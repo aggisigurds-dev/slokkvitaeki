@@ -174,17 +174,21 @@
   // Tekjur ársins, staflaðar SL + BH (Agnar 25.11.2026: „tekjur per mánuð allt árið heild. Stacked slökkvitæki + brunahólf"). Gögn: yfirsyn.cjs
   // tekjurAr() — sömu reglur og Tekjur í beinni; SL fyrir yfirtöku (04.05.2026) eru reikningar Stólpa ÷ 1,24 og sýndir daufari.
   // 26.11.2026 (Agnar: „hafa þarna 2025 bara Brunahólf og síðan prósentu af síðan bæði Slökkvitæki og Brunahólf 2026 … til að sýna
-  // okkar fyrirtækja stækkun sem við eigum“): 2025 = Brunahólf eitt (Slökkvitæki var ekki okkar fyrr en 04.05.2026), og vöxturinn er
-  // bæði félögin 2026 á móti Brunahólfi 2025 — til sama dags, svo hálfnað ár sé ekki borið við heilt ár.
+  // okkar fyrirtækja stækkun sem við eigum“): 2025 = Brunahólf eitt (Slökkvitæki var ekki okkar fyrr en 04.05.2026).
+  // Prósentan er reiknuð af TÖLUNNI SEM SÉST (Agnar sama dag: „Ætti þá að vera kringum 90 %“ — línan sýndi 163,2 m en prósentan var
+  // af 128,4 m til sama dags, 129 %, sem hvergi stóð): bæði félögin 2026 til dags á móti Brunahólfi ALLT árið 2025. Hún er því varfærin og
+  // hækkar út árið; samanburður til sama dags stendur í titlinum.
   function fyrraHtml(ta) {
     const f = ta.fyrra_bh_alls, ftd = ta.fyrra_bh_til_dags;
     if (!fin(f) || f <= 0) return '';
-    const vx = fin(ftd) && ftd > 0 ? Math.round((ta.alls / ftd - 1) * 100) : null;
+    const vx = Math.round((ta.alls / f - 1) * 100);
+    const vtd = fin(ftd) && ftd > 0 ? Math.round((ta.alls / ftd - 1) * 100) : null;
+    const pc = n => (n >= 0 ? '+' : '') + n + ' %';
     const t = 'Vöxtur félaganna sem við eigum. ' + ta.fyrra_ar + ': Brunahólf eitt (Slökkvitæki var keypt 04.05.' + ta.ar + '), allt árið ' + isk(f) + ' kr m. vsk.' +
-      (vx != null ? '\n' + ta.ar + ' til dags, bæði félögin: ' + isk(ta.alls) + ' kr — á móti Brunahólfi ' + dd(ta.fyrra_ar + '-01-01') + '–' + dd(ta.fyrra_til) + '.' + ta.fyrra_ar + ': ' +
-      isk(ftd) + ' kr → ' + (vx >= 0 ? '+' : '') + vx + ' %.' : '');
+      '\n' + ta.ar + ' til dags, bæði félögin: ' + isk(ta.alls) + ' kr → ' + pc(vx) + ' á móti öllu árinu ' + ta.fyrra_ar + '.' +
+      (vtd != null ? '\nTil sama dags (' + dd(ta.fyrra_ar + '-01-01') + '–' + dd(ta.fyrra_til) + '.' + ta.fyrra_ar + ': ' + isk(ftd) + ' kr): ' + pc(vtd) + '.' : '');
     return '<span class="yr-yv" title="' + esc(t) + '">' + esc(ta.fyrra_ar) + ' BH <b>' + mkr(f, 1) + ' m</b>' +
-      (vx != null ? ' · <s class="' + (vx >= 0 ? 'yr-up' : 'yr-dn') + '">' + (vx >= 0 ? '▲ ' : '▼ ') + Math.abs(vx) + ' %</s>' : '') + '</span>';
+      ' · <s class="' + (vx >= 0 ? 'yr-up' : 'yr-dn') + '">' + (vx >= 0 ? '▲ ' : '▼ ') + Math.abs(vx) + ' %</s></span>';
   }
   function arTekjurHtml(ta) {
     if (!ok(ta) || !Array.isArray(ta.manudir) || ta.manudir.length !== 12) return '<span class="yr-ks">' + led('or') + 'Tekjur ársins ómældar' + (ta && ta.omaelt ? ' — ' + esc(ta.omaelt) : '') + '</span>';
@@ -968,5 +972,5 @@
     ].join('\n');
   }
 
-  window.YfirsynRond = { html, css, smellur, geymaArs, load, allsherjar, opnaKrofur, S, version: '2026-11-26b' };
+  window.YfirsynRond = { html, css, smellur, geymaArs, load, allsherjar, opnaKrofur, S, version: '2026-11-26c' };
 })();
