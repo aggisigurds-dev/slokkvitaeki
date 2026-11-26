@@ -111,19 +111,19 @@
     G + ' > div:first-child{display:none!important}' +
     G + ' > .co-banner:not(.p2-open){display:none!important}' +
     G + ' > .p2-gomul{display:none!important}' +
-    /* 26.11.2026 (Agnar: „neðra fyrirtækjaboxið … átti að breyta útlitinu í það sem er fyrir ofan … sameina … svo öll sjáist og sé í dökkgráa stílnum"):
-       „Allir reitir" afhjúpaði gamla bannerinn í LJÓSUM stíl sem stakt box með tvíteknum NE-haus. Nú fær hann sama dökkgráa
-       málmstíl og rennur sem framhald af spjaldinu fyrir ofan. Tvítekni hausinn (nafn/kt — þegar í p2-haus) er falinn, en ALLT
-       annað stendur eftir (tengiliðir, byggingartölur, götusýn m/upphleðslu, fasteignaskrá, Hreyfingaryfirlit — sem eru hvergi
-       annars staðar) — texti ljós, reitir/raðir dökkir. */
-    G + ' > .co-banner.p2-open{background:' + METAL + '!important;color:#e8eaee!important;border:0!important;border-radius:14px!important;margin:8px 0 0!important;padding:16px 18px 18px!important;box-shadow:0 14px 34px -20px rgba(0,0,0,.7),0 0 0 1px rgba(20,24,34,.45)!important;overflow:hidden}' +
-    G + ' > .co-banner.p2-open > .co-banner-id{display:none!important}' +
-    G + ' > .co-banner.p2-open [class*="_bupp"],' + G + ' > .co-banner.p2-open [class*="_fasteign"],' + G + ' > .co-banner.p2-open .co-banner-right,' + G + ' > .co-banner.p2-open .co-banner-right *,' + G + ' > .co-banner.p2-open .b405-facts,' + G + ' > .co-banner.p2-open .co-bupp,' + G + ' > .co-banner.p2-open .co-mynd,' + G + ' > .co-banner.p2-open label,' + G + ' > .co-banner.p2-open small{color:#d6dce7!important}' +
-    G + ' > .co-banner.p2-open ._bupp-lina{background:rgba(255,255,255,.05)!important;border:1px solid rgba(255,255,255,.1)!important;box-shadow:none!important}' +
-    G + ' > .co-banner.p2-open .co-bupp-reitur,' + G + ' > .co-banner.p2-open .co-banner-note,' + G + ' > .co-banner.p2-open input,' + G + ' > .co-banner.p2-open textarea{background:rgba(0,0,0,.28)!important;color:#e8eaee!important;border-color:rgba(255,255,255,.14)!important}' +
-    G + ' > .co-banner.p2-open .btn-outline,' + G + ' > .co-banner.p2-open ._bupp-flis,' + G + ' > .co-banner.p2-open ._anf-takki,' + G + ' > .co-banner.p2-open ._bupp-vixl,' + G + ' > .co-banner.p2-open .co-mynd-upp{background-image:none!important;background:rgba(255,255,255,.08)!important;color:#e8eaee!important;border-color:rgba(255,255,255,.24)!important}' +
-    G + ' > .co-banner.p2-open .b405-facts span{background:rgba(255,255,255,.08)!important;color:#eef1f5!important;border:1px solid rgba(255,255,255,.16)!important}' +
-    G + ' > .co-banner.p2-open .co-mynd-vefja,' + G + ' > .co-banner.p2-open .co-mynd-flis{background:#0d0d10!important;border-color:rgba(255,255,255,.12)!important}' +
+    /* 26.11.2026 (Agnar: „neðra fyrirtækjaboxið … færa upplýsingarnar upp … notað efra boxið"): „Allir reitir" sýndi gamla
+       bannerinn sem STAKT box fyrir neðan. Nú er hann FÆRÐUR INN Í efra spjaldið (#p2-glugg) — settBannerStad() — og stílaður
+       sem dökkt framhald neðst í SAMA boxi: eitt box, ekki tvö. Tvítekni hausinn falinn (nafn/kt eru í p2-haus), allt annað
+       stendur eftir (tengiliðir, byggingartölur, götusýn m/upphleðslu, Hreyfingaryfirlit). Lokað → færður aftur sem beint barn
+       (þá felur `.co-banner:not(.p2-open){display:none}` hann). */
+    G + ' #p2-glugg > .co-banner.p2-open{grid-column:1 / -1!important;grid-row:auto!important;margin:12px -20px -36px!important;padding:14px 20px 28px!important;border:0!important;border-top:1px solid rgba(255,255,255,.16)!important;border-radius:0!important;box-shadow:none!important;background:' + METAL + '!important;color:#e8eaee!important;overflow:visible}' +
+    G + ' #p2-glugg > .co-banner.p2-open > .co-banner-id{display:none!important}' +
+    G + ' #p2-glugg > .co-banner.p2-open [class*="_bupp"],' + G + ' #p2-glugg > .co-banner.p2-open [class*="_fasteign"],' + G + ' #p2-glugg > .co-banner.p2-open .co-banner-right,' + G + ' #p2-glugg > .co-banner.p2-open .co-banner-right *,' + G + ' #p2-glugg > .co-banner.p2-open .b405-facts,' + G + ' #p2-glugg > .co-banner.p2-open .co-bupp,' + G + ' #p2-glugg > .co-banner.p2-open .co-mynd,' + G + ' #p2-glugg > .co-banner.p2-open label,' + G + ' #p2-glugg > .co-banner.p2-open small{color:#d6dce7!important}' +
+    G + ' #p2-glugg > .co-banner.p2-open ._bupp-lina{background:rgba(255,255,255,.05)!important;border:1px solid rgba(255,255,255,.1)!important;box-shadow:none!important}' +
+    G + ' #p2-glugg > .co-banner.p2-open .co-bupp-reitur,' + G + ' #p2-glugg > .co-banner.p2-open .co-banner-note,' + G + ' #p2-glugg > .co-banner.p2-open input,' + G + ' #p2-glugg > .co-banner.p2-open textarea{background:rgba(0,0,0,.28)!important;color:#e8eaee!important;border-color:rgba(255,255,255,.14)!important}' +
+    G + ' #p2-glugg > .co-banner.p2-open .btn-outline,' + G + ' #p2-glugg > .co-banner.p2-open ._bupp-flis,' + G + ' #p2-glugg > .co-banner.p2-open ._anf-takki,' + G + ' #p2-glugg > .co-banner.p2-open ._bupp-vixl,' + G + ' #p2-glugg > .co-banner.p2-open .co-mynd-upp{background-image:none!important;background:rgba(255,255,255,.08)!important;color:#e8eaee!important;border-color:rgba(255,255,255,.24)!important}' +
+    G + ' #p2-glugg > .co-banner.p2-open .b405-facts span{background:rgba(255,255,255,.08)!important;color:#eef1f5!important;border:1px solid rgba(255,255,255,.16)!important}' +
+    G + ' #p2-glugg > .co-banner.p2-open .co-mynd-vefja,' + G + ' #p2-glugg > .co-banner.p2-open .co-mynd-flis{background:#0d0d10!important;border-color:rgba(255,255,255,.12)!important}' +
     G + ' > [data-p2t]{margin-top:10px!important}' +
     G + '[data-p2tab="skjol"] > [data-p2t]:not([data-p2t~="skjol"]),' +
     G + '[data-p2tab="slt"] > [data-p2t]:not([data-p2t~="slt"]),' +
@@ -877,10 +877,21 @@
 
   /* ---------- samsetning ---------- */
   var sig = '';
+  /* bannerinn er færður INN Í #p2-glugg þegar „Allir reitir" er á (p2-open) svo allt sé í EINU boxi, og AFTUR sem beint barn
+     #companies-main þegar lokað (þá felur `.co-banner:not(.p2-open){display:none}` hann). Idempotent — snertir DOM aðeins ef
+     staðsetningin er röng. Kallað í hverju tifi + strax við smell. */
+  function settBannerStad(m) {
+    var bn = sel(m, '.co-banner'); if (!bn) return;
+    var g = document.getElementById('p2-glugg');
+    if (bn.classList.contains('p2-open') && g) { if (bn.parentNode !== g) g.appendChild(bn); }
+    else if (bn.parentNode !== m) m.appendChild(bn);
+  }
   function byggja(m) {
     var banner = sel(m, '.co-banner');
     var h = document.getElementById('p2-haus');
     if (!h || h.parentNode !== m) {
+      /* áður en p2-glugg er eytt: taktu bannerinn út úr honum (annars hyrfi hann með) og settu sem beint barn fyrir endurbygginguna */
+      if (banner && banner.parentNode !== m) m.appendChild(banner);
       ['p2-haus', 'p2-msimi', 'p2-kpi', 'p2-glugg', 'p2-athug', 'p2-samsk', 'p2-flipar', 'p2-teikn', 'p2-adrar'].forEach(function (id) { var o = document.getElementById(id); if (o && o.parentNode) o.parentNode.removeChild(o); });
       h = document.createElement('div'); h.id = 'p2-haus'; h.className = 'p2-haus p2-nytt';
       var g = document.createElement('div'); g.id = 'p2-glugg'; g.className = 'p2-glugg p2-nytt';
@@ -1055,7 +1066,7 @@
     else if (a === 'rymingar') umbod(m, '._ba-lina-takki');
     else if (a === 'brunaaaetlun') umbod(m, '._ba-takki');
     else if (a === 'opna-gamalt') {
-      var bn = sel(m, '.co-banner'); if (bn) { bn.classList.toggle('p2-open'); b.textContent = bn.classList.contains('p2-open') ? 'Fela reitina' : 'Allir reitir'; }
+      var bn = sel(m, '.co-banner'); if (bn) { bn.classList.toggle('p2-open'); b.textContent = bn.classList.contains('p2-open') ? 'Fela reitina' : 'Allir reitir'; settBannerStad(m); }
     }
   }
 
@@ -1087,7 +1098,7 @@
     if (!m.classList.contains('p2')) return;   // ekkert yfirlag uppi
     m.classList.remove('p2', 'p2-gam');
     m.removeAttribute('data-p2tab');
-    var bn = sel(m, ':scope > .co-banner'); if (bn) bn.classList.remove('p2-open');
+    var bn = sel(m, '.co-banner'); if (bn) { if (bn.parentNode !== m) m.appendChild(bn); bn.classList.remove('p2-open'); }   /* taktu bannerinn út úr p2-glugg áður en hann er eytt hér fyrir neðan */
     ['p2-haus', 'p2-msimi', 'p2-kpi', 'p2-glugg', 'p2-athug', 'p2-samsk', 'p2-flipar', 'p2-teikn', 'p2-adrar', 'p2-bygg']
       .forEach(function (id) { var o = document.getElementById(id); if (o && o.parentNode) o.parentNode.removeChild(o); });
     allt(m, '[data-p2t]').forEach(function (e) { e.removeAttribute('data-p2t'); });
@@ -1096,11 +1107,11 @@
   function tikk() {
     if (document.hidden) return;
     var m = document.getElementById('companies-main');
-    if (!m || !sel(m, ':scope > .co-banner') || !sel(m, '.co-banner-name')) return;
+    if (!m || !sel(m, '.co-banner') || !sel(m, '.co-banner-name')) return;
     if (m.classList.contains('gr-sydar')) { afturkalla(m); return; }
     stilar();
     if (!m.classList.contains('p2')) m.classList.add('p2');
-    byggja(m); merkja(m); samskiptaBox(m); athugasemd(m); endurteikna(m); byggStika(m);
+    byggja(m); merkja(m); samskiptaBox(m); athugasemd(m); endurteikna(m); byggStika(m); settBannerStad(m);
   }
 
   setInterval(tikk, 600);
