@@ -167,7 +167,10 @@
       bar.id = ID;
       tengja(bar);
     }
-    if (bar.previousElementSibling !== banner) banner.after(bar);   // beint undir hausborðanum
+    // 500 raðar börnum #companies-main með `order` (haus=1, KPI=2 …) og regla þess ber hærri specificity en #id í
+    // stílblaði — svo röðin verður að koma INLINE (vinnur alltaf). order:1 = með hausnum, strax ofan við KPI-spjöldin.
+    if (bar.style.order !== '1') bar.style.order = '1';
+    if (bar.parentNode !== main) main.appendChild(bar);
     fylla(bar, fid);
   }
 
