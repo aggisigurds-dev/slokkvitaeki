@@ -106,6 +106,7 @@
 
   let drop = null, virkI = -1, radir = [], seq = 0, tof = 0, verifTof = 0, inpNu = null;
   let sidastValid = '';   // norm gildi sem var valið/staðfest úr HMS
+  let sjalfvirk = false;  // satt meðan við setjum reitinn sjálf — svo okkar eigin input-atburður endurræsi ekki leitina
 
   function dropEl() {
     if (drop) return drop;
@@ -168,14 +169,20 @@
       if (pn) { pn.value = p.postnr; try { pn.dispatchEvent(new Event('input', { bubbles: true })); } catch (_) {} }
     }
     loka();
-    setjaVorn(inp, 'ok', 'Staðfang úr HMS — landnúmer ' + p.landnr + '.');
+    // Láta appið vita án þess að endurræsa okkar eigin leit (14 fyllir t.d. póstnúmer af heimilisfangi).
+    sjalfvirk = true;
     try { inp.dispatchEvent(new Event('input', { bubbles: true })); } catch (_) {}
+    sjalfvirk = false;
+    setjaVorn(inp, 'ok', 'Staðfang úr HMS — landnúmer ' + p.landnr + '.');
     try { inp.focus(); } catch (_) {}
   }
 
   async function leita(inp) {
     const q = String(inp.value || '').trim();
-    sidastValid = sidastValid && norm(inp.value) === sidastValid ? sidastValid : '';
+    // Reiturinn ber nákvæmlega staðfangið sem var valið → engin þörf á tillögum (og kemur í veg fyrir
+    // að listinn opnist aftur eftir val). sidastValid hreinsast um leið og notandinn breytir gildinu.
+    if (sidastValid && norm(q) === sidastValid) { loka(); return; }
+    sidastValid = '';
     if (q.length < 3 || !(window.Landnr && Landnr.search)) { loka(); return; }
     const my = ++seq;
     let rows = [];
