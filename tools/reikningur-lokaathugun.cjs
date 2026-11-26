@@ -21,9 +21,16 @@
  *           node tools/reikningur-lokaathugun.cjs R-001307 --send   reikningurinn er þegar sendur (athugun eftir sendingu)
  * Útgangskóði: 0 = stemmir · 1 = stemmir ekki (verkið er EKKI búið) · 2 = ódæmt (gögn lásust ekki eða regla vantar).
  *
- * AÐEINS LESTUR: REST-lestur með publishable-lyklinum (sami og audit-skyrsla-solu), niðurhal PDF úr opinberu geymslunni og
- * GET á forsíðu appsins (er 517 í loftinu?). Ekkert skrifað, ekkert sent. Úttakið sýnir kt og nöfn — það er tilgangurinn —
- * og á því aldrei heima í CI-loggi, commit-skilaboðum eða skrám í repóinu.
+ * AÐEINS LESTUR: REST-lestur, niðurhal PDF úr opinberu geymslunni og GET á forsíðu appsins (er 517 í loftinu?). Ekkert
+ * skrifað, ekkert sent. Úttakið sýnir kt og nöfn — það er tilgangurinn — og á því aldrei heima í CI-loggi,
+ * commit-skilaboðum eða skrám í repóinu.
+ *
+ * INNSKRÁNING (26.11.2026): `anon` les ekki lengur solur, fyrirtaeki, customers_base, customer_documents o.fl. (RLS krefst
+ * starfsmanns-JWT með `rola`). Tólið sækir því sama JWT og appið (`sb_jwt` úr GET /api/hub-adgangar) með köku lotunnar:
+ *   HUB_USER=<kaka> node tools/reikningur-lokaathugun.cjs R-001390      (kakan: innri.lotu_koku(10, 2) — uid 10, ALDREI 1)
+ *   SB_JWT=<jwt>    node tools/reikningur-lokaathugun.cjs R-001390      (ef JWT er þegar í höndum)
+ * Kakan/JWT kemur AÐEINS úr umhverfinu; aldrei skrifuð í skrá, log eða úttak. Án þeirra er reynt með publishable-lyklinum.
+ * PDF-texti: `pdftotext` ef hann er til, annars `pdf-parse` úr node_modules (Windows-vélar hafa ekki poppler).
  */
 'use strict';
 const fs = require('fs');
@@ -77,20 +84,29 @@ function samtala(sale) {
 }
 
 // Verðlisti: Akstur og Skýrslugerð úr app_settings.slokk_visit_defaults (ofan á kóðasjálfgildi), annað úr vorur eftir nafni.
+// Línuafsláttur úr úttekt (165) stendur sem viðskeyti „ · −15% afsl." og einingaverðið er þegar afsláttað:
+// einingaverð = round(round(listaverð) × (1 − afsl/100)) — sama stærðfræði og 129/165 (mælt 26.11.2026 á R-001390).
+const AFSL_VIDSKEYTI = /\s*·\s*[−-]\s*(\d+(?:[.,]\d+)?)\s*%\s*afsl\.?\s*$/i;
 function listaverd(l, svd, vorurByNafn) {
-  const desc = String((l && l.desc) || '').trim();
+  let desc = String((l && l.desc) || '').trim();
+  const am = desc.match(AFSL_VIDSKEYTI);
+  const afsl = am ? Number(am[1].replace(',', '.')) : 0;
+  if (am) desc = desc.slice(0, am.index).trim();
   const heiti = desc.includes(' · ') ? desc.split(' · ').slice(1).join(' · ').trim() : desc;
   const s = svd || {};
   if (/^akstur$/i.test(heiti)) return { heiti, verd: s.akstur != null ? Number(s.akstur) : SVD_KODI.akstur, uppruni: 'verðskrá (Akstur)' };
   if (/^skýrslugerð$/i.test(heiti)) return { heiti, verd: s.skyrslugerd != null ? Number(s.skyrslugerd) : SVD_KODI.skyrslugerd, uppruni: 'verðskrá (Skýrslugerð)' };
   const v = vorurByNafn && vorurByNafn.get(heiti.toLowerCase());
-  return v ? { heiti, verd: Math.round(Number(v.verd_an_vsk)), uppruni: 'vorur #' + v.id } : { heiti, verd: null, uppruni: null };
+  if (!v) return { heiti, verd: null, uppruni: null };
+  const lv = Math.round(Number(v.verd_an_vsk));
+  return afsl ? { heiti, verd: Math.round(lv * (1 - afsl / 100)), uppruni: 'vorur #' + v.id + ' −' + afsl + '%', afsl }
+    : { heiti, verd: lv, uppruni: 'vorur #' + v.id };
 }
 
 // Reiknings-PDF (texti úr pdftotext -raw): R-númer, kennitala kúnna (ekki seljandans), „Til greiðslu".
 function lesaReikningsTexta(t) {
   if (!t) return null;
-  const rnum = (t.match(/Reikningur\s+(R-\d{6})/) || [])[1] || '';
+  const rnum = (t.match(/Reikningur\s*(R-\d{6})/) || [])[1] || '';   // pdf-parse skilar „ReikningurR-001390" (ekkert bil)
   const kts = [...t.matchAll(/\bkt\.?:?\s*(\d{6}-?\d{4})/gi)].map((m) => ktT(m[1])).filter((k) => k !== SELJANDI_KT);
   const tg = t.match(/Til greiðslu\s*:?\s*(-?[\d.]+)\s*kr/i);
   return { rnum, kts: [...new Set(kts)], til_greidslu: tg ? Number(tg[1].replace(/\./g, '')) : null, texti: t };
@@ -282,10 +298,35 @@ function prenta(res) {
 }
 
 // ── gagnaöflun (aðeins lestur) ─────────────────────────────────────────────────────────────────────────────────────────
+// Starfsmanns-JWT (sama og appið fær í js/db.js): SB_JWT beint, eða sb_jwt úr /api/hub-adgangar með HUB_USER-kökunni.
+let jwtP = null;
+function starfsJwt() {
+  if (!jwtP) jwtP = (async () => {
+    if (process.env.SB_JWT) return process.env.SB_JWT;
+    const kaka = process.env.HUB_USER;
+    if (!kaka) return null;
+    const r = await fetch(APP + '/api/hub-adgangar', { headers: { Cookie: 'hub_user=' + kaka }, cache: 'no-store' });
+    if (!r.ok) throw new Error('innskráning: /api/hub-adgangar HTTP ' + r.status + ' — er HUB_USER-kakan útrunnin?');
+    const j = await r.json();
+    if (!j || !j.sb_jwt) throw new Error('innskráning: /api/hub-adgangar skilaði engu sb_jwt (authed=' + !!(j && j.authed) + ')');
+    return j.sb_jwt;
+  })();
+  return jwtP;
+}
 async function get(slod) {
-  const r = await fetch(SUPA + '/rest/v1/' + slod, { headers: { apikey: KEY, Authorization: 'Bearer ' + KEY } });
-  if (!r.ok) throw new Error(slod.split('?')[0] + ' HTTP ' + r.status);
+  const jwt = await starfsJwt();
+  const r = await fetch(SUPA + '/rest/v1/' + slod, { headers: { apikey: KEY, Authorization: 'Bearer ' + (jwt || KEY) } });
+  if (!r.ok) {
+    const meira = (r.status === 401 || r.status === 403) && !jwt ? ' — krefst innskráningar: keyrðu með HUB_USER=<kaka lotunnar> (sjá haus skrárinnar)' : '';
+    throw new Error(slod.split('?')[0] + ' HTTP ' + r.status + meira);
+  }
   return r.json();
+}
+// Varaleið þegar pdftotext vantar (Windows): pdf-parse úr node_modules repósins.
+async function pdfParseTexti(buf) {
+  let pp = null;
+  try { pp = require(path.join(ROT, 'node_modules', 'pdf-parse', 'lib', 'pdf-parse.js')); } catch (_) { return { villa: 'pdftotext og pdf-parse vantar' }; }
+  try { const d = await pp(buf); return { texti: d.text }; } catch (e) { return { villa: 'pdf-parse: ' + String((e && e.message) || e).slice(0, 50) }; }
 }
 function pdftexti(slod) {
   if (!slod) return { villa: 'engin slóð' };
@@ -293,10 +334,12 @@ function pdftexti(slod) {
   const tmp = path.join(os.tmpdir(), 'lokaath-' + process.pid + '-' + Math.random().toString(36).slice(2) + '.pdf');
   return fetch(SUPA + '/storage/v1/object/public/samningar/' + p.split('/').map(encodeURIComponent).join('/')).then(async (r) => {
     if (!r.ok) return { villa: 'niðurhal HTTP ' + r.status };
-    fs.writeFileSync(tmp, Buffer.from(await r.arrayBuffer()));
+    const buf = Buffer.from(await r.arrayBuffer());
+    fs.writeFileSync(tmp, buf);
     const x = cp.spawnSync('pdftotext', ['-raw', '-enc', 'UTF-8', tmp, '-'], { encoding: 'utf8', timeout: 20000 });
     try { fs.unlinkSync(tmp); } catch (_) {}
-    if (x.error) return { villa: x.error.code === 'ENOENT' ? 'pdftotext vantar' : String(x.error.message).slice(0, 60) };
+    if (x.error && x.error.code === 'ENOENT') return pdfParseTexti(buf);
+    if (x.error) return { villa: String(x.error.message).slice(0, 60) };
     if (x.status !== 0) return { villa: 'pdftotext skilaði ' + x.status };
     return { texti: x.stdout };
   }).catch((e) => ({ villa: String((e && e.message) || e).slice(0, 60) }));
@@ -317,6 +360,7 @@ async function saekja(num, opt) {
   if (!sr.length) throw new Error('engin sala með númerið ' + num);
   const sale = sr.find((x) => !x.is_credit) || sr[0];
   const coId = sale.customer_id, ar = new Date(sale.created_at).getFullYear();
+  const s0base = sale.customer_base_id != null ? Number(sale.customer_base_id) : null;
   const kts = [ktT(sale.customer_kt)].filter((k) => k.length === 10);
   const [base, site, st, vorur, kn, forsk, skjol, facts, par, live517] = await Promise.all([
     sale.customer_base_id != null ? get('customers_base?select=id,nafn,kennitala,rekstrarfelag&id=eq.' + sale.customer_base_id).then((x) => x[0] || null) : null,
@@ -330,7 +374,7 @@ async function saekja(num, opt) {
     coId != null ? get('customer_documents?select=id,doc_type,invoice_number,amount,year,doc_date,notes,file_name,storage_path,drive_file_id,is_duplicate,created_at&fyrirtaeki_id=eq.' + coId + '&order=created_at.desc')
       : get('customer_documents?select=id,doc_type,invoice_number,amount,year,doc_date,notes,file_name,storage_path,drive_file_id,is_duplicate,created_at&invoice_number=eq.' + encodeURIComponent(num)),
     coId != null ? get('arsskodun_report_facts?select=fyrirtaeki_id,total_devices,report_year,parsed_at&fyrirtaeki_id=eq.' + coId + '&report_year=eq.' + ar) : [],
-    coId != null ? get('document_pairs?select=id,year,service_type,invoice_doc_id,report_doc_id&fyrirtaeki_id=eq.' + coId + '&year=eq.' + ar + '&service_type=eq.uttekt') : [],
+    coId != null ? get('document_pairs?select=id,year,service_type,invoice_doc_id,report_doc_id,customer_base_id&fyrirtaeki_id=eq.' + coId + '&year=eq.' + ar + '&service_type=eq.uttekt&order=id.desc') : [],
     erAppMed517(),
   ]);
   if (site && ktT(site.kennitala).length === 10) kts.push(ktT(site.kennitala));
@@ -344,7 +388,9 @@ async function saekja(num, opt) {
   const skjolReikn = skjol.filter((d) => d.doc_type === 'reikningur');
   const ds = skjol.find((d) => /^uttektarsk/.test(String(d.doc_type)) && String(d.year) === String(ar) && d.storage_path);
   const skjalSkyrsla = ds ? { name: ds.notes || ds.file_name || '', storage_path: ds.storage_path, year: String(ds.year), doc_date: ds.doc_date, uppruni: 'skjal' } : null;
-  const parRod = par && par[0];
+  // Pör eru lykluð á (greiðandi, ár, tegund, staður): eftir kt-breytingu situr gamla parið hjá gamla greiðandanum (saga).
+  // Parið sem gildir fyrir þessa sölu er því par HENNAR greiðanda; annars nýjasta parið (26.11.2026, R-001390).
+  const parRod = par && (par.find((p) => s0base != null && Number(p.customer_base_id) === s0base) || par[0]);
   const parDoc = parRod && parRod.invoice_doc_id != null ? (skjol.find((d) => d.id === parRod.invoice_doc_id) || (await get('customer_documents?select=id,invoice_number&id=eq.' + parRod.invoice_doc_id))[0] || null) : null;
   const vorurByNafn = new Map(vorur.map((v) => [String(v.nafn || '').toLowerCase(), v]));
   const g = { sale, base, site, svd: (st && st[0] && st[0].svd) || null, vorurByNafn, kredit, rs: RS, vidhengi, skjolReikn, skjalSkyrsla,
@@ -370,10 +416,11 @@ module.exports = { daema, prenta, saekja, ktGild, samtala, listaverd, lesaReikni
 if (require.main === module) {
   const a = process.argv.slice(2);
   const num = a.find((x) => /^R-\d{6}$/.test(x));
-  if (!num) { console.log('Notkun: node tools/reikningur-lokaathugun.cjs R-000000 [--json] [--send]'); process.exit(2); }
+  if (!num) { console.log('Notkun: HUB_USER=<kaka> node tools/reikningur-lokaathugun.cjs R-000000 [--json] [--send]'); process.exit(2); }
   saekja(num, { send: a.includes('--send') }).then((g) => {
     const res = daema(g);
     console.log(a.includes('--json') ? JSON.stringify(res, null, 2) : prenta(res));
-    process.exit(res.stemmir ? 0 : (res.villur.length ? 1 : 2));
-  }).catch((e) => { console.log('ÓDÆMT: ' + String((e && e.message) || e).slice(0, 160)); process.exit(2); });
+    // exitCode, ekki process.exit(): á Windows hrundi exit() meðan fetch-tengingar lokuðust (libuv UV_HANDLE_CLOSING → 127).
+    process.exitCode = res.stemmir ? 0 : (res.villur.length ? 1 : 2);
+  }).catch((e) => { console.log('ÓDÆMT: ' + String((e && e.message) || e).slice(0, 220)); process.exitCode = 2; });
 }

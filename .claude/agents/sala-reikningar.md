@@ -137,8 +137,13 @@ keyrslu er kennslan:** rétt/rangt á úrskurð (`odin_urskurdir`), og breyti ha
 Keyrðu í repórótinni:
 
 ```
-node tools/reikningur-lokaathugun.cjs <R-númer>
+HUB_USER=<kaka lotunnar> node tools/reikningur-lokaathugun.cjs <R-númer>
 ```
+
+**Innskráning (26.11.2026):** `anon` les ekki lengur `solur`, `fyrirtaeki`, `customers_base` né `customer_documents` (RLS krefst
+starfsmanns-JWT). Án kökunnar skilar tólið „ÓDÆMT: solur HTTP 401 — krefst innskráningar“. Kakan er
+`select kaka from innri.lotu_koku(10, 1)` (uid 10, ALDREI 1), aðeins í umhverfisbreytu, aldrei í skrá eða svari. Tólið sækir
+sjálft `sb_jwt` úr `/api/hub-adgangar` eins og appið. PDF-texti: `pdftotext` ef til er, annars `pdf-parse` (Windows).
 
 Útgangskóði 0 = stemmir. 1 = stemmir ekki: lagaðu og keyrðu aftur. 2 = ódæmt (gögn lásust ekki eða regla vantar): verkið
 er EKKI búið. Segðu hvað vantar. Tólið aðeins les. Úttakið sýnir kt og nöfn, svo það fer aldrei í commit, skrá í repóinu né CI-logg.
