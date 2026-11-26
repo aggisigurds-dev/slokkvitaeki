@@ -133,9 +133,11 @@
       const b = hnappur(d), nafn = (b.textContent || '').replace(/\s+/g, ' ').trim() || d.nafn;
       return '<div class="r" data-k="' + d.k + '"><input type="checkbox" data-pin="' + d.k + '" ' + (f.has(d.k) ? 'checked' : '') + ' title="Hakað = sést á stikunni"><div data-run="' + d.k + '"><b>' + esc(d.nafn === 'Útlit fest' ? nafn : d.nafn) + '</b><span>' + esc(d.lys) + '</span></div></div>';
     }).join('');
-    const p = pop(nb, gaediH + '<h4>Aðgerðir</h4>' + rod + '<div class="fot">Hakið ræður hvað stendur á stikunni. Smelltu á nafn aðgerðar til að keyra hana.</div>');
+    const stillH = window.TeiknStillingar ? '<h4>Teikningastillingar</h4><div class="r" data-stillingar="1" style="cursor:pointer"><div><b>⚙ Táknasafn &amp; aðgerðir</b><span>Bæta við, fela, endurnefna og raða tækjum og merkjum í ræmunni — og hvaða aðgerðir sjást. Gildir á öllum vélum.</span></div></div>' : '';
+    const p = pop(nb, gaediH + '<h4>Aðgerðir</h4>' + rod + '<div class="fot">Hakið ræður hvað stendur á stikunni. Smelltu á nafn aðgerðar til að keyra hana.</div>' + stillH);
     if (!p) return;
     p.addEventListener('click', e => {
+      if (e.target.closest('[data-stillingar]')) { lokaPop(); try { window.TeiknStillingar.opna(); } catch (_) {} return; }
       const q = e.target.closest('[data-gaedi]');
       if (q) { const i = +q.getAttribute('data-gaedi'); if (gb[i]) gb[i].click(); p.querySelectorAll('[data-gaedi]').forEach(x => x.classList.toggle('on', x === q)); return; }
       const pin = e.target.closest('[data-pin]');
@@ -278,5 +280,10 @@
 
   function tikk() { try { const m = modal(); if (!m || !m.classList.contains('open')) return; tengja(); beita(); } catch (e) { console.warn('[484]', e && e.message); } }
   setInterval(tikk, 1200);
-  window.TeiknTakkar = { tikk, festir, takaTilBaka: () => takaTilBaka(document.getElementById('fp-t484-undo')) };
+  // 532 (Táknasafn-ritillinn) les aðgerðalistann og kveikir/slekkur á þeim í einum stillingaglugga.
+  window.TeiknTakkar = {
+    tikk, festir, takaTilBaka: () => takaTilBaka(document.getElementById('fp-t484-undo')),
+    listi: () => TAKKAR.map(t => ({ k: t.k, nafn: t.nafn, lys: t.lys })),
+    setFestir: a => { if (Array.isArray(a)) { vistaFestir(a); try { beita(); } catch (_) {} } }
+  };
 })();

@@ -39,7 +39,7 @@
   // 06.10.2026 (Agnar: „breyta stærðarstillunni svo ég geti minnkað meira“): lágmark 24 → 10 px.
   const STAERD_MIN = 10;
   const STAERD_MAX = 160;
-  const STIMPLAR = [
+  const DEF_STIMPLAR = [
     { id: 'neyðarútgangur', nafn: 'Neyðarútgangur', stutt: 'NÚ', litur: '#15803d', glyff: 'exit' },
     { id: 'ut', nafn: 'Út', stutt: 'ÚT', litur: '#15803d', glyff: 'exit' },
     { id: 'hose', nafn: 'Slöngumerki', stutt: 'SL', litur: '#c93c1d', glyff: 'hose' },
@@ -54,7 +54,7 @@
     // Agnar 15.10.2026 (skýringar Trönuhrauns 10): BO = björgunarop — opnanlegur gluggi sem flóttaleið.
     { id: 'bjorgunarop', nafn: 'Björgunarop', stutt: 'BO', litur: '#15803d', glyff: 'window' }
   ];
-  const TAEKI_TAKN = [
+  const DEF_TAEKI_TAKN = [
     { id: 'lettvatn', nafn: 'Léttvatn', stutt: 'LÉ', litur: '#e11d2e', glyff: 'extinguisher' },
     { id: 'duft', nafn: 'Duft', stutt: 'DF', litur: '#e11d2e', glyff: 'extinguisher' },
     { id: 'co2', nafn: 'CO₂', stutt: 'CO', litur: '#e11d2e', glyff: 'extinguisher' },
@@ -66,7 +66,7 @@
   // tegund, stada: 'bid' } — telst aldrei tæki. „Tengja við tæki" í ræmunni gerir það að skráðu tæki (unitId = uttaeki.id);
   // TurboPaint tengir það sjálfkrafa við óstaðsett tæki sömu tegundar við „Vista í úttekt". `tegund` = heiti tegundar eins
   // og tækin eru skráð (uttaeki.type), sama og TEGUND_HEITI í kjarni sjalftenging.ts.
-  const BUNADUR = [
+  const DEF_BUNADUR = [
     { id: 'lettvatn', nafn: 'Slökkvitæki — léttvatn', stutt: 'LÉ', tegund: 'Léttvatn' },
     { id: 'duft', nafn: 'Slökkvitæki — duft', stutt: 'DF', tegund: 'ABC Duft' },
     { id: 'co2', nafn: 'Slökkvitæki — CO₂', stutt: 'CO', tegund: 'CO2' },
@@ -77,6 +77,29 @@
     { id: 'segull', nafn: 'Segulloki', stutt: 'SG', tegund: 'Segulloki' },
     { id: 'annad', nafn: 'Annað tæki', stutt: 'TÆ', tegund: 'Annað tæki' }
   ];
+  // ── Táknasafn stillanlegt (Agnar 26.11.2026: „bakenda-stillingar … breyta, bæta við táknum, hide, add, svo ég þurfi ekki
+  // stöðugt Claude í að laga 24/7"). STIMPLAR/BUNADUR eru nú SAMSETT: kóða-sjálfgefið (DEF_*) + yfirlög notandans úr Vidmot
+  // (þjóns-vistun, eins á öllum vélum — 532 skrifar þau). Ritillinn (532) breytir þessu; 433 virkar þótt 532 hlaðist ekki.
+  // Ný tákn eru alltaf BÚNAÐUR (tegund úr þekktum lista → rétt tákn á striga sjálfkrafa, 434 fjold()); Merki má fela/
+  // endurnefna/lita/raða en ekki bæta við (nýtt stimpil-id teiknaðist sem „annað" á striga). TAEKI_TAKN er ekki stillanlegt.
+  let STIMPLAR = DEF_STIMPLAR.slice(), BUNADUR = DEF_BUNADUR.slice();
+  const TAEKI_TAKN = DEF_TAEKI_TAKN;
+  function samsett(DEF, key) {
+    const o = (window.Vidmot && Vidmot.lesa(key, null)) || {};
+    const breytt = (o && o.breytt) || {}, falin = new Set((o && o.falin) || []), ny = Array.isArray(o && o.ny) ? o.ny : [], rodin = Array.isArray(o && o.rod) ? o.rod : null;
+    let L = DEF.map(d => Object.assign({}, d, breytt[d.id] || {}));
+    ny.forEach(n => { if (n && n.id && !L.some(x => x.id === n.id)) L.push(Object.assign({}, n)); });
+    L = L.filter(x => !falin.has(x.id));
+    if (rodin) L.sort((a, b) => { const ia = rodin.indexOf(a.id), ib = rodin.indexOf(b.id); return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib); });
+    return L;
+  }
+  function beitaPalette() {
+    try { STIMPLAR = samsett(DEF_STIMPLAR, 'teikning.merki'); BUNADUR = samsett(DEF_BUNADUR, 'teikning.bunadur'); }
+    catch (e) { console.warn('[433] palette', e); STIMPLAR = DEF_STIMPLAR.slice(); BUNADUR = DEF_BUNADUR.slice(); }
+  }
+  beitaPalette();
+  // val frá annarri vél (Vidmot) tekur gildi við næstu teikningu; ritillinn hér heima kallar endurteikna() strax eftir vistun
+  try { document.addEventListener('vidmot-breytt', () => { beitaPalette(); try { stikaBunadar(); stikaStimpla(); } catch (_) {} }); } catch (_) {}
 
   const S = {
     drag: null, bid: null, valinn: null, slepptSmellur: false, vistun: 0,
@@ -848,7 +871,7 @@
       else if (listi && listi.parentNode === panel) panel.insertBefore(rod, listi);
       else panel.appendChild(rod);
     }
-    const fingur = BUNADUR.map(s => s.id).join(',') + ((window.TeiknTakn && TeiknTakn.fingrafar) ? TeiknTakn.fingrafar() : '');
+    const fingur = BUNADUR.map(s => s.id + ':' + (s.nafn || '') + ':' + (s.stutt || '')).join(',') + ((window.TeiknTakn && TeiknTakn.fingrafar) ? TeiknTakn.fingrafar() : '');
     if (rod.dataset.ok === fingur && rod.querySelector('.fp-stimpill')) return;
     rod.dataset.ok = fingur;
     rod.title = 'Hvar tæki og búnaður á að vera — óskráð þar til það er tengt við tæki (Tengja við tæki í ræmunni, eða sjálfkrafa í TurboPaint við „Vista í úttekt“).';
@@ -891,7 +914,7 @@
       if (listi && listi.parentNode === panel) panel.insertBefore(rod, listi);
       else panel.appendChild(rod);
     }
-    const fingur = STIMPLAR.map(s => s.id).join(',') + ((window.TeiknTakn && TeiknTakn.fingrafar) ? TeiknTakn.fingrafar() : '');
+    const fingur = STIMPLAR.map(s => s.id + ':' + (s.nafn || '') + ':' + (s.stutt || '') + ':' + (s.litur || '')).join(',') + ((window.TeiknTakn && TeiknTakn.fingrafar) ? TeiknTakn.fingrafar() : '');
     if (rod.dataset.ok === fingur && rod.querySelector('.fp-stimpill')) return;
     rod.dataset.ok = fingur;
     rod.innerHTML = '<div class="fp-stimpil-lbl">Merki</div>' + STIMPLAR.map(s =>
@@ -1363,7 +1386,7 @@
   }, true);
 
   window.TeiknMerking = {
-    grip, iDragi, setjaTaeki, setjaStimpil, setjaEitt, setjaBunad, tengjaBunad, breytaBunad, ostadsettTaeki, vistaAdThjoni, erStimpil, erNytt, nyttTalning, stimplar: STIMPLAR, bunadur: BUNADUR,
+    grip, iDragi, setjaTaeki, setjaStimpil, setjaEitt, setjaBunad, tengjaBunad, breytaBunad, ostadsettTaeki, vistaAdThjoni, erStimpil, erNytt, nyttTalning, get stimplar() { return STIMPLAR; }, get bunadur() { return BUNADUR; },
     tikk, afturkalla, eydaMerki, snuaMerki, afritaMerki, opnaValmynd, finnaMerki,
     stimpilPx: merkiStaerd, skjaStaerd, passaBreidd, setjaStaerd: skraStaerd, sjalfStaerd, breytaTakn, endurstillaStaerd,
     staerdLykill: () => String(vistudStaerd()),
@@ -1371,7 +1394,10 @@
     // Vinnumyndin (445): hvaða stimpill er vopnaður á ræmunni, hvaða merki er valið, og frágangur færslu.
     vopn: () => S.valinn,
     valid: () => S.valinnMerki,
-    faert
+    faert,
+    // Táknasafn-ritillinn (532): sjálfgefnu listarnir (til að bera saman við yfirlög) og endurteiknun eftir vistun.
+    sjalfgefid: { merki: DEF_STIMPLAR, bunadur: DEF_BUNADUR, taeki: DEF_TAEKI_TAKN },
+    endurteikna: () => { beitaPalette(); try { stikaBunadar(); stikaStimpla(); } catch (_) {} }
   };
 
   if (!vefja()) { let n = 0; const i = setInterval(() => { if (vefja() || ++n > 80) clearInterval(i); }, 150); }
