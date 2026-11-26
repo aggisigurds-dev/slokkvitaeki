@@ -6218,6 +6218,14 @@
       if (!TeiknVal.erTilSkyndi(r.eign)) { try { await TeiknVal.saekja(r.eign); } catch (_) {} } else if (!TeiknVal.erSott(r.eign)) TeiknVal.saekja(r.eign);
       TeiknVal.finnaAlltHusid(val, r.dr, r.eign, TeiknSaekja.flokka);
     }
+    // 26.11.2026 (Nesdekk, Völuteigur 29): einnar hæðar hús þar sem grunnmyndin ber enga hæð í titli — t.d. „Nr.25-29:",
+    // aðaluppdráttur alls hússins á einu blaði (Völuteigur 25/27/29 deila landnúmeri). Þá fannst enginn hæðarlykill og
+    // tillagan varð tóm („0 hæðir"). Bjóðum þá nýjustu grunnmyndina sem eina hæð („1. hæð", skorin á stærsta húsramma)
+    // svo teikningin opnist — Agnar getur bætt við hæðum eða fært skurðinn. Aðeins ef Agnar valdi ekkert blað sjálfur.
+    if (!val.size && grunn.length) {
+      const best = grunn.slice().sort((a, b) => String(b.d.dags || '').localeCompare(String(a.d.dags || '')))[0];
+      best.lyklar = ['1']; val.set('1', best);
+    }
     // 02.11.2026 (Agnar: „skelfilega hægur"): blöðin voru lesin EITT Í EINU (sækja → teikna PDF → greina → næsta). Nú 3 í einu
     // (2 þegar blaðið er hreint PDF: 6000 px strigi er ~100 MB), fyrsta hæðin fyrst, og blað sem hefur verið lesið áður í þessari
     // lotu (mynd + húsrammar) er munað í fahMinni — „Finna allt húsið" í annað sinn les ekkert upp á nýtt.
