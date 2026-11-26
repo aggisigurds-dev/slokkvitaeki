@@ -72,6 +72,8 @@
   const svgGrima = d => "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E" + d + "%3C/svg%3E\") center/contain no-repeat";
   const T_DAGATAL = svgGrima("%3Cpath d='M8 2v4M16 2v4'/%3E%3Crect width='18' height='18' x='3' y='4' rx='2'/%3E%3Cpath d='M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01'/%3E");
   const T_LISTI = svgGrima("%3Cpath d='m3 17 2 2 4-4M3 7l2 2 4-4M13 6h8M13 12h8M13 18h8'/%3E");
+  const T_PINNI = svgGrima("%3Cpath d='M12 17v5'/%3E%3Cpath d='M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z'/%3E");
+  const T_BLYANTUR = svgGrima("%3Cpath d='M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z'/%3E%3Cpath d='m15 5 4 4'/%3E");
   const takn = (m, lit) => 'content:"";flex:none;width:16px;height:16px;background:' + (lit || '#ff8a1f') + ';-webkit-mask:' + m + ';mask:' + m + ';filter:drop-shadow(0 0 6px rgba(255,138,31,.7))';
 
   function css() {
@@ -140,22 +142,35 @@
       V + ' .links{background:' + DK1 + '}',
       V + ' .mk-bar{background:' + DK2 + '}',
       V + ' .modes{background:' + DK3 + ';padding:8px 10px}',
-      // Flýtileiðir: ein lína. Flísarnar eru þéttar; komist þær ekki fyrir skrunar línan lárétt og hópurinn
-      // „Mitt vinnuborð + Nýtt mál" stendur kyrr við hægri brúnina (sticky) svo aðgerðin sé alltaf sýnileg.
-      V + ' .links{--hb:6px;flex-wrap:nowrap;gap:6px;padding:10px 14px 10px 16px;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;scrollbar-color:rgba(160,190,235,.22) transparent;overscroll-behavior-x:contain}',
+      // Flýtileiðir (rýni 26.11): ALLAR flísar í einni línu, ekkert falið undir öðru og ekkert skrun.
+      // Mælt á 1470 px glugga (borðið 1202 px): 10 flísar Agnars (Aðgangsstýring … Nýr prófíll) taka 1147 px þéttar,
+      // svo heitið, „+ N í öðrum hömum“ og aðgerðahópurinn (≈ 430 px) komast ekki í sömu línu. Lína 1 = flísarnar;
+      // lína 2 = heitið + talningin vinstra megin og hópurinn [📌 Festa][✎ Breyta] | [Mitt vinnuborð][+ Nýtt mál] hægra
+      // megin. Hnútunum er ekki hnikað — `order` og brotlína (::after) raða þeim. Fleiri flísar en komast brjóta um (aldrei falið).
+      V + ' .links{--hb:4px;flex-wrap:wrap;gap:0 4px;padding:10px 14px 10px 16px;overflow:visible}',
       V + ' .links>*{flex:none}',
+      V + ' .links>.lkw,' + V + ' .links>.lk-tomt{order:0;margin:2px 0}',
+      V + ' .links::after{content:"";order:1;flex:0 0 100%;height:0;margin:5px 0 4px;box-shadow:0 -1px 0 rgba(0,0,0,.45),0 1px 0 rgba(255,255,255,.05)}',
+      V + ' .links>.lbl,' + V + ' .links>.lk-m,' + V + ' .links>.grow,' + V + ' .links>.btn,' + V + ' .links>.lk-akt{order:2}',
       V + ' .links>.grow{flex:1 0 0}',
-      V + ' .links>.lbl{margin-right:6px;font:600 12px/1 var(--body);letter-spacing:.09em;text-transform:uppercase;color:#eef3fb;white-space:nowrap}',
+      V + ' .links>.lbl{margin-right:8px;font:600 12px/1 var(--body);letter-spacing:.09em;text-transform:uppercase;color:#eef3fb;white-space:nowrap}',
       V + ' .lkw{gap:2px}',
-      V + ' .lk{height:28px;gap:5px;padding:0 10px 0 3px;border:0;border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(0,8,24,.38));box-shadow:' + SH_CHIP + ';font:500 12px/1 var(--body);color:#e6edf8;text-shadow:0 1px 0 rgba(0,0,0,.6)}',
+      V + ' .lk{height:26px;gap:4px;padding:0 8px 0 3px;border:0;border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(0,8,24,.38));box-shadow:' + SH_CHIP + ';font:500 12px/1 var(--body);color:#e6edf8;text-shadow:0 1px 0 rgba(0,0,0,.6)}',
       V + ' .lk:hover{filter:none;background:linear-gradient(180deg,rgba(255,255,255,.18),rgba(0,8,24,.28));color:#fff;box-shadow:' + SH_CHIP_HOVER + '}',
-      V + ' .lk-ic{width:20px;height:20px;background:rgba(255,103,2,.16);color:' + OR_INK + ';box-shadow:inset 0 0 0 1px rgba(255,138,31,.6),0 0 10px -2px rgba(255,120,30,.6);font:700 10.5px/1 var(--body);text-shadow:none}',
+      V + ' .lk-ic{width:18px;height:18px;background:rgba(255,103,2,.16);color:' + OR_INK + ';box-shadow:inset 0 0 0 1px rgba(255,138,31,.6),0 0 10px -2px rgba(255,120,30,.6);font:700 10px/1 var(--body);text-shadow:none}',
       V + ' .lk-x{background:' + WELL + ';border:0;color:' + BAD_INK + ';box-shadow:inset 0 0 0 1px rgba(248,113,113,.5)}',
-      V + ' .lk-m{font:600 11.5px/1 var(--body);letter-spacing:.04em;text-transform:none;color:' + MUTED + ';white-space:nowrap;padding:0 4px}',
+      V + ' .lk-m{font:600 12px/1 var(--body);letter-spacing:0;text-transform:none;color:' + MUTED + ';white-space:nowrap;padding:0 4px}',
       V + ' .lk-tomt{color:' + MUTED + '}',
       V + ' .links .btn.sm,' + V + ' .links .btn{height:30px;padding:0 12px;font-size:12.5px;border-radius:10px}',
-      V + ' .lk-akt{flex-wrap:nowrap;gap:8px;position:sticky;right:-14px;z-index:1;margin-right:-14px;padding:0 14px 0 10px;background:#0e2a4f;box-shadow:-14px 0 12px -8px #0e2a4f}',
-      V + ' .lk-skil{width:1px;height:24px;background:rgba(255,255,255,.12);box-shadow:-1px 0 0 rgba(0,0,0,.6)}',
+      // „+ Festa tengil" og „Breyta" (368 data-t5="link-add"/"link-edit") sem táknhnappar: pinni og blýantur. Textinn er
+      // áfram í hnappnum (font-size:0), svo skjálesari les „+ Festa tengil" / „Breyta" / „Búið" eins og áður.
+      V + ' .links>.btn:is([data-t5="link-add"],[data-t5="link-edit"]){width:32px;padding:0;font-size:0;gap:0}',
+      V + ' .links>.btn:is([data-t5="link-add"],[data-t5="link-edit"])::before{content:"";width:15px;height:15px;flex:none;background:currentColor}',
+      V + ' .links>.btn[data-t5="link-add"]::before{-webkit-mask:' + T_PINNI + ';mask:' + T_PINNI + '}',
+      V + ' .links>.btn[data-t5="link-edit"]::before{-webkit-mask:' + T_BLYANTUR + ';mask:' + T_BLYANTUR + '}',
+      V + ' .links>.btn[data-t5="link-add"]{margin-left:8px}',
+      V + ' .lk-akt{flex-wrap:nowrap;gap:8px;margin-left:8px}',
+      V + ' .lk-skil{width:1px;height:24px;margin-right:2px;background:rgba(255,255,255,.12);box-shadow:-1px 0 0 rgba(0,0,0,.6)}',
       // Merkja og keyra (519): stöðuröð í stjórnborðinu.
       V + ' .mk-bar{margin:0;padding:8px 16px;gap:6px 16px;font-size:13px;color:' + ONNAVY + '}',
       V + ' .mk-bar .mk-t b{font:700 15px/1 var(--body);color:#fff}',
@@ -691,10 +706,8 @@
       // ── Mjór skjár ───────────────────────────────────────────────────────────────────────────────────────────────
       '@container t5 (max-width: 760px){' +
         V + ' .h1{font-size:30px}' +
-        // Á síma brjóta Flýtileiðir um eins og í V2: í 360 px tæki kyrri hópurinn („Mitt vinnuborð + Nýtt mál“) nær allri
-        // línunni og flísarnar hyrfu undir hann (mælt 390 px). Ein lína gildir á tölvu.
-        V + ' .links{flex-wrap:wrap;overflow:visible;padding:8px 10px}' +
-        V + ' .lk-akt{position:static;flex-wrap:wrap;margin:0 0 0 auto;padding:0;background:none;box-shadow:none}' +
+        V + ' .links{padding:8px 10px}' +
+        V + ' .lk-akt{flex-wrap:wrap;margin-left:auto}' +
         V + ' .seg.modeseg{flex-wrap:nowrap;overflow-x:auto}' +
         V + ' .seg.modeseg button{flex:0 0 auto;height:40px}' +
         V + ' .flipar{flex-wrap:nowrap;overflow-x:auto;padding:10px}' +
