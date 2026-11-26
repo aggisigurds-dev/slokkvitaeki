@@ -1,0 +1,20 @@
+[deploy] Teikningar: random ny merki med eigin ikoni (beidni 7)
+
+Agnar 26.11: "lika bara random ny merki sem vill baeta innan i. Vill fa einhverja
+stjorn bara." Fyrri utgafan (e3e1cd0) leyfdi ny takn adeins sem bunad a thekktri
+tegund; nu ma baeta vid random nyju MERKI med eigin ikoni + lit, og thad teiknast
+rett a striganum.
+
+- 434 teiknaMerki: virdir m.glyff (eitt af 12 ikonum) + lit beint a merkinu — svo
+  sersmidad merki teiknast rett thott id-id se ekki i innbyggdu toflunum. Innbyggd
+  merki obreytt (reykskynjari-punktar, raunsaet slokkvitaeki halda ser).
+- 433 setjaStimpil: setur m.glyff a merki sem er EKKI innbyggt (DEF_STIMPLAR) svo
+  434 teikni rett; innbyggd merki fa ekki m.glyff og halda sinni sermedferd.
+- 532: "+ Nytt merki" i Merki-hlutanum (heiti + litur + ikon-val ur 12 glyffum) og
+  ikon-val a sersmiduðum merkja-rodum; ny merki vistast i teikning.merki.ny
+  {id,nafn,stutt,litur,glyff}. Baeta-vid virkar nu baedi fyrir Bunad og Merki.
+
+node --check OK (433/434/532); audit-all --static graent nema 2 oskyld fyrir. ?v=
+haekkud a 433/434/532 (20261126stb).
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
