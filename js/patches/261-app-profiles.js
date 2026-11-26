@@ -164,6 +164,10 @@
     // hliðin: allt sem verkstjórar skráðu, per verk, og fer beint í Efnislistann við reikningsgerð.
     { k: 'br-efnisnotkun',   label: 'Efnisnotkun · verkstjórar skrá efni á verk', short: 'Efnisnotkun', en: 'Materials', emoji: '🧰', url: 'https://brunaholf.netlify.app/brunathettingar?embed=1' },
     { k: 'br-fra-verkstad',  label: 'Frá verkstað · efnisnotkun per verk', short: 'Frá verkstað', en: 'From site', emoji: '🏗️', url: 'https://brunaholf.netlify.app/?embed=1#verkstadapostur' },
+    // 26.11.2026 (Agnar: „gera öpp útgáfu af þessu og setja inn í appið firestarters"): Starfsmannahamur Apex Ajour í Kjarna —
+    // punktar á teikningu, mynd, flokkur (stærð), starfsmaður, gátlisti og staða, eins og í EG Ajour-appinu. Síðan er sjálf
+    // símaskjár (eigin haus og stika), því touch: true. Kjarni leyfir rammann (frame-ancestors *.netlify.app, next.config.mjs).
+    { k: 'apex-starfsmenn',  label: 'Apex · skráningar á teikningu (eins og Ajour)', short: 'Apex', en: 'Apex', emoji: '📍', url: 'https://kjarni.vercel.app/kjarni/skraning/starfsmadur', touch: true },
     // Verkkaupar er SJÁLFSTÆÐ síða (ekki hash-flipi í index.html) — því bein slóð
     // án ?embed=1#… . Hún er þegar app-útlit (eigin haus, engin hliðarstika).
     { k: 'br-verkkaupar',    label: 'Verkkaupar (Brunahólf)', short: 'Verkkaupar', emoji: '🤝', url: 'https://brunaholf.netlify.app/verkkaupar.html' },
@@ -862,6 +866,9 @@
         // skráningarsíðan í Boss-appið, rétt á eftir BH Kröfum (vantar hana, fara þær aftast).
         insertOnce('__fvk1',  'br-fra-verkstad', 'br-krofuyfirlit', 'boss');
         insertOnce('__fvk2',  'br-efnisnotkun',  'br-fra-verkstad', 'boss');
+        // 26.11.2026 (Agnar: „setja inn í appið firestarters"): Apex-skráningar á eftir NLSH í Firestarters og Firestarters EN.
+        insertOnce('__apex1', 'apex-starfsmenn', 'br-nlsh', 'xfirestarters');
+        insertOnce('__apex2', 'apex-starfsmenn', 'br-nlsh', 'xfirestartersen');
         // 02.11.2026 (Agnar: „gera kannski bara sér borð/glugga fyrir þessi aðalmál"): Aðalmál (492) strax á eftir
         // Þjónustuborðinu í Boss- og Þjónustuborðs-appinu (aftast ef borðið vantar).
         insertOnce('__adm1',  'adalmal', 'bord', 'boss');
