@@ -2417,7 +2417,11 @@
               else V.push('kennitölu');
               if(effSimi) R.push('<div class="ssp-lina"><span class="ssp-merki">Sími</span><span class="ssp-gildi mono">'+esc(effSimi)+(siDer?derTag:'')+'</span></div>');
               else V.push('síma');
-              if(info.tengilidur) R.push('<div class="ssp-lina heil"><span class="ssp-merki">Tengiliður</span><span class="ssp-gildi">'+esc(info.tengilidur)+'</span></div>');
+              // Samband „til hliðar" (26.11.2026, Agnar): reitirnir nýta hægra svæðið —
+              // Tengiliður er EKKI lengur heil (full breidd) heldur deilir röð með Síma í
+              // 2-dálka grind (442 .ssp-reitir er 2-col). Netföng/vantar halda fullri breidd;
+              // á síma fellur grindin í einn dálk (container-query @560 í 442).
+              if(info.tengilidur) R.push('<div class="ssp-lina"><span class="ssp-merki">Tengiliður</span><span class="ssp-gildi">'+esc(info.tengilidur)+'</span></div>');
               else V.push('tengilið');
               if(emails) R.push('<div class="ssp-lina heil efst"><span class="ssp-merki">Netföng'+(emDer?'<small>úr byggingum</small>':'')+'</span><span class="ssp-plotur">'+emails+'</span></div>');
               else V.push('netföng');
