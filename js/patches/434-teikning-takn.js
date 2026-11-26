@@ -387,6 +387,13 @@
   function teiknaMerki(ctx, m, mx, my, s, units) {
     if (m && m.kvardi > 0) s = s * m.kvardi;
     if (m && m.punktur) return teiknaPunkt(ctx, m.punktur, mx, my, s);
+    // Eigið tákn (Agnar 26.11.2026: „random ný merki sem vill bæta innan í"): merki sem notandinn bjó til í Táknasafninu
+    // (532) ber sitt eigið glyff + lit beint á merkinu — teiknast rétt þótt id-ið sé ekki í innbyggðu töflunum. 433 setur
+    // m.glyff AÐEINS á sérsmíðuð merki (ekki innbyggð), svo reykskynjari-punktar og raunsæ slökkvitæki haldast óbreytt.
+    if (m && m.glyff && GLYFF.indexOf(m.glyff) >= 0) {
+      const lit = Object.assign({}, LITIR.annad, (m.color || m.bg) ? { bg: m.color || m.bg } : {});
+      return teiknaTakn(ctx, m.glyff, lit, mx, my, s, m && m.rot);
+    }
     const lyk = lykillFyrir(m, units);
     if (raunOn() && PUNKTUR_LYK[lyk]) return teiknaPunkt(ctx, PUNKTUR_LYK[lyk], mx, my, s);
     if (raunOn() && teiknaRaun(ctx, lyk, mx, my, s, m && m.vantar)) return;

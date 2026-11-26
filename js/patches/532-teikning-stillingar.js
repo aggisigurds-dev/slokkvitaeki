@@ -20,6 +20,9 @@
   const TT = () => window.TeiknTakn;
   // Þekktar tegundir fyrir nýjan búnað — sömu og tækin eru skráð (uttaeki.type) og 434 fjold()/kjarni þekkja.
   const TEGUNDIR = ['Léttvatn', 'ABC Duft', 'CO2', 'Brunaslanga', 'Reykskynjari', 'Hitaskynjari', 'Viðvörunarbjalla', 'Segulloki', 'Handboði', 'Annað tæki'];
+  // Íkon sem nýtt merki má bera (sömu og 434 teiknar). Agnar 26.11.2026: „random ný merki sem vill bæta innan í".
+  const GLYFF = (window.TeiknTakn && Array.isArray(TeiknTakn.glyff)) ? TeiknTakn.glyff : ['extinguisher', 'hose', 'sign-extinguisher', 'sign-hose', 'exit', 'electric', 'hydrant', 'pin', 'alarm', 'detector', 'magnet', 'window'];
+  const GLYFF_NOFN = { extinguisher: 'Slökkvitæki', hose: 'Slanga', 'sign-extinguisher': 'Skilti SLT', 'sign-hose': 'Skilti slanga', exit: 'Útgangur', electric: 'Rafmagn', hydrant: 'Hani', pin: 'Pinni', alarm: 'Hnappur', detector: 'Skynjari', magnet: 'Segull', window: 'Björgunarop' };
 
   function lesaYf(key) { try { const v = window.Vidmot && Vidmot.lesa(key, null); return v && typeof v === 'object' ? v : {}; } catch (_) { return {}; } }
   function vista(key, obj) { try { if (window.Vidmot) Vidmot.setja(key, obj); } catch (e) { console.warn('[532] vista', e); } }
@@ -92,6 +95,7 @@
       '<span class="ico"></span>' +
       '<input type="text" class="nafn" value="' + esc(d.nafn || '') + '" placeholder="Heiti">' +
       (erMerki ? '<input type="color" class="lit" value="' + esc(/^#[0-9a-f]{6}$/i.test(d.litur || '') ? d.litur : '#c93c1d') + '" title="Litur">' : '') +
+      (erMerki && d._ny ? '<select class="gly" title="Íkon">' + GLYFF.map(g => '<option value="' + g + '"' + (d.glyff === g ? ' selected' : '') + '>' + esc(GLYFF_NOFN[g] || g) + '</option>').join('') + '</select>' : '') +
       '<span class="mv"><button type="button" class="up" ' + (i === 0 ? 'disabled style="opacity:.3"' : '') + '>▲</button><button type="button" class="dn" ' + (i === n - 1 ? 'disabled style="opacity:.3"' : '') + '>▼</button></span>' +
       '<button type="button" class="eye" data-on="' + (d.falid ? 0 : 1) + '" title="Sýna / fela í ræmunni">' + (d.falid ? '🚫' : '👁') + '</button>' +
       (d._ny ? '<button type="button" class="x" title="Eyða þessu tákni">✕</button>' : '') +
@@ -110,6 +114,10 @@
       '<h3>Merki (skilti og tákn)</h3>' +
       '<div class="sk">ÚT-skilti, slöngumerki, rafmagn o.fl. Má fela, endurnefna, lita og raða.</div>' +
       '<div data-sec="mer">' + M.mer.map((d, i) => rodHtml(d, i, M.mer.length, true)).join('') + '</div>' +
+      '<div class="addrow" data-add="mer"><input type="text" class="n-nafn" placeholder="Heiti nýs merkis" style="flex:1;min-width:110px">' +
+      '<input type="color" class="n-lit" value="#c93c1d" title="Litur">' +
+      '<select class="n-gly" title="Íkon">' + GLYFF.map(g => '<option value="' + g + '">' + esc(GLYFF_NOFN[g] || g) + '</option>').join('') + '</select>' +
+      '<button type="button" class="add">+ Bæta við</button></div>' +
       '<h3>Aðgerðartakkar (hvað sést á stikunni)</h3>' +
       '<div class="sk">Hakað = sést efst í teikniglugganum. Afhakað fer í „Nánar ▾".</div>' +
       '<div data-sec="takkar">' + M.takkar.map((t, i) =>
@@ -148,6 +156,7 @@
       const d = listi(arr)[+r.dataset.i]; if (!d) return;
       if (e.target.classList.contains('nafn')) { d.nafn = e.target.value; }
       if (e.target.classList.contains('lit')) { d.litur = e.target.value; const ic = r.querySelector('.ico'); if (ic) ikon(ic, d, true); }
+      if (e.target.classList.contains('gly')) { d.glyff = e.target.value; const ic = r.querySelector('.ico'); if (ic) ikon(ic, d, true); }
     });
     ov.querySelector('.bd').addEventListener('click', e => {
       const r = e.target.closest('.r'); if (!r) return; const sec = r.closest('[data-sec]'); if (!sec) return;
@@ -164,9 +173,15 @@
     });
     ov.querySelector('.bd').addEventListener('click', e => {
       const add = e.target.closest('.add'); if (!add) return;
-      const box = add.closest('.addrow'); const nafn = (box.querySelector('.n-nafn').value || '').trim(); const teg = box.querySelector('.n-teg').value;
+      const box = add.closest('.addrow'); if (!box) return;
+      const nafn = (box.querySelector('.n-nafn').value || '').trim();
       if (!nafn) { box.querySelector('.n-nafn').focus(); return; }
-      M.bun.push({ _ny: true, id: 'n' + Date.now().toString(36), nafn, stutt: stuttAf(nafn), tegund: teg, falid: false });
+      const id = 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+      if (box.getAttribute('data-add') === 'mer') {
+        M.mer.push({ _ny: true, id, nafn, stutt: stuttAf(nafn), litur: box.querySelector('.n-lit').value, glyff: box.querySelector('.n-gly').value, falid: false });
+      } else {
+        M.bun.push({ _ny: true, id, nafn, stutt: stuttAf(nafn), tegund: box.querySelector('.n-teg').value, falid: false });
+      }
       render(ov, M);
     });
 
@@ -183,7 +198,12 @@
         const defId = new Set((DEF || []).map(d => d.id)), defMap = {}; (DEF || []).forEach(d => { defMap[d.id] = d; });
         const yf = { rod: arr.map(d => d.id), falin: arr.filter(d => d.falid).map(d => d.id), breytt: {}, ny: [] };
         arr.forEach(d => {
-          if (d._ny || !defId.has(d.id)) { const n = { id: d.id, nafn: d.nafn, stutt: d.stutt || stuttAf(d.nafn), tegund: d.tegund }; yf.ny.push(n); return; }
+          if (d._ny || !defId.has(d.id)) {
+            yf.ny.push(erMerki
+              ? { id: d.id, nafn: d.nafn, stutt: d.stutt || stuttAf(d.nafn), litur: d.litur, glyff: d.glyff }
+              : { id: d.id, nafn: d.nafn, stutt: d.stutt || stuttAf(d.nafn), tegund: d.tegund });
+            return;
+          }
           const b = {}, base = defMap[d.id] || {};
           if ((d.nafn || '') !== (base.nafn || '')) b.nafn = d.nafn;
           if ((d.stutt || '') !== (base.stutt || '')) b.stutt = d.stutt;

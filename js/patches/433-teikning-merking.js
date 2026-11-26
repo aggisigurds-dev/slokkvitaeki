@@ -367,6 +367,9 @@
     const id = unitId || ('s:' + def.id + ':' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6));
     p.markers = p.markers.filter(m => m.unitId !== id);
     const m = { unitId: id, kind: 'sign', sign: def.id, x, y, color: def.litur, rot: rot || 0 };
+    // Sérsmíðað merki (532): ber sitt glyff beint svo það teiknist rétt (434). AÐEINS á merki sem er EKKI innbyggt —
+    // innbyggð merki (reykskynjari o.fl.) halda sinni sérmeðferð (punktur/raunsætt) gegnum lykilinn í 434.
+    if (def.glyff && !DEF_STIMPLAR.some(d => d.id === def.id)) m.glyff = def.glyff;
     p.markers.push(m);
     skraUndo({ teg: 'stimpill', merki: afritMerki(m) });
     try { if (window.TeiknBord && TeiknBord.samstilla) TeiknBord.samstilla(); } catch (_) {}
