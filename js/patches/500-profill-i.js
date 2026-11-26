@@ -455,7 +455,10 @@
     if (document.getElementById('p2-css')) return;
     var s = document.createElement('style');
     s.id = 'p2-css';
-    s.textContent = css + '#companies-main.p2{container:p2c/inline-size}@container p2c (max-width:760px){' + NARROW + '}@media (max-width:900px){' + NARROW + '}';
+    // 26.11.2026 (Agnar: heimilisfang „Völuteigur 29" braut einn staf á línu á síma): 4-dálka p2-glugg með föstum 520px
+    // myndadálki sveltir textadálkana — mælt braut gildi staf-fyrir-staf undir ~1000px gáma (27 línur við 800), og
+    // collapse-markið var aðeins 760px. Hækkað í 1100px svo þröng/símabreidd falli í hreina 1-dálks NARROW-útlitið.
+    s.textContent = css + '#companies-main.p2{container:p2c/inline-size}@container p2c (max-width:1100px){' + NARROW + '}@media (max-width:900px){' + NARROW + '}';
     document.head.appendChild(s);
   }
 
