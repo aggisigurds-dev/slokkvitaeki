@@ -349,7 +349,12 @@
       P+'.rf-next--overdue{display:inline-flex;align-items:center;gap:3px;font-weight:700;color:#fff;background:linear-gradient(145deg,#e2555f,#a01820 60%,#5a0c10);border:1px solid #4a0a0e;border-radius:7px;padding:2px 7px;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 2px 4px -2px rgba(0,0,0,.4);text-shadow:0 1px 1px rgba(0,0,0,.3)}',
       P+'.rf-next--none{color:#cbd2dc}',
       // note input inside the white body
-      P+'._rf_note{display:block;width:100%;padding:7px 10px;border:1px solid rgba(20,24,34,.14);border-radius:8px;font:inherit;font-size:12.5px;background:#fff;box-sizing:border-box;margin-bottom:12px;color:#141822}',
+      // Fix #4 (26.11.2026): athugasemdin er EIN lína — föst hæð, engin dráttur (resize),
+      // svo reiturinn blási ekki kortið út. Miðakerfi-dofin/rauð vantar-lína líka hér.
+      P+'._rf_note{display:block;width:100%;height:36px;min-height:36px;resize:none;padding:8px 10px;border:1px solid rgba(20,24,34,.14);border-radius:8px;font:inherit;font-size:12.5px;line-height:18px;background:#fff;box-sizing:border-box;margin-bottom:11px;color:#141822;overflow:hidden;white-space:nowrap}',
+      P+'._rf_vantar{font-size:12.5px}',
+      P+'._rf_vantar_add{all:unset;cursor:pointer;color:#c92a2a;font-weight:600;font-size:12.5px}',
+      P+'._rf_vantar_add:hover{text-decoration:underline}',
       // ── BRUNAKERFI Í SAMA YFIRLITI (2026-07-27, Claude Design „Brunayfirlit-v2") ──
       // Þjónusturofi (Bæði / 🧯 Slökkvitæki / 🚨 Brunakerfi), tölfluspjöld og
       // tvískiptar frumur — efri lína = slökkvitæki, neðri = brunakerfi.
@@ -2339,11 +2344,28 @@
         '</div>'+
         '<div class="ssp-buk">'+
           '<div class="_rf_info_view ssp-reitir">'+
-            '<div class="ssp-lina"><span class="ssp-merki">Kennitala</span><span class="ssp-gildi mono">'+(effKt?esc(fmtKt(effKt))+(ktDer?derTag:''):'<span class="ssp-daufur">—</span>')+'</span></div>'+
-            '<div class="ssp-lina"><span class="ssp-merki">Sími</span><span class="ssp-gildi mono">'+(effSimi?esc(effSimi)+(siDer?derTag:''):'<span class="ssp-daufur">—</span>')+'</span></div>'+
-            '<div class="ssp-lina heil"><span class="ssp-merki">Tengiliður</span><span class="ssp-gildi">'+(info.tengilidur?esc(info.tengilidur):'<span class="ssp-daufur">—</span>')+'</span></div>'+
-            '<div class="ssp-lina heil efst"><span class="ssp-merki">Netföng'+(emDer?'<small>úr byggingum</small>':'')+'</span>'+
-              (emails?'<span class="ssp-plotur">'+emails+'</span>':'<span class="ssp-gildi ssp-daufur">—</span>')+'</div>'+
+            // Fix #1 (26.11.2026, ósk Agnars „fyrirferðamikið og tómt"): TÓMUR REITUR
+            // FÆR ALDREI FULLA RÖÐ. Raða aðeins reitum með gildi; safna því sem vantar
+            // í EINA dofna „vantar"-línu sem opnar Breyta-formið. Áður stóð „Kennitala —"
+            // og „Tengiliður —" sem feitar raðir og blésu kortið út að óþörfu.
+            (function(){
+              var R=[],V=[];
+              if(effKt) R.push('<div class="ssp-lina"><span class="ssp-merki">Kennitala</span><span class="ssp-gildi mono">'+esc(fmtKt(effKt))+(ktDer?derTag:'')+'</span></div>');
+              else V.push('kennitölu');
+              if(effSimi) R.push('<div class="ssp-lina"><span class="ssp-merki">Sími</span><span class="ssp-gildi mono">'+esc(effSimi)+(siDer?derTag:'')+'</span></div>');
+              else V.push('síma');
+              if(info.tengilidur) R.push('<div class="ssp-lina heil"><span class="ssp-merki">Tengiliður</span><span class="ssp-gildi">'+esc(info.tengilidur)+'</span></div>');
+              else V.push('tengilið');
+              if(emails) R.push('<div class="ssp-lina heil efst"><span class="ssp-merki">Netföng'+(emDer?'<small>úr byggingum</small>':'')+'</span><span class="ssp-plotur">'+emails+'</span></div>');
+              else V.push('netföng');
+              var vl='';
+              if(V.length){
+                var t=(V.length===1?V[0]:V.slice(0,-1).join(', ')+' og '+V[V.length-1]);
+                t=t.charAt(0).toUpperCase()+t.slice(1)+' vantar';
+                vl='<div class="ssp-lina heil _rf_vantarlina"><span class="ssp-gildi ssp-daufur _rf_vantar">'+esc(t)+' — <button type="button" class="_rf_vantar_add">+ bæta við</button></span></div>';
+              }
+              return R.join('')+vl;
+            })()+
           '</div>'+
           '<div class="_rf_info_form" style="display:none">'+
             '<div class="ssp-reitir" style="gap:10px">'+
@@ -2419,6 +2441,9 @@
       infoFormEl.style.display=on?'':'none'; infoViewEl.style.display=on?'none':'';
       infoEditBtn.textContent=on?'Loka':'Breyta'; }
     if(infoEditBtn) infoEditBtn.addEventListener('click', function(){ showInfoForm(infoFormEl.style.display==='none'); });
+    // Fix #1: „+ bæta við" í vantar-línunni opnar sama Breyta-form.
+    var vantarAdd=body.querySelector('._rf_vantar_add');
+    if(vantarAdd) vantarAdd.addEventListener('click', function(){ showInfoForm(true); });
     var infoCancel=body.querySelector('._rf_info_cancel');
     if(infoCancel) infoCancel.addEventListener('click', function(){ showInfoForm(false); });
     var infoSave=body.querySelector('._rf_info_save');

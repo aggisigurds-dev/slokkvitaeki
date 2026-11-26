@@ -1145,8 +1145,14 @@
     // 04.10.2026 (Agnar: „more stylish í samræmi við Fyrirtæki í þjónustu"): Stálspjald (442) — málmhaus með hnoðum,
     // línur á stálplötu, silfur-/málmtakkar, engin emoji (áður fjólublátt spjald með 💬/✉️/⚠️).
     card.classList.add("ssp");
-    const haus = hlid => '<div class="ssp-haus"><span class="ssp-titill">Samskiptasaga</span>' +
-      (dom ? '<span class="ssp-undir">@' + esc(dom) + '</span>' : '') + '<span class="ssp-hlid">' + (hlid || '') + '</span></div>';
+    // Fix #2 (26.11.2026): hausinn getur borið TOPPSENDANDA (netfang þess sem sendir
+    // mest) í stað lénsins eins — „samskiptin elta sendandann". Fellur aftur í @lén
+    // þegar enginn póstur fannst, svo hegðun breytist ekki þar sem ekkert er.
+    const haus = (hlid, sub) => {
+      const u = sub || (dom ? '@' + esc(dom) : '');
+      return '<div class="ssp-haus"><span class="ssp-titill">Samskiptasaga</span>' +
+        (u ? '<span class="ssp-undir">' + u + '</span>' : '') + '<span class="ssp-hlid">' + (hlid || '') + '</span></div>';
+    };
     if (slot) slot.appendChild(card); else info.parentNode.insertBefore(card, info.nextSibling);
     if (!dom && !coids.length) {
       card.innerHTML = haus('') + '<div class="ssp-buk"><span class="ssp-gildi ssp-daufur">Engin netföng eða byggingar á félaginu — skráðu netfang til að sjá póstsögu.</span></div>';
@@ -1176,6 +1182,14 @@
     const cut = lastUs > handled ? lastUs : handled;
     const openQ = mails.filter(m => m.is_question && !m.fra_okkur && m.received_at > cut).length;
     const top = mails[0];
+    // Fix #2: toppsendandi = sá sem á flestar færslur (ekki frá okkur). Berst í hausinn.
+    const _fra = {};
+    mails.filter(m => !m.fra_okkur && m.sender_email).forEach(m => {
+      const k = String(m.sender_email).toLowerCase();
+      (_fra[k] || (_fra[k] = { n: 0, email: m.sender_email })).n++;
+    });
+    const _topFra = Object.keys(_fra).map(k => _fra[k]).sort((a, b) => b.n - a.n)[0];
+    const subLabel = _topFra ? esc(_topFra.email) : (dom ? '@' + esc(dom) : '');
     const mailsHtml = mails.map(m => {
       const spurn = m.is_question && !m.fra_okkur;
       return '<div class="ssp-lina heil" style="display:block;margin:0 0 6px">' +
@@ -1191,7 +1205,7 @@
         ? '<button type="button" class="_ssk-rf-mark ssp-btn malm">✓ Merkja afgreitt</button>'
         : (handled && !openQ ? '<span class="ssp-plata"><i class="ssp-led graent"></i>Afgreitt</span>' : "")) +
       '<button type="button" class="_ssk-rf-toggle ssp-btn">Opna ▾</button>';
-    card.innerHTML = haus(hlid) +
+    card.innerHTML = haus(hlid, subLabel) +
       '<div class="ssp-buk">' +
         '<div class="ssp-reitir">' +
           (top
