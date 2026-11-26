@@ -6194,6 +6194,35 @@
     while (fahMinni.size > 12) fahMinni.delete(fahMinni.keys().next().value);
     return trygg;
   }
+  // 26.11.2026 (Agnar, Nesdekk/Völuteigur 29): sveitarfélög eins og Mosfellsbær (luks.mos.is) afhenda aðaluppdráttinn sem
+  // BEINT .TIF sem vafrinn hvorki birtir né teikn-mynd kann → teikningin opnaðist ekki. TIF-vélin (384) afkóðar hana þó
+  // (UTIF í vinnuþræði, sama og forskoðun). Hér afkóðum við blaðið EINU SINNI og vistum JPEG í Storage (varanleg, opinber
+  // slóð, deterministic lykill svo sama TIF endurhleðst ekki) — image_url hæðarinnar verður venjuleg mynd sem allar leiðir
+  // (birting, skurður, Vista, aðrar vélar, TurboPaint) ráða við. Bregðist geymslan er blob-slóðin a.m.k. sýnileg í lotunni.
+  const tifMinni = new Map();
+  async function tifPng(infoUrl, cid) {
+    if (tifMinni.has(infoUrl)) return tifMinni.get(infoUrl);
+    const p = (async () => {
+      const TF = window.TeikningaForskodun;
+      if (!TF || !TF.myndSlod) throw new Error('TIF-vélin (384) er ekki hlaðin');
+      const blobUrl = await TF.myndSlod({ infoUrl });
+      if (!window.DB || !DB.sb || !cid) return blobUrl;
+      const img = await hladaMynd(blobUrl);
+      const cv = document.createElement('canvas'); cv.width = img.naturalWidth || img.width; cv.height = img.naturalHeight || img.height;
+      cv.getContext('2d').drawImage(img, 0, 0);
+      const jpg = await new Promise(r => cv.toBlob(r, 'image/jpeg', 0.9));
+      if (!jpg) return blobUrl;
+      const lyk = 'teikning-tif/' + cid + '/' + String(infoUrl).replace(/^https?:\/\//i, '').replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '').slice(0, 70) + '.jpg';
+      const up = await DB.sb.storage.from('turbopaint').upload(lyk, jpg, { upsert: true, contentType: 'image/jpeg', cacheControl: '31536000' });
+      if (up && up.error && !/exist/i.test(up.error.message || '')) throw new Error(up.error.message);
+      const pub = DB.sb.storage.from('turbopaint').getPublicUrl(lyk);
+      return (pub && pub.data && pub.data.publicUrl) || blobUrl;
+    })();
+    p.catch(() => tifMinni.delete(infoUrl));
+    tifMinni.set(infoUrl, p);
+    return p;
+  }
+  window.TeiknTifPng = tifPng;
   // Tillagan fyrir staðinn — reiknuð en ekki beitt (prófanir: TeiknBord.finnaAlltHusid({ anYfirlags: true }))
   async function fahTillaga(framvinda) {
     const FP = FPx(); if (!FP || !FP.companyId) throw new Error('Enginn staður opinn');
@@ -6238,8 +6267,11 @@
     const pdfLeyfi = () => new Promise(res => { const reyna = () => { if (pdfVirk < 2) { pdfVirk++; res(); } else pdfBid.push(reyna); }; reyna(); });
     const pdfLosa = () => { pdfVirk--; const n = pdfBid.shift(); if (n) n(); };
     const lesaBlad = async ({ x, lyklar }) => {
-      const url = '/.netlify/functions/teikn-mynd?url=' + encodeURIComponent(x.d.infoUrl);
-      const erPdf = /\.pdf(\.info)?$/i.test(String(x.d.infoUrl || ''));
+      const erTif = !!(window.TeikningaForskodun && TeikningaForskodun.beintTif && TeikningaForskodun.beintTif(x.d));
+      let url = '/.netlify/functions/teikn-mynd?url=' + encodeURIComponent(x.d.infoUrl);
+      // Mosfellsbæjar-TIF o.fl.: afkóða + vista JPEG, nota varanlegu slóðina (annars teikn-mynd sem birtir ekki TIF)
+      if (erTif) { try { const pg = await tifPng(x.d.infoUrl, FP.companyId); if (pg) url = pg; } catch (e) { console.warn('[383] TIF->PNG', e); } }
+      const erPdf = !erTif && /\.pdf(\.info)?$/i.test(String(x.d.infoUrl || ''));
       if (erPdf) await pdfLeyfi();
       let b;
       try { b = await fahLesaBlad(url); } finally { if (erPdf) pdfLosa(); }

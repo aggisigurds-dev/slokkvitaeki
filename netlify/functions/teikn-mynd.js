@@ -9,7 +9,10 @@ import Hlid from './_starfshlid.cjs';
 // þakið stoppi ekki stærri teikningar.
 
 const FETCH_PLAN = process.env.KJARNI_FETCH_PLAN || 'https://slokkvitaeki.vercel.app/api/turbopaint/fetch-plan';
-const LEYFDIR = new Set(['skjalasafn.reykjavik.is', 'teikningar.hafnarfjordur.is']);
+// luks.mos.is (26.11.2026): Mosfellsbæjar-kortasjá afhendir skannanir sem .TIF BEINT (Nesdekk, Völuteigur 29 — 119448.TIF).
+// Vafrinn les ekki TIFF, svo blaðið er afkóðað client-megin (384 TIF-vélin, UTIF) og JPEG vistað í Storage; þessi hýsill
+// þarf samt að vera leyfður svo proxy-slóðin (og teikn-pdf, sem TIF-vélin notar) nái í frumritið.
+const LEYFDIR = new Set(['skjalasafn.reykjavik.is', 'teikningar.hafnarfjordur.is', 'luks.mos.is']);
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
