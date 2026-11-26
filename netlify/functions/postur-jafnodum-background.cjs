@@ -130,7 +130,9 @@ async function vinna({ budget = NY_I_KEYRSLU } = {}) {
       bjo_til.push({ afgreidsla_id: id, digest_id: e.id, fra: e.sender_email, efni: e.subject });
     } catch (err) {
       if (err && err.kodi === 409) { s.sleppt.spjald++; continue; }   // varð til hjá annarri keyrslu á milli — allt í lagi
-      villur.push({ digest_id: e.id, villa: String((err && err.message) || err).slice(0, 200) });
+      const vm = String((err && err.message) || err).slice(0, 200);
+      try { console.error('postur-jafnodum: digest #' + e.id + ' brást — ' + vm); } catch (_) {}
+      villur.push({ digest_id: e.id, villa: vm });
     }
   }
   return { opin_fyrir: s.opin, budget: s.budget, skodad: s.candidates.length, bjo_til, sleppt: s.sleppt, villur };

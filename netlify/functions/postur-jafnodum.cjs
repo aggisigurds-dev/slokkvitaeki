@@ -25,6 +25,12 @@ exports.handler = async (event) => {
         sleppt: s.sleppt,
       });
     }
+    // Samstillt keyrsla (greining / handvirkt): bíður eftir vinnunni og skilar niðurstöðu MEÐ villum. Smá budget svo
+    // það haldist innan tímamarka samstillts falls. Notað til að sjá nákvæmlega hvað brást (villur-fylkið).
+    if (qs.keyra === 'sync') {
+      const r = await BG.vinna({ budget: Math.min(3, Number(qs.budget) || BG.NY_I_KEYRSLU) });
+      return P.json(200, Object.assign({ ok: true, synced: true }, r));
+    }
     // Handvirk keyrsla: ræsa bakgrunnsfallið (15 mín. þak þar) og skila strax — ekkert beðið eftir Sonnet.
     const grunnur = String(process.env.URL || 'https://slokkvitaeki.netlify.app').replace(/\/+$/, '');
     const r = await fetch(grunnur + '/.netlify/functions/postur-jafnodum-background', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}', signal: AbortSignal.timeout(8000) }).catch(() => null);
