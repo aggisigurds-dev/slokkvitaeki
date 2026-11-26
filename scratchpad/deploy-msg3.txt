@@ -1,0 +1,26 @@
+[deploy] Teikningar: sjalfsafgreidsla a taknasafni + adgerdum (532)
+
+Agnar 26.11: "vil bakenda-stillingar og ham til ad stjorna hvad se i adgerdartokkum
+... breyta, baeta vid taknum, hide, add, svo eg thurfi ekki stodugt Claude i ad laga
+24/7." Nyr stillingagluggi svo Agnar stjori sjalfur, an kodabreytinga.
+
+- 532-teikning-stillingar.js (nyr): window.TeiknStillingar.opna() - einn gluggi med
+  Bunadur (taeki a teikningu), Merki (skilti/takn) og Adgerdartakkar. Fela/syna,
+  endurnefna, lita (merki), rada (upp/nidur), + baeta vid nyju takni. Opnast ur
+  "Nanar v" -> "⚙ Taknasafn & adgerdir". Skrifar YFIRLOG a thjon (Vidmot
+  teikning.bunadur / teikning.merki / teikning.takkar) - eins a ollum velum, aldrei
+  localStorage. Engin kodabreyting a taknum.
+- 433: STIMPLAR/BUNADUR eru nu SAMSETT (DEF_* sjalfgefid + yfirlog ur Vidmot);
+  beitaPalette() + hlustun a vidmot-breytt; fingerprint ber nafn/stutt/litur svo
+  endurnefning/litun endurteiknar raemuna; export: sjalfgefid + endurteikna + getter.
+- 484: "⚙ Taknasafn & adgerdir" i Nanar-glugga; TeiknTakkar.listi()/setFestir() fyrir
+  adgerda-flipann.
+- Mork (stadfest): ny takn eru BUNADUR bundinn THEKKTRI tegund (Lettvatn, Reykskynjari
+  ...) svo takn a striga verdi rett sjalfkrafa; alveg nyjar tegundir og eigin
+  ikonamyndir ekki i thessari lotu. TurboPaint (kjarni, onnur vel) les somu yfirlog i
+  ser verki sidar.
+
+node --check OK (433/484/532); audit-all --static graent nema 2 oskyld fyrir
+(tmp_import_*.mjs regex, .claude/worktrees afrit). ?v= haekkud a 433/484, 532 nytt.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
