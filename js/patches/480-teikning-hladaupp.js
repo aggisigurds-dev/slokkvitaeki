@@ -114,5 +114,28 @@
     return true;
   }
   if (!tengja()) { const t = setInterval(() => { if (tengja()) clearInterval(t); }, 500); setTimeout(() => clearInterval(t), 60000); }
-  window.TeiknHladaUpp = { hladaUpp, vistaBord };
+
+  /* 26.11.2026 (Agnar: „að ég geti paste screenshots inn í myndagluggann"): sveitarfélög eins og Mosfellsbær skila .TIF af
+   * hýsli sem vafrinn hvorki sækir né les („Náði ekki í myndina"). Þá opnar Agnar teikninguna hjá sveitarfélaginu, tekur
+   * skjáskot og LÍMIR það beint inn þegar teikningaglugginn er opinn — fer um sömu upphleðslu (hladaUpp) og „Hlaða upp".
+   * Aðeins þegar #modal-floorplan er opinn, og aðeins ef úrklippan ber mynd (annars truflar það venjulegt líming). */
+  function limThondlun(e) {
+    const modal = document.getElementById('modal-floorplan');
+    if (!modal || getComputedStyle(modal).display === 'none') return;
+    const mark = e.target && e.target.closest && e.target.closest('input,textarea,[contenteditable="true"]');
+    if (mark) return;                                   // ekki stela límingu úr textareit (t.d. athugasemd)
+    const items = (e.clipboardData && e.clipboardData.items) || [];
+    let file = null;
+    for (let i = 0; i < items.length; i++) { const it = items[i]; if (it.kind === 'file' && /^image\//.test(it.type)) { file = it.getAsFile(); break; } }
+    if (!file) return;
+    e.preventDefault();
+    if (!file.name || file.name === 'image.png') { try { file = new File([file], 'skjaskot-' + Date.now() + '.png', { type: file.type || 'image/png' }); } catch (_) {} }
+    const FP = window.FloorPlan;
+    if (!FP || !FP.companyId) { segja('Opnaðu teikningu á fyrirtæki fyrst, svo límdu skjáskotið.', true); return; }
+    segja('Les skjáskotið inn…');
+    hladaUpp({ files: [file], value: '' }, function () { segja('Gat ekki lesið úrklippuna.', true); });
+  }
+  document.addEventListener('paste', limThondlun, true);
+
+  window.TeiknHladaUpp = { hladaUpp, vistaBord, lim: limThondlun };
 })();
