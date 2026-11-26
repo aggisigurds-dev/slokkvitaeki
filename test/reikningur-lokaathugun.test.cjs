@@ -172,6 +172,20 @@ test('lesarar PDF-texta: kt seljandans er aldrei tekin sem kt kúnna', () => {
   assert.strictEqual(T.ktGild('691299-0089'), false);
 });
 
+// 26.11.2026: línur úr úttekt bera línuafslátt sem viðskeyti („ · −15% afsl.") og einingaverðið er þegar afsláttað.
+// Áður fannst heitið ekki í vorur (viðskeytið fylgdi) og verðið var „óstaðfest". pdf-parse skilar líka „ReikningurR-…".
+test('verðlisti: línuafsláttur úr úttekt er lesinn og borinn saman við afsláttarverð', () => {
+  const vorur = new Map([['léttvatnstæki 6l. yfirferð', { id: 27, verd_an_vsk: '3150' }], ['co₂ 2 kg. yfirferð', { id: 31, verd_an_vsk: '3270.16' }],
+    ['v-merki slökkvitæki 15x15', { id: 242, verd_an_vsk: '3191.94' }]]);
+  const a = T.listaverd({ desc: 'Yfirferð · Léttvatnstæki 6L. yfirferð · −15% afsl.' }, {}, vorur);
+  assert.deepStrictEqual([a.heiti, a.verd, a.afsl], ['Léttvatnstæki 6L. yfirferð', 2678, 15]);
+  assert.strictEqual(T.listaverd({ desc: 'Yfirferð · CO₂ 2 kg. yfirferð · −15% afsl.' }, {}, vorur).verd, 2780);
+  assert.strictEqual(T.listaverd({ desc: 'V-merki slökkvitæki 15x15 · −15% afsl.' }, {}, vorur).verd, 2713);
+  assert.strictEqual(T.listaverd({ desc: 'Yfirferð · Léttvatnstæki 6L. yfirferð' }, {}, vorur).verd, 3150);
+  assert.strictEqual(T.listaverd({ desc: 'Akstur' }, { akstur: 3600 }, vorur).verd, 3600);
+  assert.strictEqual(T.lesaReikningsTexta('Hótel Gervi\nkt. 691299-0079\nReikningurR-900002\nTil greiðslu :1.240 kr').rnum, 'R-900002');
+});
+
 // Lifandi gögn (aðeins lestur): R-001307 eins og hún stendur. Parið ársins á staðnum bendir á kreditfærða reikninginn
 // (mælt 17.11.2026), svo reiknings-PDF-röðin á að FALLA þar til 517 er í loftinu eða parið lagað. Prentar engar kt/nöfn.
 test('LIFANDI: R-001307 — reiknings-PDF fellur meðan parið bendir á kreditfærðan reikning og 517 er ekki í loftinu', { skip: anRS || (process.env.LOKAATHUGUN_AN_NETS ? 'LOKAATHUGUN_AN_NETS' : false) }, async (t) => {
