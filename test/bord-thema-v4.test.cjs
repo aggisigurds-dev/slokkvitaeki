@@ -125,7 +125,6 @@ test('Biðval: V4 sýnist strax áður en þjónninn svarar, og hverfur ef vistu
 test('Hver einasta V4-regla er afmörkuð við :host([data-thema="bh2"][data-v4])', () => {
   const { V4, T } = umhverfi();
   const css = V4.css();
-  const V = ':host([data-thema="bh2"][data-v4])';
   // Fletjum @container/@media: tökum innihald þeirra og prófum hverja reglu.
   const reglur = [];
   const ganga = (txt) => {
@@ -154,7 +153,9 @@ test('Hver einasta V4-regla er afmörkuð við :host([data-thema="bh2"][data-v4]
       if (c === '(') d++; else if (c === ')') d--; else if (c === ',' && d === 0) { hlutar.push(sel.slice(byrjun, k)); byrjun = k + 1; }
     }
     hlutar.push(sel.slice(byrjun));
-    for (const h of hlutar) assert.ok(h.trim().startsWith(V), 'óafmörkuð V4-regla: ' + h.trim().slice(0, 120));
+    // V4-hýsillinn, má bera fleiri merki (t.d. [data-t5snerti="simi"] úr 530) — en aldrei færri.
+    const afmorkud = /^:host\(\[data-thema="bh2"\]\[data-v4\](\[[^\]]+\])*\)/;
+    for (const h of hlutar) assert.ok(afmorkud.test(h.trim()), 'óafmörkuð V4-regla: ' + h.trim().slice(0, 120));
   }
   // 507 skilar V4 aftast í yfirlagi sínu (svo V4 gangi framar V2-reglum með sömu sértækni).
   const allt = T.css();

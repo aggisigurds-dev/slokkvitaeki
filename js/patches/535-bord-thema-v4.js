@@ -117,9 +117,8 @@
       V + ' .t5-hl .btn,' + V + ' .head>div:first-child>a.btn{background:rgba(5,15,36,.55);color:#fff;box-shadow:' + SH_CHIP + ';backdrop-filter:blur(4px)}',
       V + ' .t5-hl .btn:hover,' + V + ' .head>div:first-child>a.btn:hover{background:rgba(20,51,95,.75);box-shadow:' + SH_CHIP_HOVER + '}',
       // Takkahópar: samliggjandi glerlyklar deila radíus, etsuð lína á milli (Flýtileiðir, hamir, hausar).
-      V + ' :is(.links,.modes,.phead,.vs-h,.ek-h,.rg-h,.t5-agentanet,.vip-takkar){column-gap:8px}',
       V + ' :is(.links,.modes,.phead,.vs-h,.ek-h,.rg-h,.t5-agentanet,.vip-takkar)>.btn.iv:has(+ .btn.iv){border-top-right-radius:0;border-bottom-right-radius:0}',
-      V + ' :is(.links,.modes,.phead,.vs-h,.ek-h,.rg-h,.t5-agentanet,.vip-takkar)>.btn.iv+.btn.iv{margin-left:-8px;border-top-left-radius:0;border-bottom-left-radius:0;box-shadow:inset 1px 0 0 rgba(0,0,0,.55),inset 2px 0 0 rgba(255,255,255,.06),' + SH_CHIP + '}',
+      V + ' :is(.links,.modes,.phead,.vs-h,.ek-h,.rg-h,.t5-agentanet,.vip-takkar)>.btn.iv+.btn.iv{margin-left:calc(-1 * var(--hb,8px));border-top-left-radius:0;border-bottom-left-radius:0;box-shadow:inset 1px 0 0 rgba(0,0,0,.55),inset 2px 0 0 rgba(255,255,255,.06),' + SH_CHIP + '}',
 
       // ── Rofar (Segmented): innfelld rauf, valinn = silfur ─────────────────────────────────────────────────────────
       V + ' .seg{background:rgba(0,6,18,.55);box-shadow:inset 0 1px 3px rgba(0,0,0,.7),inset 0 0 0 1px rgba(160,190,235,.22);border-radius:12px;padding:3px;gap:3px}',
@@ -143,7 +142,7 @@
       V + ' .modes{background:' + DK3 + ';padding:8px 10px}',
       // Flýtileiðir: ein lína. Flísarnar eru þéttar; komist þær ekki fyrir skrunar línan lárétt og hópurinn
       // „Mitt vinnuborð + Nýtt mál" stendur kyrr við hægri brúnina (sticky) svo aðgerðin sé alltaf sýnileg.
-      V + ' .links{flex-wrap:nowrap;gap:6px;padding:10px 14px 10px 16px;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;scrollbar-color:rgba(160,190,235,.22) transparent;overscroll-behavior-x:contain}',
+      V + ' .links{--hb:6px;flex-wrap:nowrap;gap:6px;padding:10px 14px 10px 16px;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;scrollbar-color:rgba(160,190,235,.22) transparent;overscroll-behavior-x:contain}',
       V + ' .links>*{flex:none}',
       V + ' .links>.grow{flex:1 0 0}',
       V + ' .links>.lbl{margin-right:6px;font:600 12px/1 var(--body);letter-spacing:.09em;text-transform:uppercase;color:#eef3fb;white-space:nowrap}',
@@ -165,9 +164,8 @@
       V + ' .mk-led[data-l="keyrir"]{--c:#5b8ff0;box-shadow:0 0 5px var(--c),0 0 12px var(--c)}',
       V + ' .mk-led[data-l="buin"]{--c:#22c55e;box-shadow:0 0 5px var(--c),0 0 12px var(--c)}',
       V + ' .mk-led[data-l="buin_vs"]{--c:#f2c14e;box-shadow:0 0 5px var(--c),0 0 12px var(--c)}',
-      V + ' .mk-run{height:32px;min-height:32px;padding:0 14px;border:0;border-radius:10px;background:' + APP + ';color:#fff;font:600 13px/1 var(--body);text-shadow:0 1px 0 rgba(120,35,0,.6);box-shadow:' + SH_GLOW + '}',
+      V + ' .mk-run{height:32px;padding:0 14px;border:0;border-radius:10px;background:' + APP + ';color:#fff;font:600 13px/1 var(--body);text-shadow:0 1px 0 rgba(120,35,0,.6);box-shadow:' + SH_GLOW + '}',
       V + ' .mk-run[disabled]{opacity:1;background:' + LYKILL + ';color:' + MUTED + ';box-shadow:' + SH_CHIP + '}',
-      V + ' .mk-sed,' + V + ' .mk-x{color:' + MUTED + '}',
       V + ' .mk-lst li{background:rgba(220,38,38,.14);color:' + BAD_INK + ';box-shadow:inset 0 0 0 1px rgba(248,113,113,.35)}',
       V + ' .mk-lst li.ok{background:rgba(22,163,74,.14);color:' + OK_INK + ';box-shadow:inset 0 0 0 1px rgba(74,222,128,.35)}',
       V + ' .mk-lst li b{color:#fff}',
@@ -179,7 +177,12 @@
       V + ' .mk-m[data-s="klarad"]{' + P_OK + '}',
       V + ' .mk-m[data-s="vantar_svar"]{' + P_BAD + '}',
       V + ' .mk-m[data-s="blundar"]{' + P_HLUTL + '}',
-      V + ' .mk-g{border:0;border-radius:12px;background:' + GLER_LITID + ';box-shadow:' + SH_CARD + '}',
+      // Hraðvalsglugginn: útlitið hér líka, því mk519-css er aðeins í skuggarótinni þegar stikan sjálf er teiknuð.
+      V + ' .mk-g{margin:6px 0 2px;padding:8px;max-width:520px;border:0;border-radius:12px;background:' + GLER_LITID + ';box-shadow:' + SH_CARD + '}',
+      V + ' .mk-gr{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}',
+      V + ' .mk-h{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:44px;padding:4px 2px;font:500 12px/1.15 var(--body);text-align:center;cursor:pointer}',
+      V + ' .mk-r .mk-h{flex:0 0 auto;min-height:34px;padding:4px 10px;flex-direction:row}',
+      V + ' .mk-x,' + V + ' .mk-sed{appearance:none;border:0;background:none;box-shadow:none;padding:4px 6px;font:500 12px var(--body);color:' + INK2 + ';text-decoration:underline;cursor:pointer}',
       V + ' .mk-h{border:0;border-radius:8px;background:' + LYKILL + ';color:#e6edf8;box-shadow:' + SH_CHIP + '}',
       V + ' .mk-h[aria-pressed="true"]{background:' + APP + ';color:#fff;box-shadow:' + SH_GLOW + '}',
       V + ' .mk-h[data-v="veit_ekki"],' + V + ' .mk-h[data-v="rannsaka"]{box-shadow:inset 0 0 0 1px rgba(255,138,31,.6),' + SH_CHIP + '}',
@@ -188,7 +191,7 @@
       V + ' .mk-ni{background:' + WELL + ';color:' + INK2 + ';box-shadow:' + SH_WELL + '}',
       V + ' .mk-ni.vs{background:rgba(220,38,38,.14);color:' + BAD_INK + '}' + V + ' .mk-ni.ok{background:rgba(22,163,74,.14);color:' + OK_INK + '}',
       // Hamir: fliparnir sitja beint á stjórnborðinu; virkur = appelsínugult gler.
-      V + ' .modes{gap:8px}',
+      V + ' .modes{--hb:8px;gap:8px}',
       V + ' .seg.modeseg{flex:1 1 auto;background:none;box-shadow:none;border-radius:0;padding:0;gap:4px}',
       V + ' .seg.modeseg button{flex:0 1 auto;height:36px;padding:0 12px;border:0;border-radius:10px;background:none;font:600 13.5px var(--body);color:#e6edf8;text-shadow:0 1px 0 rgba(0,0,0,.6)}',
       V + ' .seg.modeseg button:hover{background:rgba(255,255,255,.07);color:#fff}',
@@ -217,7 +220,7 @@
 
       // ── Spjöld: upphleypt gler, navy-haus með hástafatitli og glóandi tákni ────────────────────────────────────────
       V + ' .panel{border:0;border-radius:15px;background:' + GLER + ';box-shadow:' + SH_CARD + ';color:' + INK + '}',
-      V + ' .phead{min-height:44px;padding:8px 14px 8px 16px;gap:8px 12px;background:' + HAUS + ';box-shadow:' + HAUS_SH + ';border:0;border-image:none;border-radius:15px 15px 0 0;color:#fff;--ink:#fff;--ink2:' + INK2 + ';--mute:' + MUTED + '}',
+      V + ' .phead{--hb:12px;min-height:44px;padding:8px 14px 8px 16px;gap:8px 12px;background:' + HAUS + ';box-shadow:' + HAUS_SH + ';border:0;border-image:none;border-radius:15px 15px 0 0;color:#fff;--ink:#fff;--ink2:' + INK2 + ';--mute:' + MUTED + '}',
       V + ' .phead:last-child,' + V + ' .mod:not(.open):not(.alltaf) .phead{border-radius:15px}',
       V + ' .ptitle{display:flex;align-items:center;gap:8px;font:700 12.5px/1.2 var(--body);letter-spacing:.09em;text-transform:uppercase;color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.7)}',
       V + ' .plate,' + V + ' .plate.dark{order:0;font:600 11.5px/1 var(--body);letter-spacing:.04em;color:' + MUTED + ';text-shadow:none}',
@@ -323,6 +326,7 @@
       V + ' .vip header b{font:700 12px/1 var(--body);letter-spacing:.09em;text-transform:uppercase;color:#fff;text-shadow:0 0 10px rgba(242,193,78,.35)}',
       V + ' .vip .vip-tala{color:#fff}',
       V + ' .vip .vip-fel-l,' + V + ' .vip .vip-inn,' + V + ' .vip .vip-sk,' + V + ' .vip .vip-mal,' + V + ' .vip .vip-holf,' + V + ' .vip .vip-l1 time{color:' + MUTED + '}',
+      V + ' .vip-takkar{--hb:6px}',
       V + ' .vip ul{margin:0;padding:10px 12px 12px;gap:8px}',
       V + ' .vip .vip-rod{padding:10px 12px;border:0;border-radius:12px;background:' + WELL + ';box-shadow:' + SH_WELL + '}',
       V + ' .vip .vip-rod._ovisst{box-shadow:inset 0 0 0 1px rgba(160,190,235,.3),' + SH_WELL + '}',
@@ -378,6 +382,10 @@
       V + ' .saga .sg-r,' + V + ' .fskjol .sg-r,' + V + ' .well .sg-r,' + V + ' .fskjol .sx{border:0;background:' + LYKILL + ';color:#e6edf8;box-shadow:' + SH_CHIP + '}',
       V + ' .saga .sg-r:hover,' + V + ' .fskjol .sg-r:hover,' + V + ' .well .sg-r:hover{background:' + LYKILL_HOVER + '}',
       V + ' .bm input,' + V + ' .bm textarea,' + V + ' .bm select,' + V + ' .composer input[type="text"],' + V + ' .composer textarea,' + V + ' .nt textarea,' + V + ' .nt.dark textarea,' + V + ' .baf-ta{border:0;background:rgba(0,6,18,.6);color:#fff;box-shadow:' + SH_WELL + ',inset 0 0 0 1px rgba(160,190,235,.18)}',
+      // „+ Nýtt mál" og „+ Hamur": felliglistar og dagsetning (368 .nylbl — hvítir í Boss/V2).
+      V + ' .nylbl select,' + V + ' .nylbl input{border:0;background:rgba(0,6,18,.6);color:#fff;box-shadow:' + SH_WELL + ',inset 0 0 0 1px rgba(160,190,235,.18)}',
+      V + ' .nylbl select:focus,' + V + ' .nylbl input:focus{outline:2px solid #ffb066;outline-offset:1px}',
+      V + ' .nylbl{color:' + SOFT + '}',
       V + ' .bm label>span,' + V + ' .bm .bm-c,' + V + ' .nt.dark .ntst{color:' + SOFT + '}',
       V + ' .nt.dark textarea:focus,' + V + ' .bm textarea:focus,' + V + ' .bm input:focus,' + V + ' .composer input:focus,' + V + ' .composer textarea:focus{outline:2px solid #ffb066;outline-offset:1px;box-shadow:' + SH_WELL + ',inset 0 0 0 1px #ff8a1f}',
       V + ' .nt-tl{background:' + WELL + ';box-shadow:' + SH_WELL + '}',
@@ -489,6 +497,19 @@
       V + ' .baf-r:hover{background:rgba(255,255,255,.04)}',
       V + ' .baf-v.opid>.baf-r{background:rgba(91,143,240,.10)}',
       V + ' .baf-teg{border-color:rgba(160,190,235,.3);color:' + MUTED + '}',
+      // Aldurspillur verkanna (511 .baf-ald): litur í brún og bleki.
+      V + ' .baf-ald{' + P_HLUTL + '}',
+      V + ' .baf-ald.baf-t-y{' + P_WARN + '}' + V + ' .baf-ald.baf-t-r{' + P_BAD + '}',
+      V + ' .baf-t-y .baf-sv{color:' + WARN_INK + '}' + V + ' .baf-t-r .baf-sv{color:' + BAD_INK + '}',
+      V + ' .baf-dyr{border-color:transparent;background:' + LYKILL + ';color:#e6edf8;box-shadow:' + SH_CHIP + '}',
+      V + ' .baf-dyr:hover{border-color:transparent;background:' + LYKILL_HOVER + ';color:#fff}',
+      V + ' .baf-dyr-o{color:#ff8a1f}',
+      V + ' .baf-dyr-a{background:' + APP + ';color:#fff;box-shadow:' + SH_GLOW + '}' + V + ' .baf-dyr-a .baf-dyr-o{color:#fff}',
+      V + ' .baf-dyr-s{background:linear-gradient(180deg,rgba(74,222,128,.35),rgba(22,101,52,.55)),#0e2850;color:#fff;box-shadow:inset 0 0 0 1px rgba(74,222,128,.6),' + SH_CHIP + '}',
+      V + ' .baf-dl{border:0;background:' + WELL + ';box-shadow:' + SH_WELL + '}',
+      V + ' .baf-dl-h{background:rgba(255,255,255,.04);color:' + INK2 + ';border-bottom-color:rgba(255,255,255,.08)}',
+      V + ' .baf-dl li{border-bottom-color:rgba(255,255,255,.08)}' + V + ' .baf-dl details{border-top-color:rgba(255,255,255,.08)}',
+      V + ' .baf-sp{color:#fff;text-shadow:none}' + V + ' .baf-kick::before{box-shadow:none}',
       V + ' .baf-d{border-top:0;background:rgba(0,8,22,.3);box-shadow:' + ETS_EFST + '}',
       V + ' .baf-k h3,' + V + ' .baf-kt span{color:' + MUTED + '}',
       V + ' .baf-kick{color:' + OR_INK + '}',
@@ -573,12 +594,12 @@
       V + ' #yf499 .yf-nanar,' + V + ' #yf499 small{color:' + MUTED + '}',
       V + ' #yf499 .yf-villa{color:' + BAD_INK + '}',
       V + ' #yf499 .yf-grind div{background:linear-gradient(90deg,rgba(255,255,255,.04),rgba(255,255,255,.1),rgba(255,255,255,.04))}',
-      // J.A.R.V.I.S.-röðin (493).
-      V + ' .t5-agentanet{margin:0;padding:11px 16px 11px 18px;border:0;border-radius:12px;background:' + GLER_LITID + ';box-shadow:' + SH_CARD + ',inset 3px 0 0 #5b8ff0,-4px 0 16px -6px rgba(91,143,240,.55)}',
+      // J.A.R.V.I.S.-röðin (493). Stíll 493 er í <head> og nær ekki inn í skuggarótina — röðin fær því uppsetninguna hér.
+      V + ' .t5-agentanet{--hb:8px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0;padding:11px 16px 11px 18px;border:0;border-radius:12px;background:' + GLER_LITID + ';box-shadow:' + SH_CARD + ',inset 3px 0 0 #5b8ff0,-4px 0 16px -6px rgba(91,143,240,.55)}',
       V + ' .t5-agentanet .l{flex:none;min-width:160px;margin-right:8px;font:700 11px/1 var(--body);letter-spacing:.12em;color:#eef3fb}',
 
       // ── Vinnusamantekt (489): mælar með glóandi efri brún; opinn mælir = shadow-valid ──────────────────────────────
-      V + ' .vs-h{gap:8px 14px;padding:10px 14px 10px 16px;border:0;background:' + HAUS + ';box-shadow:' + HAUS_SH + ';border-radius:15px 15px 0 0}',
+      V + ' .vs-h{--hb:14px;gap:8px 14px;padding:10px 14px 10px 16px;border:0;background:' + HAUS + ';box-shadow:' + HAUS_SH + ';border-radius:15px 15px 0 0}',
       V + ' .vs-h h2{display:flex;align-items:center;gap:8px;font:700 12.5px/1.2 var(--body);letter-spacing:.09em;text-transform:uppercase;color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.7)}',
       V + ' .vs-h h2::before{' + takn(T_LISTI) + '}',
       V + ' .vs-sum{color:#fff;padding-left:14px;box-shadow:-1px 0 0 rgba(0,0,0,.6),-2px 0 0 rgba(255,255,255,.12)}',
@@ -622,7 +643,7 @@
       V + ' .vs-tog{color:' + MUTED + '}',
 
       // ── Einkaritarinn (506) og Ráðgjafinn (506-radgjafinn): „brief"-spjöld ────────────────────────────────────────
-      V + ' .ek-h,' + V + ' .rg-h{gap:8px 12px;padding:14px 18px 6px 20px;border:0;background:none}',
+      V + ' .ek-h,' + V + ' .rg-h{--hb:12px;gap:8px 12px;padding:14px 18px 6px 20px;border:0;background:none}',
       V + ' .ek-h h2,' + V + ' .rg-h h2{font:700 12px/1 var(--body);letter-spacing:.12em;text-transform:uppercase;color:#eef3fb}',
       V + ' .ek-mute,' + V + ' .rg-mute{font-size:12.5px;color:' + MUTED + '}',
       V + ' .ek-fyrir,' + V + ' .rg-fyrir{padding:10px 20px 14px;border-bottom:0;font:700 22px/1.3 var(--body);letter-spacing:-.01em;color:#fff;text-shadow:0 0 22px rgba(130,175,255,.2)}',
@@ -661,19 +682,28 @@
       V + ' .yr-kn{text-shadow:0 1px 0 rgba(0,0,0,.8),0 2px 6px rgba(0,0,0,.5),0 0 22px rgba(130,175,255,.25)}',
       V + ' .yr-kl svg,' + V + ' .yr-kl .ic{filter:drop-shadow(0 0 6px rgba(255,138,31,.55))}',
 
+      // Símahamur (530: data-t5snerti="simi"): sýnilegar stærðir eins og í V2/519 á síma — snertisvæði 530 leggjast ofan á.
+      ':host([data-thema="bh2"][data-v4][data-t5snerti="simi"]) .lk{height:34px;font-size:13px;padding:0 14px 0 5px}',
+      ':host([data-thema="bh2"][data-v4][data-t5snerti="simi"]) .lk-ic{width:22px;height:22px}',
+      ':host([data-thema="bh2"][data-v4][data-t5snerti="simi"]) .links .btn,' + ':host([data-thema="bh2"][data-v4][data-t5snerti="simi"]) .modes>.btn.sm{height:36px}',
+      ':host([data-thema="bh2"][data-v4][data-t5snerti="simi"]) .mk-m{min-width:30px;height:26px;font-size:12px}',
+      ':host([data-thema="bh2"][data-v4][data-t5snerti="simi"]) .mk-run{min-height:40px}',
       // ── Mjór skjár ───────────────────────────────────────────────────────────────────────────────────────────────
       '@container t5 (max-width: 760px){' +
         V + ' .h1{font-size:30px}' +
-        V + ' .links{padding:8px 10px}' +
-        V + ' .lk-akt{right:-10px;margin-right:-10px;padding-right:10px}' +
+        // Á síma brjóta Flýtileiðir um eins og í V2: í 360 px tæki kyrri hópurinn („Mitt vinnuborð + Nýtt mál“) nær allri
+        // línunni og flísarnar hyrfu undir hann (mælt 390 px). Ein lína gildir á tölvu.
+        V + ' .links{flex-wrap:wrap;overflow:visible;padding:8px 10px}' +
+        V + ' .lk-akt{position:static;flex-wrap:wrap;margin:0 0 0 auto;padding:0;background:none;box-shadow:none}' +
         V + ' .seg.modeseg{flex-wrap:nowrap;overflow-x:auto}' +
-        V + ' .seg.modeseg button{flex:0 0 auto;height:38px}' +
+        V + ' .seg.modeseg button{flex:0 0 auto;height:40px}' +
         V + ' .flipar{flex-wrap:nowrap;overflow-x:auto;padding:10px}' +
         V + ' .week{padding:10px}' +
         V + ' .day{min-height:0}' +
+        V + ' .mk-m{min-width:30px;height:26px;font-size:12px}' +
         // J.A.R.V.I.S.-röðin brotnar um á síma: langi takkinn má brjóta textann svo ekkert standi út fyrir skjáinn (mælt 390 px).
         V + ' .t5-agentanet{padding:10px 12px}' +
-        V + ' .t5-agentanet .l{display:block;min-width:0;margin:0 0 8px}' +
+        V + ' .t5-agentanet .l{flex:1 0 100%;min-width:0;margin:0}' +
         V + ' .t5-agentanet .btn{max-width:100%;height:auto;min-height:32px;white-space:normal;text-align:left}' +
         V + ' .phead .sum{box-shadow:none;padding-left:0}' +
       '}',
