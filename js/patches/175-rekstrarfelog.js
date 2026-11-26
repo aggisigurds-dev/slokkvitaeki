@@ -412,6 +412,16 @@
       P+'._rf_samskipti_slot>*+*{border-top:1px solid rgba(20,24,34,.14)!important}',
       // byggingakaflinn (síðasti div-inn) er ber markup → sömu hliðar og hausar
       P+'._rf_body>div:last-child{padding:12px 16px 2px!important}',
+      // ── ÞÉTT SAMBAND (26.11.2026): inline-lína í stað boxaðra tiles, flæðir yfir breiddina
+      P+'._rf_samband{display:flex!important;flex-wrap:wrap;align-items:baseline;gap:5px 24px;padding:2px 0}',
+      P+'._rf_fld{display:inline-flex;align-items:baseline;gap:6px;min-width:0;max-width:100%}',
+      P+'._rf_fld--net{align-items:center}',
+      P+'._rf_fl{font:700 9.5px/1.3 "JetBrains Mono",ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase;color:#7d8694;flex:none}',
+      P+'._rf_fl em{font-style:normal;color:#9aa3b2;text-transform:none;letter-spacing:0;font-size:9px}',
+      P+'._rf_fv{font-size:13px;color:#141822;min-width:0;overflow-wrap:anywhere}',
+      P+'._rf_fv.mono{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:12.5px;color:#1d2330}',
+      P+'._rf_samband ._rf_vantar{font-size:12.5px}',
+      P+'._rf_samband .ssp-plotur{gap:4px}',
       '@media(max-width:640px){'+
         P+'.ssp-haus{padding:4px 12px!important;min-height:28px!important}'+
         P+'.ssp-buk{padding:8px 12px 9px!important}'+
@@ -2406,30 +2416,28 @@
           '<span class="ssp-hlid">'+keldanBtn+'<button class="_rf_info_edit ssp-btn" type="button">Breyta</button></span>'+
         '</div>'+
         '<div class="ssp-buk">'+
-          '<div class="_rf_info_view ssp-reitir">'+
-            // Fix #1 (26.11.2026, ósk Agnars „fyrirferðamikið og tómt"): TÓMUR REITUR
-            // FÆR ALDREI FULLA RÖÐ. Raða aðeins reitum með gildi; safna því sem vantar
-            // í EINA dofna „vantar"-línu sem opnar Breyta-formið. Áður stóð „Kennitala —"
-            // og „Tengiliður —" sem feitar raðir og blésu kortið út að óþörfu.
+          '<div class="_rf_info_view _rf_samband">'+
+            // ÞÉTTLEIKI (26.11.2026, Agnar „hræðileg nýting á plássinu, 80% sóun"): hætt
+            // við boxuð .ssp-lina tiles í FULLRI breidd (hvert með örlítið innihald → mest
+            // autt). Samband er nú ÞÉTT inline-lína: label+gildi hlið við hlið sem FLÆÐIR
+            // yfir alla breiddina og wrappar bara þegar þarf. Aðeins reitir með gildi; það
+            // sem vantar fer í eina dofna vantar-línu í sömu röð. Aðeins útlit.
             (function(){
               var R=[],V=[];
-              if(effKt) R.push('<div class="ssp-lina"><span class="ssp-merki">Kennitala</span><span class="ssp-gildi mono">'+esc(fmtKt(effKt))+(ktDer?derTag:'')+'</span></div>');
+              var fld=function(l,v,mono){ return '<span class="_rf_fld"><i class="_rf_fl">'+l+'</i><span class="_rf_fv'+(mono?' mono':'')+'">'+v+'</span></span>'; };
+              if(effKt) R.push(fld('Kennitala', esc(fmtKt(effKt))+(ktDer?derTag:''), 1));
               else V.push('kennitölu');
-              if(effSimi) R.push('<div class="ssp-lina"><span class="ssp-merki">Sími</span><span class="ssp-gildi mono">'+esc(effSimi)+(siDer?derTag:'')+'</span></div>');
+              if(effSimi) R.push(fld('Sími', esc(effSimi)+(siDer?derTag:''), 1));
               else V.push('síma');
-              // Samband „til hliðar" (26.11.2026, Agnar): reitirnir nýta hægra svæðið —
-              // Tengiliður er EKKI lengur heil (full breidd) heldur deilir röð með Síma í
-              // 2-dálka grind (442 .ssp-reitir er 2-col). Netföng/vantar halda fullri breidd;
-              // á síma fellur grindin í einn dálk (container-query @560 í 442).
-              if(info.tengilidur) R.push('<div class="ssp-lina"><span class="ssp-merki">Tengiliður</span><span class="ssp-gildi">'+esc(info.tengilidur)+'</span></div>');
+              if(info.tengilidur) R.push(fld('Tengiliður', esc(info.tengilidur), 0));
               else V.push('tengilið');
-              if(emails) R.push('<div class="ssp-lina heil efst"><span class="ssp-merki">Netföng'+(emDer?'<small>úr byggingum</small>':'')+'</span><span class="ssp-plotur">'+emails+'</span></div>');
+              if(emails) R.push('<span class="_rf_fld _rf_fld--net"><i class="_rf_fl">Netföng'+(emDer?' <em>úr byggingum</em>':'')+'</i><span class="ssp-plotur">'+emails+'</span></span>');
               else V.push('netföng');
               var vl='';
               if(V.length){
                 var t=(V.length===1?V[0]:V.slice(0,-1).join(', ')+' og '+V[V.length-1]);
                 t=t.charAt(0).toUpperCase()+t.slice(1)+' vantar';
-                vl='<div class="ssp-lina heil _rf_vantarlina"><span class="ssp-gildi ssp-daufur _rf_vantar">'+esc(t)+' — <button type="button" class="_rf_vantar_add">+ bæta við</button></span></div>';
+                vl='<span class="_rf_fld _rf_vantarlina"><span class="ssp-daufur _rf_vantar">'+esc(t)+' — <button type="button" class="_rf_vantar_add">+ bæta við</button></span></span>';
               }
               return R.join('')+vl;
             })()+
