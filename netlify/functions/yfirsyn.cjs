@@ -353,12 +353,15 @@ async function tekjurAr() {
   const nuMan = +nuM.slice(5, 7), sami = fyrraAr + idag().slice(4), manFra = `${fyrraAr}-${nuM.slice(5, 7)}-01`;
   const iBili = d => { const x = String(d || '').slice(0, 10); return x >= manFra && x <= sami; };
   let fyrraTilDags = manudir.filter(x => +x.man.slice(5, 7) < nuMan).reduce((a, x) => a + x.fyrra, 0);
+  // Brunahólf eitt (Agnar 26.11.2026: „hafa þarna 2025 bara Brunahólf og síðan prósentu af síðan bæði Slökkvitæki og Brunahólf 2026 …
+  // til að sýna okkar fyrirtækja stækkun sem við eigum“) — Slökkvitæki var ekki okkar 2025 (yfirtaka 04.05.2026; tekjur þess þá = Stólpi).
+  let fyrraBhTilDags = manudir.filter(x => +x.man.slice(5, 7) < nuMan).reduce((a, x) => a + x.fyrra_bh, 0);
   const voidS = new Set(voidIds.map(String));
   sl.forEach(r => { if (iBili(r.created_at) && !(r.credit_of != null && voidS.has(String(r.credit_of)))) fyrraTilDags += Number(r.samtals) || 0; });
   st.forEach(r => { if (iBili(r.dags)) fyrraTilDags += Number(r.upphaed) || 0; });
-  bh.forEach(r => { if (iBili(r.utgafudagur || r.gjalddagi)) fyrraTilDags += Number(r.upphaed_total) || 0; });
+  bh.forEach(r => { if (iBili(r.utgafudagur || r.gjalddagi)) { const u = Number(r.upphaed_total) || 0; fyrraTilDags += u; fyrraBhTilDags += u; } });
   const alls = manudir.reduce((a, x) => a + (x.sl || 0) + (x.bh || 0), 0);
-  return { ar, fyrra_ar: fyrraAr, fyrra_alls: manudir.reduce((a, x) => a + x.fyrra, 0), fyrra_til_dags: kr(fyrraTilDags), fyrra_til: sami, manudir, alls, sl_alls: manudir.reduce((a, x) => a + (x.sl || 0), 0), bh_alls: manudir.reduce((a, x) => a + (x.bh || 0), 0),
+  return { ar, fyrra_ar: fyrraAr, fyrra_alls: manudir.reduce((a, x) => a + x.fyrra, 0), fyrra_til_dags: kr(fyrraTilDags), fyrra_bh_alls: manudir.reduce((a, x) => a + x.fyrra_bh, 0), fyrra_bh_til_dags: kr(fyrraBhTilDags), fyrra_til: sami, manudir, alls, sl_alls: manudir.reduce((a, x) => a + (x.sl || 0), 0), bh_alls: manudir.reduce((a, x) => a + (x.bh || 0), 0),
     vsk: true,
     regla: 'MEÐ VSK, sömu reglur og Tekjur í beinni. SL: sölur eftir söludegi (samtals m. vsk), kreditnóta á mánuð frumsölunnar; fyrir 04.05.2026 reikningar Stólpa (fyrri eiganda). BH: Payday-reikningar greiddir eða sendir, upphæð m. vsk, eftir útgáfudegi (reikningsfært).' };
 }
