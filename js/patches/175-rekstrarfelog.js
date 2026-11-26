@@ -355,6 +355,36 @@
       P+'._rf_vantar{font-size:12.5px}',
       P+'._rf_vantar_add{all:unset;cursor:pointer;color:#c92a2a;font-weight:600;font-size:12.5px}',
       P+'._rf_vantar_add:hover{text-decoration:underline}',
+      // ── ÞÉTTA MEIRA (26.11.2026, Agnar „þétta meira" — sérstaklega á síma) ──
+      // Scoped density á Stálspjöldin (ssp-*) í rekstrarfélaga-prófílnum EINUM.
+      // Breytir EKKI 442 annars staðar — ssp-* er deilt með fyrirtækjaprófílnum,
+      // svo allt er bundið við #view-rekstrarfelog. Lægri hausar, mjórri reitir,
+      // minna padding, minna bil milli spjalda. Dökka þemað stendur óbreytt.
+      P+'.ssp-haus{min-height:32px!important;padding:3px 14px 3px 18px!important;gap:8px!important}',
+      P+'.ssp-buk{padding:7px 9px 8px!important}',
+      P+'.ssp-reitir{gap:4px!important}',
+      P+'.ssp-lina{min-height:26px!important;padding:3px 9px!important;column-gap:8px!important;grid-template-columns:74px minmax(0,1fr)!important}',
+      P+'.ssp-lina.efst{align-items:center!important}',
+      P+'.ssp-plotur{gap:4px!important}',
+      P+'.ssp-plata{height:21px!important;padding:0 7px!important}',
+      P+'.ssp-btn{height:27px!important;padding:0 10px!important}',
+      P+'._rf_info{margin-bottom:8px!important}',
+      P+'._samskipti-rf{margin-bottom:8px!important}',
+      P+'.rf-chiprow{margin-bottom:8px!important}',
+      // minni athugasemd + minni gullkassi (árs-tekjur) svo hann gnæfi ekki yfir
+      P+'.rf-gold{min-width:150px!important;padding:5px 11px!important}',
+      P+'.rf-gold__l{font-size:9px!important}',
+      P+'.rf-gold__v{font-size:15px!important}',
+      P+'.rf-gold__s{font-size:9px!important}',
+      // á síma: enn þéttara spjalda-innmál + minna bil, svo meira sjáist án skruns
+      '@media(max-width:640px){'+
+        P+'.ssp-haus{min-height:30px!important;padding:2px 12px 2px 16px!important}'+
+        P+'.ssp-buk{padding:6px 8px 7px!important}'+
+        P+'.ssp-lina{min-height:24px!important;padding:3px 8px!important;grid-template-columns:70px minmax(0,1fr)!important}'+
+        P+'.rfa__pad{padding:8px 8px!important}'+
+        P+'._rf_info{margin-bottom:7px!important}'+
+        P+'._samskipti-rf{margin-bottom:7px!important}'+
+      '}',
       // ── BRUNAKERFI Í SAMA YFIRLITI (2026-07-27, Claude Design „Brunayfirlit-v2") ──
       // Þjónusturofi (Bæði / 🧯 Slökkvitæki / 🚨 Brunakerfi), tölfluspjöld og
       // tvískiptar frumur — efri lína = slökkvitæki, neðri = brunakerfi.
