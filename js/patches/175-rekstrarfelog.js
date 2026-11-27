@@ -444,6 +444,24 @@
         P+'._rf_note{padding:8px 12px!important}'+
         P+'._rf_body>div:last-child{padding:10px 12px 2px!important}'+
       '}',
+      // ── FLIPAKERFI (27.11.2026, Agnar „flipar eins og í hausnum") ──────────────────────────────
+      //    Flipaborði: Yfirlit · Byggingar · Þjónustugátt · Samskipti · Skjöl (Byggingar sjálfgefið).
+      //    Sýnd keyrð AF ATTRIBÚTI [data-rftab] á ._rf_card → hvert svæði falið nema virki flipinn.
+      //    Pure-CSS, declarative: svæði sem mounta síðar (286 samskipti, 288 summa, 537 gátt) lenda
+      //    rétt um leið og þau birtast, án vaktar. Engin tvítök, ekkert DOM-hopp (STÖÐUGT VIÐMÓT).
+      P+'._rf_tabs{display:flex;gap:2px;flex-wrap:nowrap;overflow-x:auto;border-bottom:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#f6f8fb,#eef1f6);padding:0 8px;margin:0;-webkit-overflow-scrolling:touch}',
+      P+'._rf_tabs button{appearance:none;-webkit-appearance:none;border:0;background:transparent;font:600 12.5px/1 inherit;color:#5b6472;padding:10px 13px 9px;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;flex:none;letter-spacing:.01em}',
+      P+'._rf_tabs button:hover{color:#2b323e}',
+      P+'._rf_tabs button.is-active{color:#141822;border-bottom-color:var(--brand);font-weight:800}',
+      // fela allt nema virka flipann (keyrt á ._rf_card host-inum)
+      P+'._rf_card[data-rftab]:not([data-rftab="yfirlit"]) ._rf_note,'+P+'._rf_card[data-rftab]:not([data-rftab="yfirlit"]) ._rf_note_meira,'+P+'._rf_card[data-rftab]:not([data-rftab="yfirlit"]) ._rf_info,'+P+'._rf_card[data-rftab]:not([data-rftab="yfirlit"]) ._rf_summa{display:none!important}',
+      P+'._rf_card[data-rftab]:not([data-rftab="gatt"]) ._rf_gatt{display:none!important}',
+      P+'._rf_card[data-rftab]:not([data-rftab="samskipti"]) ._samskipti-rf{display:none!important}',
+      P+'._rf_card[data-rftab]:not([data-rftab="bygg"]) ._rf_tab_bygg{display:none!important}',
+      P+'._rf_card[data-rftab]:not([data-rftab="skjol"]) ._rf_tab_skjol{display:none!important}',
+      // með flipum sést aðeins einn kafli → EINN KASSI hairlines eiga ekki við
+      P+'._rf_card[data-rftab] ._rf_body>*+*{border-top:0!important}',
+      P+'._rf_card[data-rftab] ._rf_samskipti_slot>*+*{border-top:0!important}',
       // ── BRUNAKERFI Í SAMA YFIRLITI (2026-07-27, Claude Design „Brunayfirlit-v2") ──
       // Þjónusturofi (Bæði / 🧯 Slökkvitæki / 🚨 Brunakerfi), tölfluspjöld og
       // tvískiptar frumur — efri lína = slökkvitæki, neðri = brunakerfi.
@@ -1770,6 +1788,16 @@
           '</span>'+
         '</button>'+
         '<div class="rfa__body"><div class="rfa__pad">'+
+          // 27.11.2026 (Agnar: „flipar eins og í hausnum"): flipaborði efst — Yfirlit/Byggingar/Þjónustugátt/
+          // Samskipti/Skjöl. Byggingar sjálfgefið. Situr í rfa__pad (lifir endurteikningu _rf_body); sýnd keyrð
+          // af [data-rftab] á ._rf_card gegnum pure-CSS — engin vakt, óháð því hvenær 286/288/537 mounta.
+          '<div class="_rf_tabs" role="tablist">'+
+            '<button type="button" data-rft="yfirlit">Yfirlit</button>'+
+            '<button type="button" data-rft="bygg">Byggingar</button>'+
+            '<button type="button" data-rft="gatt">Þjónustugátt</button>'+
+            '<button type="button" data-rft="samskipti">Samskipti</button>'+
+            '<button type="button" data-rft="skjol">Skjöl</button>'+
+          '</div>'+
           // 2026-06-12 (Todoist): athugasemd beint á borðanum — vistast sjálfkrafa
           // 04.10.2026: fjöllína svo löng athugasemd sjáist öll (field-sizing:content í 442) — áður klipptist hún í einni línu
           '<textarea class="_rf_note ssp-reitur" rows="1" placeholder="Athugasemd um rekstraraðilann — vistast sjálfkrafa">'+esc(info.notes||'')+'</textarea>'+
@@ -1779,6 +1807,15 @@
           '<div class="_rf_body"></div>'+
         '</div></div>';
       var body=card.querySelector('._rf_body');
+      // Flipar: Byggingar sjálfgefið. CSS felur allt nema virka flipann eftir [data-rftab].
+      card.dataset.rftab='bygg';
+      (function(){
+        var tabs=card.querySelector('._rf_tabs');
+        if(!tabs) return;
+        var setA=function(){ Array.prototype.forEach.call(tabs.children,function(b){ b.classList.toggle('is-active', b.dataset.rft===card.dataset.rftab); }); };
+        setA();
+        tabs.addEventListener('click',function(e){ var b=e.target.closest('button[data-rft]'); if(!b) return; card.dataset.rftab=b.dataset.rft; setA(); });
+      })();
       function flip(){
         var open=!card.classList.contains('is-open');
         card.classList.toggle('is-open',open);
@@ -2487,8 +2524,8 @@
     body.innerHTML=
       infoPanel+
       '<div class="_rf_samskipti_slot"></div>'+
-      '<div style="display:flex;gap:18px;flex-wrap:wrap">'+
-        '<div style="flex:1 1 100%;min-width:280px">'+
+      '<div class="_rf_colwrap" style="display:flex;gap:18px;flex-wrap:wrap">'+
+        '<div class="_rf_tab_bygg" style="flex:1 1 100%;min-width:280px">'+
           '<div style="font-weight:600;font-size:13px;color:var(--ink2);margin-bottom:6px">Byggingar / húsfélög — úttektir</div>'+
           summary+ svcBar + statsHtml +
           '<div class="rf-tblwrap"><div class="rf-tblscroll"><table class="rf-tbl">'+
@@ -2523,7 +2560,7 @@
           '<button class="_rf_addb" style="margin-top:8px;padding:6px 12px;background:var(--surface);border:1px dashed var(--brd2);border-radius:8px;color:var(--brand);font-weight:600;font-size:12.5px;cursor:pointer">+ Bæta við byggingu / fyrirtæki</button>'+
           '<div style="font-size:11px;color:var(--ink4);margin-top:6px">Efri strimill = <b>🧯 slökkvitæki</b>, neðri = <b>🚨 brunakerfi</b> (skiptu með rofanum að ofan). Ártölu-strimillinn sýnir skoðunarárin <b>‘23–‘26</b> — smelltu á ár til að opna skýrsluna; fjöldi tækja sést í «Tæki» og þegar bent er á árið. <span style="color:#15803d">Grænt</span> = skýrsla á skrá; <span style="color:var(--brand)">blátt</span> = aðeins búnaðarsaga / í vinnslu; <span style="color:#a97514">gull</span> = þetta ár á áætlun (ókomið); <span style="color:#c0241f">rautt</span> = liðið án skýrslu. «Næsta skoðun» = fyrsti gjalddagi, ⚠ = liðinn. Brunakerfis-gögnin koma úr sömu heimild og «🔥 Brunakerfi yfirlit».</div>'+
         '</div>'+
-        '<div style="flex:1;min-width:260px">'+
+        '<div class="_rf_tab_skjol" style="flex:1;min-width:260px">'+
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'+
             '<div><div style="font-weight:600;font-size:13px;color:var(--ink2)">Skjöl félagsins</div>'+
             '<div style="font-size:11px;color:var(--ink4);margin-top:2px">Drive-dump félagsins — ekki per-bygging. Stolpi/reikningar hér kveikja ekki úttektar-perur.</div></div>'+
