@@ -781,6 +781,7 @@
   .kbar{display:flex;gap:2px}
   .kbar i{flex:none;width:9px;height:16px;border-radius:2px;background:var(--well);border:1px dashed var(--line2)}
   .kbar i.okkar{background:var(--m-face);border:1px solid var(--m-edge)}
+  .kbar i.vinnslu{background:#2f6fdb;border:1px solid #1d4fa8}
   .kbar i.til{background:var(--obsidian);border:1px solid #000}
   .kbar i.vantar{background:#b3261e;border:1px solid #6e100d}
   .kbar i.ekki{background:var(--line);border:1px solid var(--line2)}
@@ -796,6 +797,9 @@
      ekki appelsínugula merkislitinn sem .kst.okkar notar. Sama bygging og .kst.okkar svo pillan hagar sér eins. */
   .kst.gott{background:linear-gradient(180deg,rgba(31,122,68,.10),rgba(31,122,68,.22));border-color:rgba(31,122,68,.55);color:var(--good)}
   .kst.gott::before{background:var(--good);opacity:1;box-shadow:0 0 5px rgba(31,122,68,.6)}
+  /* 27.11.2026 (Agnar): samningur um þjónustu í vinnslu → blátt */
+  .kst.vinnslu{background:linear-gradient(180deg,rgba(47,111,219,.10),rgba(47,111,219,.22));border-color:rgba(47,111,219,.6);color:#1d4fa8}
+  .kst.vinnslu::before{background:#2f6fdb;opacity:1}
   .kst.til{background:var(--obsidian);border-color:#000;color:#e6e2da}
   .kst.vantar{background:linear-gradient(180deg,#d9534a,#a8231c);border-color:#6e100d;color:#fff}
   .kst.oskrad{border-style:dashed;color:var(--dim);background:transparent}
@@ -2019,7 +2023,7 @@
 <div class="toast" id="toast" role="status"></div>
 
 <script src="/gatt/verkfaeri.js?v=20261023b"></script>
-<script src="/gatt/eignagatt.js?v=20261106vb"></script>
+<script src="/gatt/eignagatt.js?v=20261127vinnsla"></script>
 <script src="/gatt/bunadargreining.js?v=20261023a"></script>
 <script src="/gatt/vidbot.js?v=20261123p"></script>
 <link rel="stylesheet" href="/gatt/premium-theme.css?v=20261106a">
@@ -2027,13 +2031,13 @@
 <link rel="stylesheet" href="/gatt/premium-hero.css?v=20261106b">
 <link rel="stylesheet" href="/gatt/premium-reference.css?v=20261106c">
 <link rel="stylesheet" href="/gatt/premium-polish-v2.css?v=20261106d">
-<script src="/gatt/portal.js?v=20261127stigl"></script>
+<script src="/gatt/portal.js?v=20261127vinnsla"></script>
 <script src="/gatt/premium-hero.js?v=20261106b" defer></script>
 <link rel="stylesheet" href="/gatt/premium-v2.css?v=20261118tigull3">
 <link rel="stylesheet" href="/gatt/login-v2.css?v=20261109breidd">
 <link rel="stylesheet" href="/gatt/login-premium-landing.css?v=20261109b">
 <link rel="stylesheet" href="/gatt/login-premium-faithful.css?v=20261110g">
-<script src="/gatt/premium-v2.js?v=20261117a" defer></script>
+<script src="/gatt/premium-v2.js?v=20261127vinnsla" defer></script>
 <script src="/gatt/login-premium-faithful.js?v=20261109c" defer></script>
 </body>
 </html>

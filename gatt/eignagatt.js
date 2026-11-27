@@ -945,7 +945,7 @@
     return '<table class="gr-kr"><thead><tr><th>Kerfi</th><th>Krafa</th><th>Til staðar</th><th>Skilyrði / magn · heimild</th></tr></thead><tbody>' + L.map(function (k) {
       var heiti = (G().KERFI_HEITI && G().KERFI_HEITI[k.k]) || k.k;
       return '<tr><td><b>' + esc(heiti) + '</b></td><td><span class="kst ' + (k.skylt === 'ja' ? 'til' : k.skylt === 'skilyrt' ? 'oskrad' : 'ekki') + '">' + esc(k.skylt === 'ja' ? 'Skylt' : k.skylt === 'skilyrt' ? 'Skilyrt' : 'Ekki skylt') + '</span></td>' +
-        '<td>' + (k.til === 'ja' ? '<span class="kst okkar">Já' + (k.adili === 'okkar' ? ' · okkar' : '') + '</span>' : k.til === 'nei' ? '<span class="kst vantar">Nei</span>' : '<span class="kst oskrad">Óvitað</span>') + '</td>' +
+        '<td>' + (k.til === 'ja' ? '<span class="kst okkar">Já' + (k.adili === 'okkar' ? ' · okkar' : k.adili === 'vinnslu' ? ' · í vinnslu' : '') + '</span>' : k.til === 'nei' ? '<span class="kst vantar">Nei</span>' : '<span class="kst oskrad">Óvitað</span>') + '</td>' +
         '<td>' + (k.skilyrdi ? esc(k.skilyrdi) : '<span class="dim">—</span>') + (k.heimild ? '<br>' + (k.url ? '<a href="' + esc(k.url) + '" target="_blank" rel="noopener">' + esc(k.heimild) + '</a>' : '<span class="dim">' + esc(k.heimild) + '</span>') : '') + '</td></tr>';
     }).join('') + '</tbody></table><div class="gr-src">Kröfur úr reglusafni (byggingarreglugerð 112/2012, reglugerð 723/2017) eftir tegund og notkunarflokki — leiðbeinandi; endanlegt mat er hjá hönnuði og slökkviliði. <em>sjálfsótt</em></div>';
   }

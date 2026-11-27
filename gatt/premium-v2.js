@@ -352,7 +352,7 @@
         if (!k || BUID[k.k]) return;
         var okkar = k.adili === 'okkar', til = k.til === 'ja';
         if (!okkar && !til) return;
-        L.push(['bolt', HEITI[k.k] || k.k, okkar ? 'Í þjónustu' : 'Til staðar', okkar]);
+        L.push(['bolt', HEITI[k.k] || k.k, okkar ? 'Í þjónustu' : (k.adili === 'vinnslu' ? 'Þjónusta í vinnslu' : 'Til staðar'), okkar]);
       });
     if (!L.length) return '';
     return kortSec('v2bun', 'flame', 'Brunavarnabúnaður', '<a href="#" class="dsec-meira" data-v2go="brunavarnir">Sjá allt →</a>',
