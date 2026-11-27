@@ -736,6 +736,7 @@
   .seg{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--line2);border-radius:5px;background:var(--well);box-shadow:var(--well-sh);margin-bottom:18px}
   .seg button{display:inline-flex;align-items:center;gap:7px;border:0;background:transparent;padding:9px 15px;border-radius:3px;font-family:var(--ui);font-size:11px;font-weight:600;letter-spacing:1.3px;text-transform:uppercase;color:var(--dim);cursor:pointer}
   .seg button svg{width:14px;height:14px}
+  #er-seg{flex-wrap:wrap;max-width:100%}
   .seg button.on{background:var(--obsidian);color:var(--accent);box-shadow:var(--obsidian-sh);text-shadow:0 -1px 0 rgba(0,0,0,.9)}
   .svc{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px}
   .svc label{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line2);border-radius:4px;background:var(--key);box-shadow:var(--key-sh);font-size:13px;color:var(--ink);cursor:pointer;transition:border-color .15s,box-shadow .15s}
@@ -1855,7 +1856,31 @@
       <button type="button" data-k="verkbeidni" id="er-vb-k"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="4.5" width="13" height="16.5" rx="2"/><path d="M9 4.5V3h6v1.5"/><path d="m9 13 2.2 2.2L15.5 11"/></svg>Verkbeiðni</button>
       <button type="button" data-k="thjonusta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Bæta við þjónustu</button>
       <button type="button" data-k="gogn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 13h6M9 17h6"/></svg>Gagnabeiðni</button>
+      <!-- 27.11.2026 (Agnar: „geta gert allt þaðan sem tölvupóstsamskiptin hafa snúist kringum"): pöntun og reikningar/kjör -->
+      <button type="button" data-k="pontun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h2l2.2 10h9.6L20 8H7.2"/><circle cx="9.5" cy="19" r="1.3"/><circle cx="17" cy="19" r="1.3"/></svg>Pöntun</button>
+      <button type="button" data-k="reikningur"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>Reikningar og kjör</button>
       <button type="button" data-k="annad">Annað</button>
+    </div>
+    <div class="svc hidden" id="er-pont">
+      <label><input type="checkbox" value="Slökkvitæki — léttvatn">Slökkvitæki — léttvatn</label>
+      <label><input type="checkbox" value="Slökkvitæki — duft">Slökkvitæki — duft</label>
+      <label><input type="checkbox" value="Slökkvitæki — kolsýra (CO₂)">Slökkvitæki — kolsýra</label>
+      <label><input type="checkbox" value="Veggfestingar">Veggfestingar</label>
+      <label><input type="checkbox" value="Skilti og merkingar">Skilti og merkingar</label>
+      <label><input type="checkbox" value="Eldvarnateppi">Eldvarnateppi</label>
+      <label><input type="checkbox" value="Reykskynjarar">Reykskynjarar</label>
+      <label><input type="checkbox" value="Brunaslanga / slöngukefli">Brunaslanga</label>
+      <label><input type="checkbox" value="Annað">Annað</label>
+    </div>
+    <div class="svc hidden" id="er-reikn">
+      <label><input type="checkbox" value="Afrit af reikningi">Afrit af reikningi</label>
+      <label><input type="checkbox" value="Spurning um reikning">Spurning um reikning</label>
+      <label><input type="checkbox" value="Reikningur á aðra kennitölu">Á aðra kennitölu</label>
+      <label><input type="checkbox" value="Afsláttur — vantar eða leiðrétting">Afsláttur / leiðrétting</label>
+      <label><input type="checkbox" value="Greiðslufrestur / eindagi">Greiðslufrestur / eindagi</label>
+      <label><input type="checkbox" value="Óska eftir tilboði">Óska eftir tilboði</label>
+      <label><input type="checkbox" value="Kjör og afsláttarkjör">Kjör og afsláttarkjör</label>
+      <label><input type="checkbox" value="Annað">Annað</label>
     </div>
     <div class="svc hidden" id="er-gogn">
       <label><input type="checkbox" value="Úttektarskýrslur (slökkvitæki)">Úttektarskýrslur</label>
@@ -1872,6 +1897,11 @@
       <label><input type="checkbox" value="Skoðun brunaslangna">Skoðun brunaslangna</label>
       <label><input type="checkbox" value="Brunaviðvörunarkerfi — skoðun og eftirlit">Brunaviðvörunarkerfi</label>
       <label><input type="checkbox" value="Neyðarlýsing">Neyðarlýsing</label>
+      <label><input type="checkbox" value="Vatnsúðakerfi (sprinkler)">Vatnsúðakerfi (sprinkler)</label>
+      <label><input type="checkbox" value="Stigleiðsla">Stigleiðsla</label>
+      <label><input type="checkbox" value="Reyklosun">Reyklosun</label>
+      <label><input type="checkbox" value="Slökkvikerfi í eldhúsháfi">Slökkvikerfi í eldhúsi</label>
+      <label><input type="checkbox" value="Brunaþéttingar">Brunaþéttingar</label>
       <label><input type="checkbox" value="Eldvarnateppi og reykskynjarar">Eldvarnateppi og reykskynjarar</label>
       <label><input type="checkbox" value="Úttekt / ráðgjöf um brunavarnir">Úttekt og ráðgjöf</label>
       <label><input type="checkbox" value="Annað">Annað</label>
@@ -2031,7 +2061,7 @@
 <link rel="stylesheet" href="/gatt/premium-hero.css?v=20261106b">
 <link rel="stylesheet" href="/gatt/premium-reference.css?v=20261106c">
 <link rel="stylesheet" href="/gatt/premium-polish-v2.css?v=20261106d">
-<script src="/gatt/portal.js?v=20261127flokkar"></script>
+<script src="/gatt/portal.js?v=20261127erindi"></script>
 <script src="/gatt/premium-hero.js?v=20261106b" defer></script>
 <link rel="stylesheet" href="/gatt/premium-v2.css?v=20261118tigull3">
 <link rel="stylesheet" href="/gatt/login-v2.css?v=20261109breidd">

@@ -1673,7 +1673,8 @@
     thjonusta: { lbl: 'Nánari lýsing (valfrjálst)', ph: 'T.d. fjöldi tækja, hæð, hvenær hentar…' },
     gogn: { lbl: 'Nánar (valfrjálst)', ph: 'T.d. hvaða ár, hvaða eignir, hver þarf gögnin…' },
     annad: { lbl: 'Erindi', ph: 'Skrifaðu erindið hér…' },
-    reikningur: { lbl: 'Erindi um reikning', ph: 'Skrifaðu erindið hér…' },
+    reikningur: { lbl: 'Nánar (valfrjálst)', ph: 'T.d. reikningsnúmer, hvaða kennitala, hvað á að leiðrétta…' },
+    pontun: { lbl: 'Nánar (valfrjálst)', ph: 'T.d. fjöldi, stærð, hvert á að afhenda og hver tekur á móti…' },
   };
   function setErKind(k) {
     if (k === 'verkbeidni' && (!synOf().verkbeidni || erUtan)) k = 'fyrirspurn';
@@ -1682,6 +1683,8 @@
     $('#er-svc').classList.toggle('hidden', k !== 'thjonusta');
     $('#er-vb').classList.toggle('hidden', k !== 'verkbeidni');
     $('#er-gogn').classList.toggle('hidden', k !== 'gogn');
+    if ($('#er-pont')) $('#er-pont').classList.toggle('hidden', k !== 'pontun');
+    if ($('#er-reikn')) $('#er-reikn').classList.toggle('hidden', k !== 'reikningur');
     $('#er-stad').classList.toggle('hidden', k !== 'verkbeidni');
     $('#er-lbl').textContent = ER_TXT[k].lbl;
     $('#er-text').placeholder = ER_TXT[k].ph;
@@ -1706,7 +1709,7 @@
     $('#er-title').textContent = erB ? erB.nafn : 'Almennt erindi';
     $('#er-addr').textContent = erB ? (erB.heimilisfang || '') : '';
     $('#er-text').value = ''; $('#er-stad').value = '';
-    document.querySelectorAll('#er-svc input, #er-vb input, #er-gogn input').forEach(function (c) { c.checked = false; });
+    document.querySelectorAll('#er-svc input, #er-vb input, #er-gogn input, #er-pont input, #er-reikn input').forEach(function (c) { c.checked = false; });
     $('#er-vb-k').classList.toggle('hidden', erUtan || !synOf().verkbeidni);
     setErKind(kind || 'fyrirspurn');
     $('#er-modal').classList.remove('hidden');
@@ -1752,7 +1755,7 @@
   $('#er-form').onsubmit = function (e) {
     e.preventDefault();
     var msg = $('#er-text').value.trim(), stad = $('#er-stad').value.trim();
-    var listi = erKind === 'thjonusta' ? '#er-svc' : erKind === 'verkbeidni' ? '#er-vb' : erKind === 'gogn' ? '#er-gogn' : null;
+    var listi = erKind === 'thjonusta' ? '#er-svc' : erKind === 'verkbeidni' ? '#er-vb' : erKind === 'gogn' ? '#er-gogn' : erKind === 'pontun' ? '#er-pont' : erKind === 'reikningur' ? '#er-reikn' : null;
     var val = []; if (listi) document.querySelectorAll(listi + ' input:checked').forEach(function (c) { val.push(c.value); });
     var btn = $('#er-send'); btn.disabled = true;
     submitErindi({ kind: erKind, b: erB, val: val, stad: stad, msg: msg, visun: erVisun }, function (ok) {
