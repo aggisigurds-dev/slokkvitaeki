@@ -43,6 +43,7 @@ og slóðin á `…-samanburdur.png`.
 |---|---|
 | `--vefur slokk\|bh\|kjarni\|<url>` | grunnur fyrir `#sýn` og `/slóð` (sjálfgefið slokk) |
 | `--taeki` | `360` `390` `412` `430` · `tafla` (834 px) · `tafla-l` (spjaldtölva á hlið, 1.112 px) · `lenovo` / `lenovo-p` (Lenovo Tab 10,1″ bílstjórans á hlið 1.280 × 720 / upprétt 800 × 1.160 — ÁÆTLAÐ af skjástærð, ekki mælt á tækinu) · `tolvu` (sími í tölvuútgáfu, 1.230 px) · `tolva` (1.440 px) |
+| `--taeki 1024x768` | sérsnið: hvaða stærð sem er (undir 600 px breidd telst sími, annars spjaldtölva) |
 | `--heil` | öll síðan, ekki aðeins fyrsti skjárinn |
 | `--bid 12000` | lengri bið þegar síðan sýnir enn „Sæki…" á myndinni |
 | `--js "<kóði>"` | keyrt fyrir myndatöku: opna flipa, skruna, smella á takka sem þú ÞEKKIR |
