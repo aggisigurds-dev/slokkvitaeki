@@ -104,7 +104,7 @@ async function skanna(budget = NY_I_KEYRSLU) {
 }
 
 const EIGIN_LEN = /@(eldklar\.is|brunaholf\.is)$/i;                       // innanhússpóstur (áframsendingar starfsmanna)
-const REIKNINGUR_TIL_OKKAR = /^(reikningur frá|.*sölureikningur\s+s-\d)/i;     // reikningar birgja TIL okkar — ekki svarað
+const REIKNINGUR_TIL_OKKAR = /^(reikningur frá|.*sölureikningur\s+s-\d)|könnun|survey|fréttabréf|newsletter/i;   // reikningar birgja TIL okkar, kannanir — ekki svarað
 
 // 27.11.2026: er sendandinn þekktur? Netfangið í fyrirtækjaskrá, samþykktur tengiliður, eða við höfum SENT á það áður.
 // Aðeins nákvæmt netfang (aldrei lén — gmail.com o.fl. myndu hleypa öllum inn). Les aðeins.
@@ -153,9 +153,19 @@ async function reikningarFyrir(kts) {
 // Semja drög með sömu vél og „Reikninga-póstur" (/api/postur-reply) — innri tóki í stað köku. Skilar { subject, body, summary }.
 async function semjaDrog(e) {
   const hausar = Object.assign({ 'Content-Type': 'application/json' }, await HUB.innriHausar());
-  const customer = await kunni(e.sender_email);
+  let customer = await kunni(e.sender_email);
   const kts = ktIPosti(e);
   if (customer && customer.kt && !kts.includes(customer.kt)) kts.push(customer.kt);
+  // 27.11.2026: samþykktur tengiliður ber kennitölu félagsins (t.d. sigga@hraun.is → Hraunbær 36 húsfélag) — þá fylgja
+  // reikningar þess félags, svo drögin finni reikninginn í stað þess að biðja kúnnann um númerið.
+  try {
+    const c = await lesa(`charlize_contacts?select=kennitala&netfang=ilike.${q(e.sender_email || '')}&status=eq.approved&kennitala=not.is.null&limit=3`);
+    for (const x of c) { const k = String(x.kennitala || '').replace(/\D/g, ''); if (k.length === 10) { const f = k.slice(0, 6) + '-' + k.slice(6); if (!kts.includes(f)) kts.push(f); } }
+    if (!customer && kts.length) {
+      const f = await lesa(`fyrirtaeki?select=nafn,kennitala&deleted_at=is.null&kennitala=eq.${q(kts[kts.length - 1])}&limit=1`);
+      if (f[0]) customer = { name: f[0].nafn || '', kt: f[0].kennitala || '' };
+    }
+  } catch (_) { /* án tengiliðar eins og áður */ }
   const r = await fetch(grunnur() + '/api/postur-reply', {
     method: 'POST', headers: hausar, signal: AbortSignal.timeout(22000),
     body: JSON.stringify({
