@@ -189,8 +189,15 @@
         const st = getComputedStyle(e);
         if (st.position !== 'fixed' || st.display === 'none' || st.visibility === 'hidden') continue;
         if ((parseInt(st.zIndex, 10) || 0) < 900) continue;
+        if (st.pointerEvents === 'none' || parseFloat(st.opacity) < 0.1) continue;
         const r = e.getBoundingClientRect();
-        if (r.width >= vw * 0.6 && r.height >= vh * 0.5) return true;
+        // Maelt a SKORUN vid vidmotid, ekki a staerd kassans: lokada nav-skufflan
+        // (#…, z 9000, 260x844) situr a translateX(-260) og er ALLTAF jafn stor.
+        // Fyrsta utgafan taldi hana opid yfirlag og pillan birtist hvergi (maelt
+        // 27.11.2026: #_zs-stika var ekki til a #vorur).
+        const bw = Math.min(r.right, vw) - Math.max(r.left, 0);
+        const bh = Math.min(r.bottom, vh) - Math.max(r.top, 0);
+        if (bw >= vw * 0.6 && bh >= vh * 0.5) return true;
       }
     } catch (_) {}
     return false;
