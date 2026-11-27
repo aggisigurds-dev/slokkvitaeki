@@ -688,7 +688,8 @@
 .bt .field{width:100%;resize:none;padding:11px 13px;border-radius:11px;border:1px solid rgba(20,24,34,.14);background:#f6f8fb;color:#141822;font-family:inherit;font-size:13.5px;outline:none}
 .bt .card--alert{border:1px solid #f3c6c4;background:linear-gradient(180deg,#fff,#fdf1f1)}
 .bt .card--alert .field{background:#fff}
-.bt .dock{position:fixed;left:0;right:0;bottom:0;z-index:30;max-width:100%;margin:0 auto;display:flex;gap:12px;padding:12px 14px;background:linear-gradient(180deg,rgba(65,69,77,0),rgba(65,69,77,.94) 42%)}
+/* 27.11.2026: bottom er --simi-dock-h (528), ekki 0 — neðri símastikan (64 px) lá ofan á „Keyra leið dagsins". 0px þegar hún er falin. */
+.bt .dock{position:fixed;left:0;right:0;bottom:var(--simi-dock-h,0px);z-index:30;max-width:100%;margin:0 auto;display:flex;gap:12px;padding:12px 14px;background:linear-gradient(180deg,rgba(65,69,77,0),rgba(65,69,77,.94) 42%)}
 @media (min-width:1100px){ .bt .dock{max-width:440px} }
 .bt .dock--wide{max-width:900px}
 .bt .dock .btn{flex:1;height:52px}
@@ -698,7 +699,7 @@
    spjaldinu (sjá openCompany) svo fixed festist við ALVÖRU botn skjásins,
    með safe-area fyrir bendilrönd símans. padding-bottom á spjaldinu tryggir
    að síðustu línur listans hverfi aldrei undir dokkinn. */
-._bs-sheet .dock{position:fixed!important;left:0!important;right:0!important;bottom:0!important;max-width:100%!important;margin:0!important;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))!important;z-index:40}
+._bs-sheet .dock{position:fixed!important;left:0!important;right:0!important;bottom:var(--simi-dock-h,0px)!important;max-width:100%!important;margin:0!important;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))!important;z-index:40}
 ._bs-sheet{padding-bottom:calc(110px + env(safe-area-inset-bottom,0px))!important}
 /* ‹ Til baka: skýr, ≥44px snertiflötur efst til vinstri á spjaldinu */
 ._bs-sheet ._bs-back{width:auto;min-width:44px;min-height:44px;padding:0 12px;font-size:15px;font-weight:700;gap:2px;white-space:nowrap}
@@ -709,7 +710,7 @@
 .bt.screen{max-width:100%;margin:0 auto;min-height:100vh;background:var(--page);padding-bottom:96px}
 .bt.screen--wide{max-width:900px}
 @media (min-width:1100px){ .bt.screen{max-width:440px} }
-#${VIEW_ID}{position:fixed!important;inset:0!important;z-index:1000;overflow-y:auto;-webkit-overflow-scrolling:touch;background:#41454d}
+#${VIEW_ID}{position:fixed!important;inset:0!important;bottom:var(--simi-dock-h,0px)!important;z-index:1000;overflow-y:auto;-webkit-overflow-scrolling:touch;background:#41454d}
 /* 03.11.2026 (útlitsúttekt): ?app=bilstjori er standalone (261) — engin #_app-hdr og engin #_app-nav, en 316 setur samt body.appmode.
    Reglurnar hér miðuðu við 50 px haus og 84 px botnstiku → 50 px tóm ræma efst og 84 px neðst (mælt 375×812: view top 50, bottom 728).
    Þær gilda því ekki í data-app="bilstjori". */
@@ -735,7 +736,7 @@ body.bs-active #_mnav_drawer,body.bs-active #_mnav_scrim,body.bs-active #_mobnav
 body.bs-active #_ad-aibtn,body.bs-active .ad-panel,body.bs-active #bstal-restore{display:none!important}
 /* the app's .topbar IS the sidebar (position:fixed/width/min-height/flex-direction:column !important) — neutralise that hijack of OUR nested topbars */
 #${VIEW_ID} .topbar,._bs-sheet .topbar{position:sticky!important;top:0!important;left:auto!important;right:auto!important;bottom:auto!important;width:auto!important;min-height:0!important;height:auto!important;flex-direction:row!important;display:flex!important}
-._bs-sheet{position:fixed;inset:0;z-index:1100;overflow-y:auto;-webkit-overflow-scrolling:touch;transform:translateX(100%);transition:transform .24s cubic-bezier(.32,.72,0,1);background:#41454d}
+._bs-sheet{position:fixed;inset:0;bottom:var(--simi-dock-h,0px);z-index:1100;overflow-y:auto;-webkit-overflow-scrolling:touch;transform:translateX(100%);transition:transform .24s cubic-bezier(.32,.72,0,1);background:#41454d}
 ._bs-sheet.in{transform:translateX(0)}
 .bt .map #_bs-mapcanvas{position:absolute;inset:0;width:100%;height:100%}
 .bt .leaflet-container{background:#e9eaee;font-family:var(--font)}

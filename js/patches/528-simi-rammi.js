@@ -349,8 +349,17 @@
       || (window.innerWidth || 0) <= 900;
   }
 
+  /* 27.11.2026: hæð stikunnar er birt sem --simi-dock-h svo yfirlög með EIGIN fastan fót geti lyft honum upp fyrir
+     hana. Mælt á lifandi síðu í 390 px: stikan (y 780–844) lá ofan á „Keyra leið dagsins" í Bílstjóra (y 780–832)
+     og smellurinn lenti á „Spyrja sérfræðing". 219 les breytuna; 0px þegar stikan er falin (tölva, app-hamur). */
+  function birtaDockHaed(px) {
+    var v = px + 'px', h = document.documentElement;
+    if (h.style.getPropertyValue('--simi-dock-h') !== v) h.style.setProperty('--simi-dock-h', v);
+  }
+
   function lyftaBolu() {
     var dock = document.getElementById('_simi-dock');
+    if (!simiSkjar()) birtaDockHaed(0);
     if (simiSkjar()) {
       if (!dock) {
         dock = document.createElement('div');
@@ -378,6 +387,7 @@
       if (btn && document.documentElement.classList.contains('slokk-phone-dev')) {
         btn.style.setProperty('display', 'flex', 'important');
       }
+      birtaDockHaed(dock.offsetHeight || 64);
       return;
     }
     if (dock && dock.style.display !== 'none') dock.style.setProperty('display', 'none', 'important');
