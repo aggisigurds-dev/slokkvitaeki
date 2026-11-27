@@ -950,21 +950,24 @@
     }).join('') + '</tbody></table><div class="gr-src">Kröfur úr reglusafni (byggingarreglugerð 112/2012, reglugerð 723/2017) eftir tegund og notkunarflokki — leiðbeinandi; endanlegt mat er hjá hönnuði og slökkviliði. <em>sjálfsótt</em></div>';
   }
   function grSet(id, html) { var el = document.querySelector('#' + id + ' .gr-b'); if (el) el.innerHTML = html; }
-  function grJson(url, ms) { return fetch(url, { signal: AbortSignal.timeout(ms || 20000) }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }); }
+  // 27.11.2026: föllin á bak við greininguna krefjast nú innskráningar starfsmanns (401/403). Kúnni í gáttinni fékk þá
+  // „Staðfangaskrá svaraði ekki" á hverri eign. Lokað svar felur hlutann í stað þess að segja ósatt um heimildina.
+  function grJson(url, ms) { return fetch(url, { signal: AbortSignal.timeout(ms || 20000) }).then(function (r) { return r.ok ? r.json() : ((r.status === 401 || r.status === 403) ? { _lokad: true } : null); }).catch(function () { return null; }); }
+  function grFela(ids) { ids.forEach(function (id) { var el = document.getElementById(id); if (el) el.hidden = true; }); }
   function grLifga(b) {
     var sec = $('#gr-sec'); if (!sec || !b || +sec.getAttribute('data-gr-fid') !== b.id) return;
     if (st().demo) { grSet('gr-eignin', '<div class="dim">Sýnishorn — í raunverulegri eign sækir gáttin staðfang, landnúmer, heitinúmer, sveitarfélag, matshluta og lóð úr skrám HMS og sýnir eignina á korti.</div>'); grSet('gr-bygging', '<div class="dim">Sýnishorn — brúttóflötur, hæðir, byggingarár og skjölin í skjalasafninu (skráningartöflur, byggingarlýsingar) koma hér.</div>'); grSet('gr-brunavarnir', '<div class="dim">Sýnishorn — orðréttar setningar úr byggingarlýsingu hússins um brunahólfun, vatnsúðakerfi, brunaviðvörunarkerfi, flóttaleiðir og slökkvitæki.</div>'); grSet('gr-skjalasafn', '<div class="dim">Sýnishorn — fjöldi og smámyndir aðaluppdrátta úr skjalasafni sveitarfélagsins.</div>'); return; }
     var c = grCache[b.id];
-    if (c) { grFylla(b, c); return; }
+    if (c) { grFylla(b, c); if (c.lokadOpin) grFela(['gr-eignin']); if (c.lokadBygg) grFela(['gr-bygging', 'gr-brunavarnir']); if (c.lokadTeikn || (c.lokadOpin && !c.teikn)) grFela(['gr-skjalasafn']); return; }
     c = grCache[b.id] = { adr: b.heimilisfang || '' };
     var hnit = b.eign && (b.eign.hnit || (isFinite(+b.eign.lat) && +b.eign.lat ? { lat: +b.eign.lat, lng: +b.eign.lng } : null));
     var q = b.eign && b.eign.heitinr ? 'heitinr=' + encodeURIComponent(b.eign.heitinr) : 'heimilisfang=' + encodeURIComponent(c.adr);
-    grJson('/.netlify/functions/fasteign-opin?' + q, 15000).then(function (j) { c.opin = j || false; grFylla(b, c);
+    grJson('/.netlify/functions/fasteign-opin?' + q, 15000).then(function (j) { if (j && j._lokad) { j = null; c.lokadOpin = true; } c.opin = j || false; grFylla(b, c); if (c.lokadOpin) grFela(['gr-eignin']);
       var landnr = (j && j.eign && j.eign.landnr) || (b.eign && b.eign.landnr);
-      if (landnr) grJson('/.netlify/functions/teikn-listi?landnr=' + encodeURIComponent(landnr), 25000).then(function (t) { c.teikn = t || false; grFylla(b, c); });
-      else { c.teikn = false; grFylla(b, c); }
+      if (landnr) grJson('/.netlify/functions/teikn-listi?landnr=' + encodeURIComponent(landnr), 25000).then(function (t) { if (t && t._lokad) { t = null; c.lokadTeikn = true; } c.teikn = t || false; grFylla(b, c); if (c.lokadTeikn) grFela(['gr-skjalasafn']); });
+      else { c.teikn = false; grFylla(b, c); if (c.lokadOpin) grFela(['gr-skjalasafn']); }
     });
-    grJson('/.netlify/functions/bygging-uppl?heimilisfang=' + encodeURIComponent(c.adr), 28000).then(function (j) { c.bygg = j && !j.error ? j : false; grFylla(b, c); });
+    grJson('/.netlify/functions/bygging-uppl?heimilisfang=' + encodeURIComponent(c.adr), 28000).then(function (j) { if (j && j._lokad) { j = null; c.lokadBygg = true; } c.bygg = j && !j.error ? j : false; grFylla(b, c); if (c.lokadBygg) grFela(['gr-bygging', 'gr-brunavarnir']); });
     if (hnit) c.hnit = hnit;
   }
   var EFNI_H = { brunaholfun: 'Brunahólfun', brunavidvorunarkerfi: 'Brunaviðvörunarkerfi', vatnsudakerfi: 'Vatnsúðakerfi', neydarlysing: 'Neyðarlýsing', handslokkvitaeki: 'Slökkvitæki', brunaslongur: 'Brunaslöngur / slöngukefli', flottaleidir: 'Flóttaleiðir', reyklosun: 'Reyklosun', thjonustusamningur: 'Þjónustusamningur', brunahonnun: 'Brunahönnun', stigahus: 'Stigahús', lyfta: 'Lyfta' };
