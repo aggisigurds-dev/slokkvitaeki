@@ -188,8 +188,28 @@
       'html body #view-bilstjori #_bs-list .stop__body>div>.stop__addr+div{margin-top:5px!important}',
       'html body #view-bilstjori #_bs-list .stop>.cb-dot{position:absolute!important;top:9px!important;right:9px!important;margin:0!important}',
       'html body #view-bilstjori #_bs-list .stop__name{padding-right:22px!important}',
+      // Mánaðarflísarnar eru takkar (sía listann og kortið); valin flís er dökk
+      'html body #view-bilstjori #_bs-manudur button{appearance:none;-webkit-appearance:none;display:inline-flex;align-items:center;height:34px;padding:0 9px;margin:0;border-radius:8px;' +
+        'border:1px solid rgba(20,24,34,.22);background:linear-gradient(180deg,#fdfdfe,#e3e7ee);color:#3a4250;font:inherit;cursor:pointer;white-space:nowrap}',
+      'html body #view-bilstjori #_bs-manudur button._on{background:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%);color:#fff;border-color:#000}',
+      'html body #view-bilstjori #_bs-manudur button._on b{color:#fff!important}',
+      R + '>[data-bs-svaedi="vakt-haus"]>#_bs-manudur{gap:6px!important}',
+      // Rofinn Listi | Myndir við leitarreitinn (sama útlit og Pinnar | Google-leið)
+      R + '>[data-bs-svaedi="leit"]{display:flex!important;align-items:center!important;gap:8px!important}',
+      R + '>[data-bs-svaedi="leit"] .search{flex:1 1 auto!important;min-width:0!important}',
+      'html body #view-bilstjori #_bs-syn{flex:none;display:flex;gap:3px;padding:3px;border-radius:9px;background:rgba(31,37,48,.92);border:1px solid #000}',
+      'html body #view-bilstjori #_bs-syn button{height:36px;padding:0 11px;border-radius:7px;border:1px solid transparent;background:transparent;color:#c7ccd3;font:700 12.5px ' + SANS + ';cursor:pointer}',
+      'html body #view-bilstjori #_bs-syn button._on{background:linear-gradient(180deg,#fdfdfe,#e3e7ee);color:#1f2530;border-color:rgba(20,24,34,.2)}',
+      // Sýnin „Myndir“: vinstri dálkur 30 % breiðari (400 → 520 px) og húsmynd hægra megin í hverju stoppi
+      'html.bs-myndir body #view-bilstjori ._bs-root{grid-template-columns:minmax(360px,520px) minmax(0,1fr)!important}',
+      'html.bs-myndir body ._bs-sheet.bt.screen{left:532px!important}',
+      'html.bs-myndir body ._bs-sheet .dock{left:532px!important}',
+      'html body #view-bilstjori #_bs-list .bs-mynd{flex:none;align-self:stretch;width:132px;min-height:96px;border-radius:8px;overflow:hidden;background:#dfe3ea;border:1px solid rgba(20,24,34,.14)}',
+      'html body #view-bilstjori #_bs-list .bs-mynd img{width:100%;height:100%;object-fit:cover;display:block}',
+      'html body #view-bilstjori #_bs-list .bs-mynd._tom{background:transparent;border:1px dashed rgba(20,24,34,.22)}',
       // „Spyrja sérfræðing“ (494) af listanum yfir á neðra vinstra horn kortsins
       'html.bs-spjald body .sa494{left:434px!important;bottom:22px!important}',
+      'html.bs-spjald.bs-myndir body .sa494{left:554px!important}',
       // Fyrirtækjaspjaldið opið: það tekur kortdálkinn og á eigin fót þar („Á leið“ · „Klára úttekt“) — takkinn aftur til
       // vinstri svo hann liggi ekki ofan á fætinum, og dagstölurnar í hausnum víkja (6 px rönd af þeim stóð út undan spjaldinu).
       'html.bs-spjald.bs-fyrirtaeki-opid body .sa494{left:12px!important;bottom:12px!important}',
@@ -257,6 +277,67 @@
     if (el._h !== html) { el.innerHTML = html; el._h = html; }
   }
 
+  /* ── 27.11.2026: ÖNNUR SÝN — „Myndir“ ───────────────────────────────────────────────────────────────────────
+   * Agnar: „geturðu líka prófað að gera aðra sýn þar sem það sést mynd af húsinu líka … bara önnur sýn stilling, sem
+   * má þá vera svona 30% breiðari en venjulega“. Rofinn Listi | Myndir situr við leitarreitinn. Í Myndir er vinstri
+   * dálkurinn 520 px (400 × 1,3) og hvert stopp ber húsmyndina hægra megin.
+   *   • Myndin er sú sem er ÞEGAR skráð á félagið (367, AppSettings co_bygging_mynd). Hér er EKKERT sótt: sjálfvirk
+   *     sókn (Street View) kostar og á heima í 367. Félag án myndar fær daufan tóman ramma.
+   *   • Valið er eitt fyrir allar vélar (Vidmot `bilstjori.syn`, regla 15.10.2026) og skrifast aðeins við smell.
+   *   • Sýnin er spjaldtölvu-/tölvusýn (≥900 px). Síminn er ósnertur. */
+  const SYN_V = 'bilstjori.syn';
+  function synNu() {
+    try { return (window.Vidmot && Vidmot.lesa && Vidmot.lesa(SYN_V, 'listi')) === 'myndir' ? 'myndir' : 'listi'; }
+    catch (_) { return 'listi'; }
+  }
+  function myndSlod(id) {
+    try { const m = window.ByggingMynd && ByggingMynd.lesaMynd && ByggingMynd.lesaMynd(id); return (m && m.url && !m.engin) ? String(m.url) : ''; }
+    catch (_) { return ''; }
+  }
+  function synRofi(leit) {
+    if (!leit) return;
+    let r = document.getElementById('_bs-syn');
+    if (!r) {
+      r = document.createElement('div');
+      r.id = '_bs-syn'; r.setAttribute('role', 'group'); r.setAttribute('aria-label', 'Sýn á stoppalista');
+      r.innerHTML = '<button type="button" data-bs-syn="listi">Listi</button><button type="button" data-bs-syn="myndir">Myndir</button>';
+    }
+    if (r.parentNode !== leit) leit.appendChild(r);
+    const s = synNu();
+    r.querySelectorAll('button').forEach(b => {
+      const on = b.dataset.bsSyn === s;
+      if (b.classList.contains('_on') !== on) b.classList.toggle('_on', on);
+      if (b.getAttribute('aria-pressed') !== String(on)) b.setAttribute('aria-pressed', String(on));
+    });
+  }
+  function myndir() {
+    const a = innerWidth >= 900 && synNu() === 'myndir';
+    const h = document.documentElement;
+    if (h.classList.contains('bs-myndir') !== a) h.classList.toggle('bs-myndir', a);
+    const listi = document.getElementById('_bs-list');
+    if (!listi) return;
+    if (!a) { listi.querySelectorAll('.bs-mynd').forEach(e => e.remove()); return; }
+    listi.querySelectorAll('.stop').forEach(sp => {
+      const body = sp.querySelector('.stop__body');
+      if (!body || body.querySelector('.bs-mynd')) return;   // skrifa aðeins það sem vantar — raða() keyrir við hverja teikningu
+      const url = myndSlod(sp.dataset.id);
+      const d = document.createElement('div');
+      d.className = 'bs-mynd' + (url ? '' : ' _tom');
+      if (url) {
+        const i = document.createElement('img');
+        i.loading = 'lazy'; i.decoding = 'async'; i.alt = '';
+        i.addEventListener('error', () => { d.classList.add('_tom'); i.remove(); });
+        i.src = url;
+        d.appendChild(i);
+      }
+      body.appendChild(d);
+    });
+  }
+  function synHreinsa() {
+    const r = document.getElementById('_bs-syn'); if (r) r.remove();
+    try { myndir(); } catch (_) {}
+  }
+
   /* ── Google-leið í kortdálknum ───────────────────────────────────────────
    * Maps Embed API (directions) í iframe ofan á Leaflet-kortinu. Upphaf = staðsetning tækisins
    * (geolocation) ef hún fæst, annars fyrsta stoppið. Lykillinn er window.GOOGLE_MAPS_EMBED_KEY
@@ -299,7 +380,7 @@
   }
 
   function raða() {
-    if (innerWidth < 900) { hreinsa(); merkja(); return; }
+    if (innerWidth < 900) { hreinsa(); merkja(); synHreinsa(); return; }
     const root = document.querySelector('#view-bilstjori ._bs-root');
     if (!root) return;
     const born = Array.from(root.children);
@@ -347,6 +428,7 @@
     set(listi, '1', '5', 'listi');
     set(kort, '2', '4 / 6', 'kort');
     merkja();
+    try { synRofi(leit); myndir(); } catch (e) { console.warn('[396] sýn', e); }
   }
 
   /* html.bs-spjald = Bílstjóri er sýnin sem er opin, á ≥900 px. Fljótandi „Spyrja sérfræðing“ (494, fastur neðst til
@@ -398,6 +480,19 @@
       }
     }).observe(v, { childList: true, subtree: true });
     addEventListener('hashchange', puls);
+    // 27.11.2026: mánaðarflísarnar sía listann (ýtt aftur → Dagsins verk), og rofinn Listi | Myndir skiptir um sýn.
+    document.addEventListener('click', e => {
+      const t = e.target && e.target.closest ? e.target : null;
+      if (!t) return;
+      const m = t.closest('#_bs-manudur [data-bs-man]');
+      if (m && window.BsListi && BsListi.velja) { const k = 'm_' + m.dataset.bsMan; BsListi.velja(BsListi.seg() === k ? 'today' : k); return; }
+      const s = t.closest('#_bs-syn [data-bs-syn]');
+      if (s) {
+        if (synNu() !== s.dataset.bsSyn) { try { if (window.Vidmot && Vidmot.setja) Vidmot.setja(SYN_V, s.dataset.bsSyn); } catch (_) {} }
+        try { raða(); } catch (_) {}
+        puls();
+      }
+    });
     // Sýnin fær/missir .active við skipti — þá fylgir html.bs-spjald strax (annars sæti „Spyrja sérfræðing“ færður á næstu síðu).
     new MO(() => { try { merkja(); } catch (_) {} }).observe(v, { attributes: true, attributeFilter: ['class'] });
     // Fyrirtækjaspjaldið (._bs-sheet) fær .in þegar það rennur inn — þá fær sýnin _spjald-opid og kortið víkur.

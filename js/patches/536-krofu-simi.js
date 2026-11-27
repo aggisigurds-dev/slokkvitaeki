@@ -3,16 +3,15 @@
  * Agnar 27.11.2026, eftir sömu yfirferð á Vörum: „Já, Kröfu yfirlit".
  *
  * MÆLT á lifandi síðu (390×844, símahamur, vistað zoom 0,90) ÁÐUR:
- *   .ky-exprow (kortin „Ógreiddar í Payday" og „Ósendar kröfur")  hæð 175 px
+ *   .ky-exprow (kortin „Ógreiddar í Payday" og „Ósendar kröfur")  hæð 175 px  (eftir: 113)
  *     ├ merki   9 px
  *     ├ upphæð 20 px / línuhæð 30 → „3.363.885 kr" brotnaði á TVÆR línur (54 px)
  *     ├ skýring 14 px / línuhæð 21 → FJÓRAR línur, 94 px einar og sér
  *     └ táknið ⏳ tekur 27 px af 183 px breidd kortsins, svo textinn hefur 117 px
  *   Samtals fór fjórðungur skjásins í tvö samantektarkort og listinn byrjaði í 469 px.
  *
- * 166 ætlaði sér þetta þrengra — það stendur þar `._ky-exp>span:first-child{display:none}`
- * og `div>div:last-child{font-size:14px}` — en hvorugt beit:
- *   · táknið sást samt (mælt: span, display block, 22 px);
+ * 166 ætlaði sér þetta þrengra — það stendur þar `div>div:last-child{font-size:14px}`
+ * — en reglan beit ekki þar sem til stóð:
  *   · `div:last-child` er SKÝRINGIN, ekki upphæðin, svo 14 px lenti á röngum hnút
  *     og upphæðin stóð í 20 px. Skinnið 399 skrifar þessa reglu aftur með tveimur
  *     raunauðkennum og fimm gervi-auðkennum, svo venjuleg regla ber hana ekki.
@@ -35,9 +34,8 @@
     'body.appmode ' + V + s).join(',');
 
   const css = [
-    // ── Kortin tvö: táknið burt, upphæðin á EINNI línu, skýringin smærri ──
+    // ── Kortin tvö: upphæðin á EINNI línu, skýringin smærri (táknið fær að standa) ──
     g('.ky-exprow ._ky-exp') + '{align-items:flex-start!important;padding:8px 10px!important;gap:6px!important}',
-    g('.ky-exprow ._ky-exp>span:first-of-type') + '{display:none!important}',
     g('.ky-exprow ._ky-exp>div') + '{min-width:0!important;width:100%!important}',
     // 1. merkið
     g('.ky-exprow ._ky-exp>div>div:nth-child(1)') +
