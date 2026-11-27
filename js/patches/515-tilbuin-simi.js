@@ -169,6 +169,7 @@
     // Aðeins það sem fellur sést strax — með ágiskunartökkunum úr 511 (sama markup, sama aðgerð).
     if (fall.length && a.athHtml) h += '<div class="ts-ath">' + a.athHtml(fall, v.id) + '</div>';
     if (S.skilabod && S.skilabod.id === v.id) h += '<div class="ts-msg" role="alert">' + esc(S.skilabod.texti) + '</div>';
+    else if (v.sidasta_tilraun) h += '<div class="ts-msg" role="alert">' + esc(v.sidasta_tilraun) + '</div>';   // vistuð á þjóninum
     h += '<button type="button" class="ts-go' + (vopnF ? ' _vopn' : '') + '" data-baf="framkvaema" data-id="' + v.id + '"' + (stopp || upptekid ? ' disabled' : '') + '>' +
       esc(upptekid ? 'Augnablik…' : vopnF ? 'Ýttu aftur til að staðfesta' : v.takki || 'Framkvæma') + '</button>';
     if (stopp) h += '<div class="ts-stopp">' + esc(stopp) + '</div>';
@@ -193,6 +194,8 @@
     }
     var h = '';
     if (S.villa) h += '<div class="ts-msg" role="status">' + esc(S.villa.texti) + ' — sýni síðustu stöðu.</div>';
+    // 27.11.2026 (Agnar: „ýtti á senda en hef ekki andsk. hugmynd hvort það virkaði"): það sem fór, grænt og efst, stendur.
+    if (S.gert && S.gert.length) h += S.gert.map(function (g) { return '<div class="ts-msg ts-ok" role="status">' + esc(g.texti) + '</div>'; }).join('');
     if (!S.tilbuin.length) return h + '<div class="ts-tomt"><b>Allt afgreitt.</b> Ný verk birtast hér þegar þau eru tilbúin og standast athuganirnar.</div>';
     var l = rada(sia(S.tilbuin, P.sia));
     h += flisarHtml(S.tilbuin);
@@ -289,6 +292,7 @@
       V + ' .ts-ath .btn{min-height:44px;padding:0 12px;border-radius:8px;border:1px solid rgba(20,24,34,.22);background:' + SILFUR + ';color:#1f2530;font:700 14px ' + SANS + ';cursor:pointer}',
       V + ' .ts-msg{margin:10px 0;padding:10px 12px;border-radius:8px;border:1px solid rgba(180,35,24,.5);background:#fff3f1;color:#8a1c12;font-weight:600;font-size:14px}',
       V + ' .ts-listi>.ts-msg{margin:10px 12px}',
+      V + ' .ts-msg.ts-ok{border-color:rgba(22,120,60,.5);background:#eefaf1;color:#135c2e;font-size:15px}',
       V + ' .ts-go{display:block;width:100%;min-height:56px;margin-top:12px;padding:10px 14px;border-radius:10px;border:1px solid #6d0f12;border-top-color:#e2574c;background:linear-gradient(#c3271c,#a1161a);color:#fff;font:800 17px ' + SANS + ';cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 2px 5px rgba(22,21,19,.35)}',
       V + ' .ts-go._vopn{border-color:#b8892e;background:#161513;color:#f7e6b8;box-shadow:0 0 0 3px rgba(184,137,46,.5)}',
       V + ' .ts-go[disabled]{cursor:not-allowed;background:#b9b3a6;border-color:#9a9383;box-shadow:none}',
