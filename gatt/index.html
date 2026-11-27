@@ -700,13 +700,14 @@
   .dkpis.k4{grid-template-columns:repeat(4,minmax(0,1fr))}
   .dk.t .v{font-family:var(--ui);font-size:17px;font-weight:600;line-height:1.25;margin-top:9px}
   .elys{font-size:14.5px;line-height:1.65;color:var(--ink2);margin:16px 0 0;max-width:860px}
-  .svcg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  /* 27.11.2026: dálkafjöldi eftir breidd HLUTANS (ekki skjásins) — í þriggja dálka eignasíðu V2 urðu spjöldin eitt orð á breidd */
+  .svcg{display:grid;grid-template-columns:repeat(auto-fit,minmax(max(170px,30%),1fr));gap:12px}
   .svc-k{padding:16px 16px 17px;border:1px solid var(--line);border-radius:5px;background:var(--m-line) top/100% 2px no-repeat,var(--panel);box-shadow:var(--key-sh)}
   .svc-k .ic2{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--key);border:1px solid var(--line2);color:var(--accent);box-shadow:var(--key-sh);margin-bottom:11px}
   .svc-k .ic2 svg{width:19px;height:19px}
   .svc-k b{display:block;font-size:14px;color:var(--ink);margin-bottom:4px}
   .svc-k span{font-size:12.5px;color:var(--ink2);line-height:1.5}
-  .skref{margin:0;padding:0;list-style:none;counter-reset:s;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  .skref{margin:0;padding:0;list-style:none;counter-reset:s;display:grid;grid-template-columns:repeat(auto-fit,minmax(max(210px,30%),1fr));gap:12px}
   .skref li{counter-increment:s;position:relative;padding:16px 16px 16px 60px;border:1px solid var(--line);border-radius:5px;background:var(--panel);box-shadow:var(--key-sh);font-size:13px;color:var(--ink2);line-height:1.5}
   .skref li::before{content:counter(s);position:absolute;left:15px;top:15px;width:31px;height:31px;border-radius:50%;display:grid;place-items:center;background:var(--m-coin);color:var(--coin-ink);font-family:var(--serif);font-weight:700;font-size:17px;box-shadow:inset 0 1px 1px rgba(255,255,255,.6),0 1px 3px rgba(0,0,0,.35)}
   .skref b{display:block;color:var(--ink);margin-bottom:2px}
@@ -2053,7 +2054,7 @@
 <div class="toast" id="toast" role="status"></div>
 
 <script src="/gatt/verkfaeri.js?v=20261023b"></script>
-<script src="/gatt/eignagatt.js?v=20261127vinnsla"></script>
+<script src="/gatt/eignagatt.js?v=20261127lokad"></script>
 <script src="/gatt/bunadargreining.js?v=20261023a"></script>
 <script src="/gatt/vidbot.js?v=20261123p"></script>
 <link rel="stylesheet" href="/gatt/premium-theme.css?v=20261106a">
