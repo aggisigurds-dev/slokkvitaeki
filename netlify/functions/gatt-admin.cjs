@@ -165,13 +165,19 @@ exports.handler = async (event) => {
       if (bases.length) { const sr = await P.sbGet(`fyrirtaeki?customer_base_id=in.(${bases.join(',')})&deleted_at=is.null&select=id,customer_base_id,nafn,heimilisfang,er_i_thjonustu&order=nafn`); if (sr.ok) stadir = await sr.json(); }
       const names = await baseNames([...access.map((a) => a.base_id), ...messages.map((m) => m.base_id), ...verk.map((v) => v.base_id), ...mal.map((m) => m.customer_base_id)]);
       verk.forEach((v) => { v.base_nafn = (names[v.base_id] || {}).nafn || ('#' + v.base_id); });
+      // 27.11.2026 (537): talning gáttarerinda per félag (öll mál með tagið gatt eða source gatt) fyrir rekstrarfélagsyfirlitið
+      const erindi_talning = {};
+      try {
+        const tr = await P.sbGet(`thjonustubeidni?or=(source.eq.gatt,tags.cs.${encodeURIComponent('["gatt"]')})&deleted_at=is.null&select=customer_base_id,status&limit=5000`);
+        if (tr.ok) (await tr.json()).forEach((m) => { const b = m.customer_base_id; if (b == null) return; const t = erindi_talning[b] || (erindi_talning[b] = { opin: 0, lokid: 0 }); if (m.status === 'lokad' || m.status === 'klarad') t.lokid++; else t.opin++; });
+      } catch (_) {}
       const bannerG = await M.globalBanner(3600);
       return P.json(200, {
         banner: bannerG ? { url: bannerG.url, at: bannerG.at, af: bannerG.af } : null,
         access: access.map((a) => Object.assign(pubRow(a), { base_nafn: (names[a.base_id] || {}).nafn || ('#' + a.base_id) })),
         messages: messages.map((m) => ({ id: m.id, base_id: m.base_id, base_nafn: (names[m.base_id] || {}).nafn || ('#' + m.base_id),
           sender: m.sender, body: m.body, author_name: m.author_name, created_at: m.created_at, read_by_staff: m.read_by_staff })),
-        verk, notendur, stadir,
+        verk, notendur, stadir, erindi_talning,
         mal: mal.map((m) => ({ id: m.id, base_id: m.customer_base_id, base_nafn: (names[m.customer_base_id] || {}).nafn || ('#' + m.customer_base_id), fid: m.fyrirtaeki_id,
           af: m.customer_nafn || '', titill: String(m.title || '').replace(/\s+af þjónustuvef/i, ''), lysing: m.summary || '', status: m.status, tags: m.tags || [], svar: m.svar || null, svarad: m.svarad_at || null, visun: m.visun || [], dags: m.created_at, abyrgd: m.abyrgd || 'okkar' })),
       });
