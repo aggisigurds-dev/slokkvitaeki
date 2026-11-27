@@ -1764,6 +1764,8 @@
           // 2026-06-12 (Todoist): athugasemd beint á borðanum — vistast sjálfkrafa
           // 04.10.2026: fjöllína svo löng athugasemd sjáist öll (field-sizing:content í 442) — áður klipptist hún í einni línu
           '<textarea class="_rf_note ssp-reitur" rows="1" placeholder="Athugasemd um rekstraraðilann — vistast sjálfkrafa">'+esc(info.notes||'')+'</textarea>'+
+          // 27.11.2026: Þjónustugátt félagsins (537) — staða, erindi og hvað kúnninn sér; fyllt þegar kortið opnast
+          '<div class="_rf_gatt"></div>'+
           '<div class="_rf_body"></div>'+
         '</div></div>';
       var body=card.querySelector('._rf_body');
@@ -1774,7 +1776,9 @@
         // öllum — og skrunstaðan fylgdi með niður. Munað hér svo kortið sem verið er að vinna í standi áfram opið.
         if(open) _opin[name]=1; else delete _opin[name];
         if(open && !body.dataset.filled){ body.dataset.filled='1'; fillBody(body,name,info); }
+        if(open) rfGattFylla();
       }
+      function rfGattFylla(){ try{ if(window.RfGatt) RfGatt.fylla(card.querySelector('._rf_gatt'), blds.map(function(b){ return b.customer_base_id; })); }catch(e){} }
       card.querySelector('._rf_head').addEventListener('click',flip);
       var noteInp=card.querySelector('._rf_note');
       noteInp.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); noteInp.blur(); } });
@@ -1795,7 +1799,7 @@
         if(pills){ var chev=pills.querySelector('.rfa__chev'); var akc=makeRfAksturChip(function(){return coIdsForBlds(blds);});
           if(chev) pills.insertBefore(akc, chev); else pills.appendChild(akc); }
       }catch(e){}
-      if(_opin[name]){ card.classList.add('is-open'); if(body && !body.dataset.filled){ body.dataset.filled='1'; try{ fillBody(body,name,info); }catch(e){} } }
+      if(_opin[name]){ card.classList.add('is-open'); if(body && !body.dataset.filled){ body.dataset.filled='1'; try{ fillBody(body,name,info); }catch(e){} } rfGattFylla(); }
       box.appendChild(card);
     });
     if(_aftur) _aftur();
