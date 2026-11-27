@@ -2661,7 +2661,7 @@
   }
 
   /* 5f · TÁKN KERFA (sömu tákn og Teikning/TurboPaint — 434 TeiknTakn) með lit eftir stöðu */
-  const KERFI_GLYFF = { slokkvitaeki: 'extinguisher', slongukefli: 'hose', reykskynjarar: 'detector', brunavidvorunarkerfi: 'alarm', vatnsudakerfi: 'hydrant', neydarlysing: 'exit', utljos: 'exit', slokkvikerfi_eldhus: 'extinguisher', rymingaruppdrattur: 'exit' };
+  const KERFI_GLYFF = { slokkvitaeki: 'extinguisher', slongukefli: 'hose', reykskynjarar: 'detector', brunavidvorunarkerfi: 'alarm', vatnsudakerfi: 'hydrant', neydarlysing: 'exit', utljos: 'exit', slokkvikerfi_eldhus: 'extinguisher', rymingaruppdrattur: 'exit', stigleidsla: 'hydrant' };
   const EFNI_GLYFF = { handslokkvitaeki: 'extinguisher', brunaslongur: 'hose', brunavidvorunarkerfi: 'alarm', neydarlysing: 'exit', flottaleidir: 'exit', vatnsudakerfi: 'hydrant' };
   const STADA_LITUR = { til: '#15803d', vantar: '#b42318', ovitad: '#b7791f', skilyrt: '#6b7483', nei: '#6b7483' };
   const STADA_TXT = { til: 'Til staðar', vantar: 'Vantar', ovitad: 'Óvitað', skilyrt: 'Skilyrt', nei: 'Aðeins neitun' };

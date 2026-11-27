@@ -40,6 +40,7 @@
     { k: 'neydarlysing', heiti: 'Neyðarlýsing', stutt: 'Neyð' },
     { k: 'utljos', heiti: 'Útljós / leiðamerkingar', stutt: 'Útljós' },
     { k: 'reyklosun', heiti: 'Reyklosun', stutt: 'Reykl' },
+    { k: 'stigleidsla', heiti: 'Stigleiðsla', stutt: 'Stigl' },
     { k: 'eldvarnarteppi', heiti: 'Eldvarnarteppi', stutt: 'Teppi' },
     { k: 'brunathettingar', heiti: 'Brunaþéttingar', stutt: 'Þétt' },
     { k: 'eldvarnaeftirlit', heiti: 'Eldvarnaeftirlit (árlegt)', stutt: 'Eftirl' },

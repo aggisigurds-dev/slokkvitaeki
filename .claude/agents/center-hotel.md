@@ -162,4 +162,14 @@ slóðin er afhent; 1bls: fjarlægja Þverholts-línuna. Saga 2023–2026 skrá�
   - Ekkert var tengt. Listinn með R-númerum er í powerplan_lotur lota 6
     (tolur.reikningur_pdf_fylgir_solu.stolpi) til samþykktar í einu lagi. Heimild: lota 6, stjórnlotan.
 
-Síðast uppfært: 17.11.2026
+- 27.11.2026 · **Melissa svarar tilboðinu (til Bjarndísar, „Re: Tilboð í brunaviðvörunarkerfi“).** Center vill ganga frá samningi um
+  (1) árlega skoðun brunaviðvörunarkerfa allra hótela, (2) slökkvitækjaþjónustu allra hótela, (3) stigleiðslu á Skjaldbreið, Klöpp,
+  Þingholti, Arnarhvoli, Plaza, Miðgarði, Granda og Þingholt Apartments, (4) sprinkler aðeins á Miðgarði. Tvær spurningar bíða svars:
+  er svigrúm fyrir hærri afslátt, og má lengja 10 daga frestinn áður en krafa fer í innheimtu. Tilboð í brunaviðvörunarkerfi fór út
+  09.11 (tímavinna utan tilboðs 14.500 kr + vsk).
+  - Skráð í `stadur_kerfi`: nýtt kerfi `stigleidsla` (til staðar, okkar) á fid 192, 193, 195, 196, 197, 198, 199, 200 og
+    `vatnsudakerfi` á 192 sem okkar. Samningur er ÓFRÁGENGINN; athugasemd hverrar raðar segir það. Mælt í gáttinni sama dag.
+  - Spurningarnar standa efst í athugasemd rekstrarfélagsins (Rekstrarfélög → Center Hótel). Svarið er Agnars; ekkert var sent.
+  - Heimild: email_digest 95959 (slokkvitaeki@brunaholf.is, 27.11.2026 kl. 15:30).
+
+Síðast uppfært: 27.11.2026
