@@ -174,10 +174,32 @@
     return el;
   }
 
+  /* Pillan víkur fyrir opnum glugga. Mælt 27.11.2026: ritilgluggi Vara (#vorur-modal,
+     z-index 10000, fyllir skjáinn í símaham) fékk pilluna ofan á titilinn sinn — hún er
+     position:fixed á <body> eins og glugginn sjálfur. Prófað á EIGINLEIKUM (fixed +
+     z-index ≥ 900 + þekur meirihluta skjásins), ekki á auðkenni eins gluggans, svo
+     næsti gluggi sem einhver skrifar erfi vörnina. */
+  function yfirlagOpid() {
+    try {
+      const vw = innerWidth, vh = innerHeight;
+      const born = document.body.children;
+      for (let i = 0; i < born.length; i++) {
+        const e = born[i];
+        if (e.id === ID) continue;
+        const st = getComputedStyle(e);
+        if (st.position !== 'fixed' || st.display === 'none' || st.visibility === 'hidden') continue;
+        if ((parseInt(st.zIndex, 10) || 0) < 900) continue;
+        const r = e.getBoundingClientRect();
+        if (r.width >= vw * 0.6 && r.height >= vh * 0.5) return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
   // Snertir DOM AÐEINS þegar gildið er raunverulega annað (reglan um tvo pappa, CLAUDE.md).
   function teikna() {
     if (!document.body) return;
-    const syna = virkt() && !!Z();
+    const syna = virkt() && !!Z() && !yfirlagOpid();
     let el = document.getElementById(ID);
     if (!el) { if (!syna) return; stil(); el = byggja(); }
     if (el.classList.contains('synt') !== syna) el.classList.toggle('synt', syna);
@@ -283,6 +305,8 @@
     new MutationObserver(() => teikna()).observe(document.documentElement, { attributes: true, attributeFilter: ['data-viewmode'] });
     addEventListener('resize', () => teikna());
     // Ódýr púls: teikna() snertir ekkert nema gildi hafi breyst (stærð síðu, haus færst, önnur síða).
+    // Gluggar eru hengdir beint a <body>: tha vikur pillan STRAX, ekki eftir 1,2 sek.
+    try { new MutationObserver(() => teikna()).observe(document.body, { childList: true }); } catch (_) {}
     setInterval(teikna, 1200);
   }
 
