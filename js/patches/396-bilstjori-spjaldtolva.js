@@ -144,6 +144,59 @@
       'html body #view-bilstjori #_bs-leid .skil{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(520px,90%);padding:18px 20px;border-radius:10px;background:#fff;border:1px solid rgba(20,24,34,.2);font:13.5px/1.5 ' + SANS + ';color:#1f2530;box-shadow:0 18px 40px -16px rgba(0,0,0,.5)}',
       'html body #view-bilstjori #_bs-leid .skil b{display:block;font-family:"Playfair Display",Georgia,serif;font-size:18px;margin-bottom:6px}',
       'html body #view-bilstjori #_bs-leid .skil code{font-family:' + MONO + ';font-size:12px;background:#f3f5f8;padding:1px 5px;border-radius:4px}',
+
+      // ── 27.11.2026: SKJÁRINN SEM APP — ekkert skrunar nema stoppalistinn ─────────────────────────────────
+      // Rótin er jafn há og sýnin (sem er position:fixed í 219), ekki 100vh: á Android er 100vh hærra en sýnilegi
+      // glugginn. Raðirnar: haus · framvinda|Keyra · leit|síur · dagstölur · listi (1fr). Kortið fyllir hægri dálk.
+      // Þessar reglur standa SÍÐAST í blaðinu og bera [data-bs-svaedi] sem raða() setur, svo þær vinna þær eldri.
+      'html body #view-bilstjori{overflow:hidden!important}',
+      R + '.bt.screen,' + R + '{height:100%!important;min-height:0!important;padding-bottom:0!important;box-sizing:border-box!important;overflow:hidden!important;' +
+        'grid-template-rows:auto auto auto auto minmax(0,1fr)!important}',
+      // Haus: 100 px → um 56 px
+      R + '>header.topbar[data-bs-svaedi="haus"]{position:static!important;padding:7px 14px!important;min-height:0!important;gap:10px!important}',
+      R + '>header.topbar[data-bs-svaedi="haus"] .icon-btn{width:44px!important;height:44px!important}',
+      // Framvinda í vinstri dálki, Keyra-takkinn við hliðina yfir kortinu (var föst rönd neðst)
+      R + '>[data-bs-svaedi="prog"]{padding:7px 12px 9px 14px!important;align-self:stretch!important;display:flex;flex-direction:column;justify-content:center}',
+      R + '>.dock[data-bs-svaedi="keyra"]{position:static!important;left:auto!important;right:auto!important;bottom:auto!important;z-index:auto!important;' +
+        'max-width:none!important;margin:0!important;padding:6px 12px 6px 0!important;background:' + STRIPE + METAL + '!important;align-self:stretch!important;align-items:center!important}',
+      R + '>.dock[data-bs-svaedi="keyra"] .btn{height:46px!important;font-size:15px!important}',
+      // Leit vinstra megin, allar sjö síurnar í EINNI röð hægra megin (voru þrjár raðir í vinstri dálki)
+      R + '>[data-bs-svaedi="leit"]{padding:8px 0 8px 12px!important}',
+      R + '>[data-bs-svaedi="leit"] .search{height:44px!important}',
+      R + '>[data-bs-svaedi="siur"]{flex-direction:row!important;align-items:center!important;gap:6px!important;padding:8px 12px 8px 0!important;min-width:0!important}',
+      R + '>[data-bs-svaedi="siur"] .seg{display:flex!important;flex-wrap:nowrap!important;gap:6px!important;min-width:0!important}',
+      R + '>[data-bs-svaedi="siur"] ._bs-seg{flex:4 1 0!important}',
+      R + '>[data-bs-svaedi="siur"] ._bs-akstur{flex:3 1 0!important}',
+      R + '>[data-bs-svaedi="siur"] .seg__btn{flex:1 1 0!important;min-width:0!important;height:44px!important;padding:0 4px!important;font-size:12px!important;line-height:1.15!important;white-space:normal!important;overflow:hidden!important}',
+      // Dagstölur þéttar; listinn skrunar einn og endar ofan við fljótandi „Spyrja sérfræðing“
+      R + '>[data-bs-svaedi="vakt"]{padding:2px 0 0 12px!important}',
+      // Dagstölur í hausnum (≥1100 px): ein ljós flís hægra megin við titilinn, vinstra megin við takkana þrjá (176 px)
+      R + '>[data-bs-svaedi="vakt-haus"]{z-index:120!important;align-self:center!important;justify-self:end!important;margin:0 176px 0 300px!important;padding:3px 6px 3px 10px!important;' +
+        'display:flex!important;flex-direction:row-reverse!important;align-items:center!important;gap:10px!important;min-width:0!important;max-width:calc(100% - 476px)!important;' +
+        'border-radius:10px!important;background:linear-gradient(180deg,#fdfdfe,#e3e7ee)!important;border:1px solid #000!important;overflow:hidden!important}',
+      R + '>[data-bs-svaedi="vakt-haus"]>div:first-child{margin:0!important;flex:none!important}',
+      R + '>[data-bs-svaedi="vakt-haus"]>div:first-child>span{display:none!important}',
+      R + '>[data-bs-svaedi="vakt-haus"] #_bs-empchip{margin-left:0!important;height:34px!important;white-space:nowrap!important}',
+      R + '>[data-bs-svaedi="vakt-haus"]>#_bs-manudur{margin:0!important;padding:0!important;border:0!important;background:transparent!important;flex-wrap:nowrap!important;white-space:nowrap!important;gap:9px!important;min-width:0!important}',
+      '@media (max-width:1239px){' + R + '>[data-bs-svaedi="vakt-haus"]>#_bs-manudur .sl{display:none!important}}',
+      R + '>[data-bs-svaedi="listi"]{overflow-y:auto!important;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;min-height:0!important;padding:8px 0 14px 12px!important}',
+      // Stoppspjaldið: 234 px → um 185 px (mælt 27.11.2026). Staða + tækjalína í EINNI línu (reglan frá 07.10 hitti ekki lengur:
+      // Hleðslu-línan (466) bættist við á eftir, svo :last-of-type var orðin önnur lína), og kúnnapunkturinn (237) fer í hornið
+      // í stað þess að taka eigin línu undir tökkunum.
+      // (Prófað 27.11 og hætt við: flex-wrap:nowrap hér sparaði 27 px á spjald en klippti mánaðarrofann 📅 … ▾ af spjöldum
+      //  með langa stöðuflís, t.d. „Útrunnið (Febrúar, 25)“. Rofinn verður að sjást.)
+      'html body #view-bilstjori #_bs-list .stop__body>div>.stop__addr+div{margin-top:5px!important}',
+      'html body #view-bilstjori #_bs-list .stop>.cb-dot{position:absolute!important;top:9px!important;right:9px!important;margin:0!important}',
+      'html body #view-bilstjori #_bs-list .stop__name{padding-right:22px!important}',
+      // „Spyrja sérfræðing“ (494) af listanum yfir á neðra vinstra horn kortsins
+      'html.bs-spjald body .sa494{left:434px!important;bottom:22px!important}',
+      // Listinn er flex-dálkur með fasta hæð: án flex:none ÞJAPPAST spjöldin niður í 0 px í stað þess að skruna (mælt: auður listi).
+      R + '>[data-bs-svaedi="listi"]>*{flex:none!important}',
+      // Kortið fyllir dálkinn niður úr (hæðin kemur af reitnum, ekki af 100vh-reikningi)
+      R + '>[data-bs-svaedi="kort"]{position:static!important;align-self:stretch!important;min-height:0!important;padding:2px 12px 12px 0!important}',
+      'html body #view-bilstjori ._bs-root>[data-bs-svaedi="kort"] .map{height:100%!important;min-height:0!important}',
+      // Spjall-bólan flýtur neðst til hægri: zoom-takkar kortsins upp fyrir hana (bólan lá ofan á „−“)
+      'html body #view-bilstjori .leaflet-bottom.leaflet-right .leaflet-control-zoom{margin-bottom:150px!important}',
     ].join('\n');
   }
 
@@ -233,7 +286,7 @@
   }
 
   function raða() {
-    if (innerWidth < 900) { hreinsa(); return; }
+    if (innerWidth < 900) { hreinsa(); merkja(); return; }
     const root = document.querySelector('#view-bilstjori ._bs-root');
     if (!root) return;
     const born = Array.from(root.children);
@@ -263,14 +316,33 @@
       if (el.style.getPropertyValue('grid-row') !== row) el.style.setProperty('grid-row', row, 'important');
       if (svaedi && el.dataset.bsSvaedi !== svaedi) el.dataset.bsSvaedi = svaedi;
     };
-    set(haus, '1 / 3', '1');
-    set(prog, '1 / 3', '2');
-    set(leit, '1', '3');
-    set(siur, '1', '4');
-    set(vakt, '1', '5');
-    set(listi, '1', '6', 'listi');
-    set(kort, '2', '3 / 7', 'kort');
-    set(dokk, '1 / 3', '7');
+    // 27.11.2026 (Agnar: „þarf driverinn að fá gott app sem virkar í landscape mode í tablet“). Mælt í hermi á
+    // 1112×834 og 1280×720: haus, framvinda, leit, þrjár síuraðir og dagstölur tóku ~480 px ofan við listann, svo
+    // EITT stopp sást (á 720 px ekki einu sinni heilt), og „Keyra leið dagsins“ lá sem föst rönd neðst yfir lista
+    // og korti, undir „Spyrja sérfræðing“ og Vinnutölvu-merkinu. Nú: framvinda | Keyra í röð 2, leit | síur í röð 3
+    // (síurnar ein lárétt röð yfir kortinu), og listinn skrunar einn (rótin er jafn há og skjárinn).
+    set(haus, '1 / 3', '1', 'haus');
+    set(prog, '1', '2', 'prog');
+    set(dokk, '2', '2', 'keyra');
+    set(leit, '1', '3', 'leit');
+    set(siur, '2', '3', 'siur');
+    // Dagstölurnar (mánaðarstrimill + nafnarofi) fara UPP Í HAUSINN þegar breiddin leyfir (≥1100 px): reitir í grid mega
+    // skarast, og hausinn er auður milli titils og takkanna. Sparar ~105 px ofan við listann. Mjórri skjár (t.d. 1024):
+    // eigin röð ofan við listann eins og áður.
+    const ihaus = innerWidth >= 1100;
+    set(vakt, ihaus ? '1 / 3' : '1', ihaus ? '1' : '4', ihaus ? 'vakt-haus' : 'vakt');
+    set(listi, '1', '5', 'listi');
+    set(kort, '2', '4 / 6', 'kort');
+    merkja();
+  }
+
+  /* html.bs-spjald = Bílstjóri er sýnin sem er opin, á ≥900 px. Fljótandi „Spyrja sérfræðing“ (494, fastur neðst til
+   * vinstri) lá ofan á stoppalistanum; með klasanum færist hann yfir kortið. Klasi á <html>, ekki :has() (audit-kyrrd). */
+  function merkja() {
+    const v = document.getElementById('view-bilstjori');
+    const a = !!(v && v.classList.contains('active') && innerWidth >= 900);
+    const h = document.documentElement;
+    if (h.classList.contains('bs-spjald') !== a) h.classList.toggle('bs-spjald', a);
   }
 
   function hreinsa() {
@@ -313,6 +385,8 @@
       }
     }).observe(v, { childList: true, subtree: true });
     addEventListener('hashchange', puls);
+    // Sýnin fær/missir .active við skipti — þá fylgir html.bs-spjald strax (annars sæti „Spyrja sérfræðing“ færður á næstu síðu).
+    new MO(() => { try { merkja(); } catch (_) {} }).observe(v, { attributes: true, attributeFilter: ['class'] });
     // Fyrirtækjaspjaldið (._bs-sheet) fær .in þegar það rennur inn — þá fær sýnin _spjald-opid og kortið víkur.
     const spjaldVakt = () => { const inn = !!document.querySelector('._bs-sheet.in'); if (v.classList.contains('_spjald-opid') !== inn) v.classList.toggle('_spjald-opid', inn); };
     new MO(ms => { for (const m of ms) { if (m.target.classList && m.target.classList.contains('_bs-sheet')) { spjaldVakt(); return; } } }).observe(document.body, { attributes: true, attributeFilter: ['class'], subtree: true });
