@@ -181,10 +181,13 @@
     '#_sz-stika .rod button{width:32px;flex:none}',
 
     /* Fljótandi takkar í einni röð undir efninu, ekki ofan á spjöldunum. */
-    '#_simi-dock{display:none}',
-    'html.slokk-phone-dev #_simi-dock,html[data-viewmode="mobile"] #_simi-dock,body.appmode #_simi-dock{',
-    'display:flex;position:fixed;left:0;right:0;bottom:0;z-index:2147481500;height:64px;box-sizing:border-box;',
+    /* 27.11.2026: staðsetningin er á GRUNNREGLUNNI, ekki aðeins undir síma-selectorunum. lyftaBolu() sýnir stikuna
+       líka þegar glugginn er ≤ 900 px (simiSkjar), t.d. upprétt spjaldtölva (834) í Skjár- eða Töflu-ham. Þar
+       náðu síma-selectorarnir ekki til hennar, svo hún varð 200 px dálkur við hlið síðunnar með „Spyrja
+       sérfræðing" teygðan í fulla hæð (mælt í hermi: #_simi-dock x 633–834, #view-bord 0–633). */
+    '#_simi-dock{display:none;position:fixed;left:0;right:0;bottom:0;z-index:2147481500;height:64px;box-sizing:border-box;',
     'padding:6px 10px;align-items:center;justify-content:flex-end;gap:8px;background:#0c0d10;border-top:1px solid #000}',
+    'html.slokk-phone-dev #_simi-dock,html[data-viewmode="mobile"] #_simi-dock,body.appmode #_simi-dock{display:flex}',
     '#_simi-dock > *{position:relative!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;transform:none!important;margin:0!important;flex:none}'
   ].join('');
 

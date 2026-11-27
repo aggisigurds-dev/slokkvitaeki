@@ -25,11 +25,12 @@
  *   <mark>   #sýn (t.d. "#bord") · /slóð · full slóð (http…, líka localhost) · skrá á diski (mockup.html)
  *
  *   --vefur slokk|bh|kjarni|<url>   grunnur fyrir #sýn og /slóð (sjálfgefið slokk)
- *   --taeki 360,390,412             tæki, sjá TAEKI hér að neðan (skot: sjálfgefið 360,390,412 · opna: 390)
+ *   --taeki 360,390,412             tæki: 360 390 412 430 · tafla (834) · tafla-l (spjaldtölva á hlið, 1112) ·
+ *                                   tolvu (sími í tölvuútgáfu) · tolva (1440). Skot: sjálfgefið 360,390,412 · opna: 390
  *   --heil                          öll síðan niður úr, ekki aðeins fyrsti skjárinn
  *   --bid 7000                      bið eftir teikningu í ms
  *   --js "<kóði>"                   keyrt í síðunni fyrir myndatöku (opna flipa, skruna, smella á prófunartakka)
- *   --hamur sjalf|simi|enginn       sýnarhamur Slökkvitækis: sjalf = þvinga aðeins ef appið valdi ekki síma (sjálfgefið)
+ *   --hamur sjalf|thvinga|enginn    sýnarhamur Slökkvitækis (sími/tafla): sjalf = þvinga aðeins ef appið valdi annað (sjálfgefið)
  *   --ut <mappa>                    hvert myndirnar fara (sjálfgefið tímastimpluð mappa í TEMP)
  *   --kaka <gildi>                  lotu-kaka (uid 10). Betra: umhverfisbreytan HERMIR_KAKA. Aldrei skrifuð í skrá.
  *
@@ -53,18 +54,26 @@ const VEFIR = {
 
 const UA_ANDROID = 'Mozilla/5.0 (Linux; Android 15; SM-S931B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36';
 const UA_IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
+const UA_TAFLA = UA_ANDROID.replace('SM-S931B', 'SM-X710').replace(' Mobile', '');
 const UA_TOLVA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
-/* simi = á síminn að teikna símaútlit hér (þá er sýnarhamur Slökkvitækis sannreyndur). */
+/* simi = símarammi á samanburðarmynd · vm = sýnarhamur sem Slökkvitæki á að velja á þessu tæki (sannreyndur) ·
+ * rammi = gildið í ?devframe= sem þvingar þann ham (patch 320: simi | tafla | taflaL). */
 const TAEKI = {
-  '360':   { heiti: 'Android 360', w: 360, h: 780, dsf: 2, ua: UA_ANDROID, snerting: true, farsimi: true, simi: true },
-  '390':   { heiti: 'iPhone 390', w: 390, h: 844, dsf: 2, ua: UA_IPHONE, snerting: true, farsimi: true, simi: true },
-  '412':   { heiti: 'Android 412', w: 412, h: 915, dsf: 2, ua: UA_ANDROID, snerting: true, farsimi: true, simi: true },
-  '430':   { heiti: 'Stór sími 430', w: 430, h: 860, dsf: 2, ua: UA_ANDROID, snerting: true, farsimi: true, simi: true },
-  'tafla': { heiti: 'Spjaldtölva 834', w: 834, h: 1112, dsf: 1, ua: UA_ANDROID.replace(' Mobile', ''), snerting: true, farsimi: true, simi: false },
+  '360':   { heiti: 'Android 360', w: 360, h: 780, dsf: 2, ua: UA_ANDROID, snerting: true, farsimi: true, simi: true, vm: 'mobile', rammi: 'simi' },
+  '390':   { heiti: 'iPhone 390', w: 390, h: 844, dsf: 2, ua: UA_IPHONE, snerting: true, farsimi: true, simi: true, vm: 'mobile', rammi: 'simi' },
+  '412':   { heiti: 'Android 412', w: 412, h: 915, dsf: 2, ua: UA_ANDROID, snerting: true, farsimi: true, simi: true, vm: 'mobile', rammi: 'simi' },
+  '430':   { heiti: 'Stór sími 430', w: 430, h: 860, dsf: 2, ua: UA_ANDROID, snerting: true, farsimi: true, simi: true, vm: 'mobile', rammi: 'simi' },
+  'tafla': { heiti: 'Spjaldtölva 834', w: 834, h: 1112, dsf: 1, ua: UA_TAFLA, snerting: true, farsimi: true, simi: false, vm: 'table', rammi: 'tafla' },
+  'tafla-l': { heiti: 'Spjaldtölva á hlið 1112', w: 1112, h: 834, dsf: 1, ua: UA_TAFLA, snerting: true, farsimi: true, simi: false, vm: 'table', rammi: 'taflaL' },
+  // Lenovo Tab 10,1" (mynd frá Agnari 27.11.2026: 23,57 × 15,45 cm, 25,65 cm skjár). 1280 × 800 er ÁÆTLAÐ af 1920 × 1200
+  // skjá við 1,5 þéttleika, ekki mælt á tækinu; hæðin 720 dregur frá stöðu- og vafrastiku. Staðfesta með raunskjáskoti.
+  'lenovo': { heiti: 'Lenovo Tab 10,1″ á hlið 1280 (áætlað)', w: 1280, h: 720, dsf: 1.5, ua: UA_TAFLA, snerting: true, farsimi: true, simi: false, vm: 'table', rammi: 'taflaL', skjar: { width: 1280, height: 800 } },
+  'lenovo-p': { heiti: 'Lenovo Tab 10,1″ upprétt 800 (áætlað)', w: 800, h: 1160, dsf: 1.5, ua: UA_TAFLA, snerting: true, farsimi: true, simi: false, vm: 'table', rammi: 'tafla', skjar: { width: 800, height: 1280 } },
   'tolvu': { heiti: 'Sími í tölvuútgáfu 1230', w: 1230, h: 2732, dsf: 1, ua: UA_TOLVA, snerting: true, farsimi: false, simi: false, skjar: { width: 412, height: 915 } },
   'tolva': { heiti: 'Tölva 1440', w: 1440, h: 900, dsf: 1, ua: null, snerting: false, farsimi: false, simi: false },
 };
+TAEKI.taflaL = TAEKI['tafla-l'];   // sama heiti og í Stílstjóra
 
 function rokin(argv) {
   const o = { skipun: argv[2], mork: [], vefur: 'slokk', taeki: null, heil: false, bid: 7000, js: null, hamur: 'sjalf', ut: null, kaka: process.env.HERMIR_KAKA || null };
@@ -78,7 +87,7 @@ function rokin(argv) {
     else if (a === '--hamur') o.hamur = argv[++i];
     else if (a === '--ut') o.ut = argv[++i];
     else if (a === '--kaka') o.kaka = argv[++i];
-    else o.mork.push(a.replace(/^[A-Za-z]:[\/]Program Files[\/]Git[\/]?/, '/'));   // Git Bash breytir "/slod" í Windows-slóð
+    else o.mork.push(a.replace(/^[A-Za-z]:[\\/]Program Files[\\/]Git[\\/]?/, '/'));   // Git Bash breytir "/slod" í Windows-slóð
   }
   if (!o.mork.length && (o.skipun === 'opna' || process.argv.includes('--vefur'))) o.mork.push('/');
   return o;
@@ -93,25 +102,55 @@ function saekjaPlaywright() {
 
 function grunnur(o) { return VEFIR[o.vefur] || o.vefur; }
 
+/* Skrá á diski? "#sýn" og "/slóð" eru alltaf á vefnum ("/" er til sem mappa á diski, það er ekki skrá). */
+function erSkra(mark) {
+  if (mark.startsWith('#') || mark.startsWith('/') || /^https?:/i.test(mark)) return false;
+  try { return fs.statSync(mark).isFile(); } catch (_) { return false; }
+}
+
 /* #sýn, /slóð, full slóð eða skrá á diski → slóð sem vafrinn opnar. */
 function slodFyrir(mark, o) {
   if (/^https?:\/\//i.test(mark) || /^file:/i.test(mark)) return mark;
-  if (!mark.startsWith('#') && fs.existsSync(mark)) return pathToFileURL(path.resolve(mark)).href;
+  if (erSkra(mark)) return pathToFileURL(path.resolve(mark)).href;
   return new URL(mark, grunnur(o)).href;
 }
 
-function erSlokk(slod) {
-  try { return /(^|\.)slokkvitaeki\.netlify\.app$/.test(new URL(slod).hostname); } catch (_) { return false; }
+function erStadbundid(slod) {
+  try { return /^(localhost|127\.0\.0\.1)$/.test(new URL(slod).hostname); } catch (_) { return false; }
 }
 
-function medDevframe(slod) {
+function erSlokk(slod, o) {
+  try { return /(^|\.)slokkvitaeki\.netlify\.app$/.test(new URL(slod).hostname) || (erStadbundid(slod) && o && o.vefur === 'slokk'); } catch (_) { return false; }
+}
+
+/* Staðbundinn þjónn (npx serve) á engin föll: /api/ og /.netlify/functions/ eru sótt af lifandi vefnum (--vefur) með
+ * lotukökunni, annars stoppar appið á innskráningarskjánum. AÐEINS lestur: öllu öðru en GET/HEAD/OPTIONS er svarað
+ * með tómu {} og það fer aldrei af vélinni. Supabase-köll vafrans fara áfram beint í grunninn, eins og á lifandi síðu. */
+async function tengjaApi(ctx, slod, o) {
+  const lifandi = grunnur(o);
+  if (!erStadbundid(slod) || !/^https:/i.test(lifandi) || erStadbundid(lifandi)) return false;
+  const stadur = new URL(slod).origin;
+  await ctx.route(u => u.origin === stadur && (u.pathname.startsWith('/api/') || u.pathname.startsWith('/.netlify/functions/')), async route => {
+    const req = route.request();
+    if (!/^(GET|HEAD|OPTIONS)$/.test(req.method())) return route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
+    const u = new URL(req.url());
+    const hausar = Object.assign({}, req.headers());
+    delete hausar.host; delete hausar.origin; delete hausar.referer;
+    if (o.kaka) hausar.cookie = 'hub_user=' + o.kaka;
+    try { const r = await route.fetch({ url: new URL(u.pathname + u.search, lifandi).href, headers: hausar, timeout: 45000 }); return route.fulfill({ response: r }); }
+    catch (_) { return route.abort(); }
+  });
+  return true;
+}
+
+function medDevframe(slod, rammi) {
   const u = new URL(slod);
-  u.searchParams.set('devframe', 'simi');
+  u.searchParams.set('devframe', rammi || 'simi');
   return u.href;
 }
 
 function nafnFyrir(mark) {
-  if (!/^https?:/i.test(mark) && !mark.startsWith('#') && fs.existsSync(mark)) mark = path.basename(mark).replace(/.html?$/i, '');
+  if (erSkra(mark)) mark = path.basename(mark).replace(/\.html?$/i, '');
   const n = mark.replace(/^https?:\/\//i, '').replace(/^file:\/+/i, '').replace(/[^a-zA-Z0-9áðéíóúýþæöÁÐÉÍÓÚÝÞÆÖ]+/g, '-').replace(/^-+|-+$/g, '');
   return (n || 'forsida').slice(-48);
 }
@@ -153,18 +192,19 @@ async function einMynd(vafri, lykill, mark, o, ut) {
   let slod = slodFyrir(mark, o);
   const ctx = await vafri.newContext(samhengi(t));
   await setjaKoku(ctx, slod, o.kaka);
+  await tengjaApi(ctx, slod, o);
   const page = await ctx.newPage();
   const hlada = async (s) => {
     await page.goto(s, { waitUntil: 'load', timeout: 90000 }).catch(e => { throw new Error(lykill + ': ' + e.message.split('\n')[0]); });
     await page.waitForTimeout(o.bid);
   };
   let thvingad = false;
-  if (o.hamur === 'simi' && t.simi && /^https?:/i.test(slod)) { slod = medDevframe(slod); thvingad = true; }
+  if ((o.hamur === 'simi' || o.hamur === 'thvinga') && t.vm && /^https?:/i.test(slod)) { slod = medDevframe(slod, t.rammi); thvingad = true; }
   await hlada(slod);
   let m = await page.evaluate(MAELA);
   // Slökkvitæki velur símaútlit af sýnarham, ekki breidd: valdi appið annað á símatæki → sami farvegur og 📱-ramminn.
-  if (o.hamur === 'sjalf' && t.simi && erSlokk(slod) && m.hamur && m.hamur !== 'mobile') {
-    slod = medDevframe(slod); thvingad = true;
+  if (o.hamur === 'sjalf' && t.vm && erSlokk(slod, o) && m.hamur && m.hamur !== t.vm) {
+    slod = medDevframe(slod, t.rammi); thvingad = true;
     await hlada(slod);
     m = await page.evaluate(MAELA);
   }
@@ -177,7 +217,7 @@ async function einMynd(vafri, lykill, mark, o, ut) {
 
 /* Allar myndir eins marks hlið við hlið, hver í sínum ramma með mælingunni undir. */
 async function samanburdur(vafri, mark, nidurstodur, ut, o) {
-  const SYND = 300;   // sýnd breidd hvers síma á samanburðarmyndinni
+  const synd = t => t.w <= 430 ? 300 : t.w <= 900 ? 440 : 640;   // sýnd breidd tækis á samanburðarmyndinni
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const spjold = nidurstodur.map(r => {
     const flaedir = r.m.sw > r.m.iw + 1;
@@ -188,14 +228,14 @@ async function samanburdur(vafri, mark, nidurstodur, ut, o) {
       r.m.smairTakkar ? r.m.smairTakkar + ' takkar undir 36 px' : null,
       r.m.hamur ? 'hamur: ' + esc(r.m.hamur) + (r.thvingad ? ' (þvingaður)' : '') : null,
     ].filter(Boolean).join('<br>');
-    return '<figure><figcaption>' + esc(r.t.heiti) + '</figcaption><div class="simi' + (r.t.simi ? '' : ' flatt') + '"><img src="' + pathToFileURL(r.skra).href + '"></div><p>' + linur + '</p></figure>';
+    return '<figure style="width:' + (synd(r.t) + 16) + 'px"><figcaption>' + esc(r.t.heiti) + '</figcaption><div class="simi' + (r.t.simi ? '' : ' flatt') + '"><img style="width:' + synd(r.t) + 'px" src="' + pathToFileURL(r.skra).href + '"></div><p>' + linur + '</p></figure>';
   }).join('');
   const html = '<!doctype html><meta charset="utf-8"><style>' +
     'body{margin:0;padding:22px 24px 26px;background:#e9ebef;font:13px/1.45 "Segoe UI",system-ui,sans-serif;color:#1c1f26;display:inline-block}' +
     'h1{font-size:15px;margin:0 0 4px;font-weight:700}small{color:#5d6470}' +
-    '.rod{display:flex;gap:22px;align-items:flex-start;margin-top:16px}' +
-    'figure{margin:0;width:' + (SYND + 16) + 'px}figcaption{font-weight:700;margin:0 0 6px 4px;font-size:13px}' +
-    '.simi{background:#101216;padding:8px;border-radius:26px;box-shadow:0 8px 22px rgba(0,0,0,.22)}.simi img{display:block;width:' + SYND + 'px;border-radius:19px}' +
+    '.rod{display:flex;gap:22px;align-items:flex-start;margin-top:16px;width:max-content}' +
+    'figure{margin:0;flex:none}figcaption{font-weight:700;margin:0 0 6px 4px;font-size:13px}' +
+    '.simi{background:#101216;padding:8px;border-radius:26px;box-shadow:0 8px 22px rgba(0,0,0,.22)}.simi img{display:block;border-radius:19px}' +
     '.simi.flatt{border-radius:10px}.simi.flatt img{border-radius:3px}' +
     'p{margin:8px 4px 0;font-size:12px;color:#4b515c}.v{color:#b3261e}' +
     '</style><h1>' + esc(mark) + '</h1><small>Símahermir · ' + new Date().toLocaleString('sv-SE').slice(0, 16) + (o.heil ? ' · öll síðan' : ' · fyrsti skjár') + ' · prófað í hermi, ekki í raunsíma</small><div class="rod">' + spjold + '</div>';
@@ -249,7 +289,7 @@ async function opna(o) {
   const t = TAEKI[lykill];
   if (!t) { console.error('Óþekkt tæki: ' + lykill + '. Til: ' + Object.keys(TAEKI).join(', ')); process.exit(2); }
   let slod = slodFyrir(o.mork[0] || '/', o);
-  if (o.hamur !== 'enginn' && t.simi && erSlokk(slod)) slod = medDevframe(slod);
+  if (o.hamur !== 'enginn' && t.vm && erSlokk(slod, o)) slod = medDevframe(slod, t.rammi);
   const { chromium } = saekjaPlaywright();
   const profill = path.join(process.env.LOCALAPPDATA || os.homedir(), 'simahermir-profill');
   const h = Math.min(t.h, 900);
@@ -263,9 +303,9 @@ async function opna(o) {
     try { ctx = await chromium.launchPersistentContext(profill, ras ? Object.assign({ channel: ras }, stillingar) : stillingar); break; }
     catch (e) { sidasta = e; }
   }
-  if (!ctx) throw new Error('Enginn vafri opnaðist: ' + sidasta.message.split('
-')[0]);
+  if (!ctx) throw new Error('Enginn vafri opnaðist: ' + sidasta.message.split('\n')[0]);
   await setjaKoku(ctx, slod, o.kaka);
+  if (await tengjaApi(ctx, slod, o)) console.log('Staðbundinn þjónn: API lesið af ' + grunnur(o) + ', skrif um /api/ stöðvuð.');
   const page = ctx.pages()[0] || await ctx.newPage();
   await page.goto(slod, { waitUntil: 'domcontentloaded', timeout: 90000 }).catch(e => console.error(e.message.split('\n')[0]));
   console.log('SÍMAHERMIR · opinn gluggi · ' + t.heiti + ' · ' + slod);

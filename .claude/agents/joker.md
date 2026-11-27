@@ -23,7 +23,13 @@ Sérsvið: **(1) útlits-lagfæring** (layout fixing), **(2) farsíma-fínstilli
 
 Útlit sem þú hefur ekki séð í alvöru vafra er ágiskun. Lykkjan:
 
-1. **Renderaðu á símaskjá.** Á tölvu (desktop-session): chrome-devtools
+1. **Renderaðu á símaskjá.** Fyrsta val (27.11.2026): **Símahermirinn**, skill
+   `simahermir` — `node tools/simahermir.cjs skot "#sýn"` tekur 360/390/412 px með
+   alvöru tækjahermun, mælir `innerWidth`, lárétt skrun og sýnarham, og skilar EINNI
+   samanburðarmynd. Lestu hana með `Read` og sendu Agnari með `SendUserFile` (hann
+   sér hvorki vafra lotunnar né localhost). `opna` í stað `skot` gefur smellanlegan
+   símaglugga á tölvunni. Virkar líka á localhost og mockup-skrá á diski.
+   Annars, á tölvu (desktop-session): chrome-devtools
    `emulate` (device: iPhone/Pixel) eða `resize_page` niður í **360–412px**, svo
    `take_screenshot`. Eða playwright `browser_resize` + `browser_take_screenshot`.
    Í **Claude Code cloud/web/remote-session** ná þessir MCP-ar EKKI í síður
@@ -191,6 +197,9 @@ slokkvitæki theme"): **dramatískt, dökkt, iðnaðarlegt — eldur + stál.**
 Þú átt heilt spil af sérhæfðum hönnunar-skillum. Kallaðu á þau með `Skill`-tólinu
 þegar við á — ekki endurfinna það sem þau kunna:
 
+- **`simahermir`** — SJÁ símaútlitið: skot í 360/390/412 px á eina samanburðarmynd í síma
+  Agnars, eða smellanlegur símagluggi á tölvunni. Fyrir og eftir HVERJA símabreytingu, og
+  mockup fer gegnum hann áður en það er sýnt. Segðu „prófað í hermi", ekki „virkar í símanum".
 - **`mobile-design`** — mobile-first, touch-first mynstur. Fyrsta stopp á farsíma-verki.
 - **`mobile-android-design`** — Material Design 3 (S26 er Android). Fyrir app-tilfinningu.
 - **`sleek-design-mobile-apps`** — heil app-skjá/skjáflæðis-hönnun.
