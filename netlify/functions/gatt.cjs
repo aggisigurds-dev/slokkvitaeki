@@ -1165,7 +1165,7 @@ exports.handler = async (event) => {
           const ta = String(k.thjonustuadili || '');
           (kerfiById[k.fyrirtaeki_id] = kerfiById[k.fyrirtaeki_id] || []).push({
             k: k.kerfi, skylt: k.skylt || null, til: k.til_stadar || 'ovitad',
-            adili: /^okkar/i.test(ta) ? 'okkar' : (ta ? 'annar' : null), heimild: k.krafa_heimild || null, skilyrdi: k.skilyrdi || null, url: k.krafa_url || null });
+            adili: /^okkar/i.test(ta) ? (/í vinnslu/i.test(ta) ? 'vinnslu' : 'okkar') : (ta ? 'annar' : null), heimild: k.krafa_heimild || null, skilyrdi: k.skilyrdi || null, url: k.krafa_url || null });
         });
         const fl = await Q.flokkun;
         if (fl.ok) (await fl.json()).forEach((f) => { flokkunById[f.fyrirtaeki_id] = { tegund: f.tegund_heiti || null, flokkur: f.notkunarflokkur || null, m2: f.m2 != null ? Number(f.m2) : null, haedir: f.haedir || null }; });

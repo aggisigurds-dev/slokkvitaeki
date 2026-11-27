@@ -2022,7 +2022,7 @@
     vatnsudakerfi: 'Vatnsúðakerfi', neydarlysing: 'Neyðarlýsing', utljos: 'Útljós og leiðamerkingar', reyklosun: 'Reyklosun', stigleidsla: 'Stigleiðsla', eldvarnarteppi: 'Eldvarnarteppi',
     brunathettingar: 'Brunaþéttingar', eldvarnaeftirlit: 'Eldvarnaeftirlit (árlegt)', slokkvikerfi_eldhus: 'Slökkvikerfi í eldhúsháfi',
     rymingaruppdrattur: 'Rýmingaruppdráttur', fjoldaskilti: 'Fjöldaskilti' };
-  var KST_HEITI = { okkar: 'Í þjónustu hjá okkur', til: 'Til staðar', vantar: 'Skylt — vantar', ekki: 'Ekki til staðar', oskrad: 'Óskráð' };
+  var KST_HEITI = { okkar: 'Í þjónustu hjá okkur', vinnslu: 'Þjónusta í vinnslu', til: 'Til staðar', vantar: 'Skylt — vantar', ekki: 'Ekki til staðar', oskrad: 'Óskráð' };
   // 26.10.2026 (Agnar: „hafa stóran staf fyrst alltaf — Nóv, Des, Sep"): stuttu mánaðarheitin með stórum staf
   var MAN_STUTT = ['Jan', 'Feb', 'Mar', 'Apr', 'Maí', 'Jún', 'Júl', 'Ágú', 'Sep', 'Okt', 'Nóv', 'Des'];
   var ER_TEG = { verkbeidni: 'Verkbeiðni', thjonusta: 'Þjónusta', fyrirspurn: 'Fyrirspurn', eldvarnabok: 'Eldvarnabók', gogn: 'Gagnabeiðni', annad: 'Annað', reikningur: 'Reikningur', verkefni: 'Verkefni', pontun: 'Pöntun' };
@@ -2030,6 +2030,8 @@
 
   function kerfiStada(k) {
     if (k.adili === 'okkar') return 'okkar';
+    // 27.11.2026 (Agnar: „skýrðu bara þjónusta í vinnslu, blátt"): samningur um kerfið er í vinnslu — thjonustuadili „okkar — í vinnslu"
+    if (k.adili === 'vinnslu') return 'vinnslu';
     if (k.til === 'ja') return 'til';
     if (k.til === 'nei') return k.skylt === 'ja' ? 'vantar' : 'ekki';
     return 'oskrad';
@@ -2139,7 +2141,7 @@
     var L = kerfiRod(b.kerfi);
     if (!syn.kerfi || !L.length) return '';
     var f = b.flokkun || {};
-    var tel = { okkar: 0, til: 0, vantar: 0, oskrad: 0, ekki: 0 };
+    var tel = { okkar: 0, vinnslu: 0, til: 0, vantar: 0, oskrad: 0, ekki: 0 };
     var rows = L.map(function (k) {
       var st = kerfiStada(k); tel[st]++;
       var sid = null, nae = null, skj = null;
@@ -2155,12 +2157,12 @@
           '<div class="ks"' + (k.heimild ? ' title="' + esc(k.heimild) + '"' : '') + '>' + (k.skylt === 'ja' ? 'Skylt' : k.skylt === 'skilyrt' ? 'Skilyrt — fer eftir stærð og notkun' : 'Ekki skylt') + '</div></td>' +
         '<td>' + (k.til === 'ja' ? 'Já' : k.til === 'nei' ? 'Nei' : '<span class="dim">Óvitað</span>') + '</td>' +
         (utan ? '' : '<td class="num">' + (sid ? esc(fmtDate(sid)) : '<span class="dim">—</span>') + '</td><td class="num">' + (nae ? esc(manTxt(nae)) : '<span class="dim">—</span>') + '</td>') +
-        '<td>' + (k.adili === 'okkar' ? 'Slökkvitæki ehf.' : k.adili === 'annar' ? 'Annar aðili' : '<span class="dim">—</span>') + '</td>' +
+        '<td>' + (k.adili === 'okkar' || k.adili === 'vinnslu' ? 'Slökkvitæki ehf.' : k.adili === 'annar' ? 'Annar aðili' : '<span class="dim">—</span>') + '</td>' +
         '<td><span class="kst ' + (seint ? 'vantar' : st) + '">' + esc(seint ? 'Á eftir' : KST_HEITI[st]) + '</span>' +
           '<button type="button" class="kbtn xs" data-kerfi-skra="' + esc(k.k) + '" data-sid="' + b.id + '" title="Skrá hvort kerfið er til staðar og hver þjónustar það">' + (st === 'oskrad' ? 'Skrá' : 'Breyta') + '</button></td>' +
         (utan ? '' : '<td class="r">' + (skj && skj.docId ? docLink('PDF', skj.docId) : '<span class="dim">—</span>') + '</td>') + '</tr>';
     }).join('');
-    var cnt = [tel.okkar ? tel.okkar + ' hjá okkur' : '', tel.til ? tel.til + ' til staðar' : '', tel.vantar ? tel.vantar + ' vantar' : '', tel.oskrad ? tel.oskrad + ' óskráð' : '']
+    var cnt = [tel.okkar ? tel.okkar + ' hjá okkur' : '', tel.vinnslu ? tel.vinnslu + ' í vinnslu' : '', tel.til ? tel.til + ' til staðar' : '', tel.vantar ? tel.vantar + ' vantar' : '', tel.oskrad ? tel.oskrad + ' óskráð' : '']
       .filter(Boolean).join(' · ');
     return '<section class="dsec"><h4>' + (utan ? 'Kerfi og kröfur' : 'Kerfi og skoðanir') + ' <span class="cnt">' + esc(cnt) + '</span></h4>' +
       '<div class="dpanel"><table class="ktbl"><thead><tr><th>Kerfi</th><th>Til staðar</th>' + (utan ? '' : '<th>Síðast</th><th>Næst</th>') +
