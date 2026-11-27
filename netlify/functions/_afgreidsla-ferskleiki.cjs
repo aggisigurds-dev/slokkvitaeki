@@ -45,11 +45,13 @@ async function athugaFerskleika(row, lesa, nu) {
   let urelt = null;
   const { drog, reikn, upphaedir } = tilvisanir(textiVerks(row));
 
-  // 1. Drög
+  // 1. Drög. Farin drög loka AÐEINS sínum hluta: nefni verkið líka ógreiddan reikning (Nesdekk #65: drög #342 farin, en
+  //    R-001198 enn ógreiddur) stendur verkið, með línu um að drögin séu farin. Sjá `dregUrelt` neðst.
+  let dregUrelt = null;
   for (const id of drog.slice(0, 4)) {
     const d = (await lesa(`invoice_drafts?select=id,kennitala,total_m_vsk,status,payday_invoice_id,customer_name&id=eq.${id}&limit=1`))[0];
     if (!d) continue;
-    if (d.payday_invoice_id) { urelt = 'Drög #' + id + ' eru farin í Payday'; break; }
+    if (d.payday_invoice_id) { dregUrelt = 'Drög #' + id + ' eru farin í Payday'; break; }
     const kt = String(d.kennitala || '').replace(/\D/g, '');
     if (kt.length === 10 && kr(d.total_m_vsk) > 0) {
       const ktF = kt.slice(0, 6) + '-' + kt.slice(6);
@@ -57,7 +59,7 @@ async function athugaFerskleika(row, lesa, nu) {
         `&status=in.(SENT,PAID)&order=utgafudagur.desc&limit=20`);
       const sama = inv.find((i) => Math.abs(kr(i.upphaed_total) - kr(d.total_m_vsk)) <= 1);
       if (sama) {
-        urelt = 'Drög #' + id + ' fóru út sem reikningur ' + sama.tilvisun + ' (' + krIs(sama.upphaed_total) + ', útg. ' + dags(sama.utgafudagur) + ')' +
+        dregUrelt = 'Drög #' + id + ' fóru út sem reikningur ' + sama.tilvisun + ' (' + krIs(sama.upphaed_total) + ', útg. ' + dags(sama.utgafudagur) + ')' +
           (sama.status === 'PAID' ? ' og hann er greiddur' : '');
         break;
       }
@@ -66,7 +68,8 @@ async function athugaFerskleika(row, lesa, nu) {
   }
 
   // 2. Reikningar sem verkið nefnir — aðeins þeir sem upphæðin í textanum staðfestir
-  if (!urelt && reikn.length && upphaedir.length) {
+  let ogreiddir = 0;
+  if (reikn.length && upphaedir.length) {
     const nums = reikn.slice(0, 6);
     const [sol, inv] = await Promise.all([
       lesa(`solur?select=num,samtals,paid_at,krafa_sent_at,status&num=in.(${nums.map((n) => 'R-' + String(n).padStart(6, '0')).join(',')})`).catch(() => []),
@@ -80,11 +83,17 @@ async function athugaFerskleika(row, lesa, nu) {
     if (fundnir.length && fundnir.every((f) => f.greitt)) {
       urelt = fundnir.map((f) => f.heiti + ' greiddur' + (f.greitt !== true ? ' ' + dags(f.greitt) : '')).join(', ');
     } else {
+      ogreiddir = fundnir.filter((x) => !x.greitt).length;
       for (const f of fundnir.filter((x) => !x.greitt)) {
         const yfir = f.eindagi ? dagarFra(f.eindagi, nu) : null;
         a.push({ texti: f.heiti + ' (' + krIs(f.kr) + ') er enn ógreiddur' + (yfir != null && yfir > 0 ? ', ' + yfir + ' dögum eftir eindaga' : '') + ' — mælt núna', ok: true });
       }
     }
+  }
+
+  if (dregUrelt) {
+    if (ogreiddir) { a.unshift({ texti: dregUrelt + ' — sá hluti verksins er búinn; ógreiddi reikningurinn hér að neðan stendur', ok: true }); urelt = null; }
+    else if (!urelt) urelt = dregUrelt;
   }
 
   // 3. Aldur

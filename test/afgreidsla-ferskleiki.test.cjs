@@ -34,6 +34,16 @@ function lesaMock(svor) {
     assert.ok(lesa.kollud.some((q) => /kt_greidanda=in\.\(420296-2079,4202962079\)/.test(q)), 'leitar á kt drögnanna');
   });
 
+  await t('Nesdekk símtal #65: drög farin EN R-001198 ógreiddur → stendur, með línu um drögin', async () => {
+    const lesa = lesaMock([['invoice_drafts', [DROG]], ['invoices?select=tilvisun,upphaed_total,status,utgafudagur', [INV391]],
+      ['solur', [{ num: 'R-001198', samtals: 364807, paid_at: null, krafa_sent_at: '2026-11-09', status: 'final' }]], ['invoices', []]]);
+    const row = { tegund: 'simtal', titill: 'Nesdekk (Óli): svara pósti', gogn: { handrit: 'Drög #342 ... Reikningur R-001198 fyrir skoðun, 364.807 kr., fór sem krafa' }, created_at: '2026-11-17T10:00:00Z' };
+    const s = await F.athugaFerskleika(row, lesa, NU);
+    assert.strictEqual(s.urelt, null, String(s.urelt));
+    assert.ok(s.a.some((x) => /reikningur 391.*sá hluti verksins er búinn/.test(x.texti)), JSON.stringify(s.a));
+    assert.ok(s.a.some((x) => /R-001198 \(364\.807 kr\) er enn ógreiddur/.test(x.texti)), JSON.stringify(s.a));
+  });
+
   await t('Drög enn ófarin → ekki úrelt, lína „mælt núna"', async () => {
     const lesa = lesaMock([['invoice_drafts', [DROG]], ['invoices', []]]);
     const s = await F.athugaFerskleika({ tegund: 'verk', titill: 'Drög #342 bíða', gogn: {}, created_at: '2026-11-26T10:00:00Z' }, lesa, NU);
