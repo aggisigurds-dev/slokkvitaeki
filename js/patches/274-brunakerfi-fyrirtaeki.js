@@ -170,7 +170,7 @@
       const r = await sb.from('brunakerfi_skyrslur').update(upd).eq('id', rep.id);
       if (r.error) { toast('Skýrslan vistaðist EKKI: ' + r.error.message, true); return; }
       if (upd.year) rep.year = upd.year;
-      toast((linurBreyttar || linurMerkt) ? 'Skýrsla vistuð ✓ · verðlínur fylgja búnaðinum' : 'Skýrsla vistuð ✓');
+      toast(((linurBreyttar || linurMerkt) ? 'Skýrsla vistuð ✓ · verðlínur fylgja búnaðinum' : 'Skýrsla vistuð ✓') + (rep.status === 'final' ? ' — ýttu á „↻ Uppfæra PDF" þegar þú ert búinn' : ''));
       if (linurBreyttar) { try { render(); } catch (_) {} }
     } catch (e) { toast('Skýrslan vistaðist EKKI: ' + ((e && e.message) || e), true); }
   }
@@ -1164,7 +1164,9 @@
     //   • Drög eru ALLTAF opin á blaðinu. Aðeins lokin (send) skýrsla heldur aflæsingarhnappnum, því breyting á henni
     //     kallar á nýtt PDF — og sé reitunum hér breytt á lokinni skýrslu birtist „Uppfæra PDF" við hlið þeirra.
     const erLokid = !!(repNow && repNow.status === 'final');
-    const opid = !!repNow && (_aflaest || !erLokid);
+    // 27.11.2026, síðar sama dag (Agnar: „engar læsingarrr" · „vill bara að þetta virki alltaf"): aflæsingin er farin
+    // ALLS STAÐAR — lokin skýrsla er líka opin. Breyting á henni vistast eins og annað og „↻ Uppfæra PDF" birtist.
+    const opid = !!repNow;
     const madurNofn = (function () {
       const s = []; const baeta = n => { n = String(n || '').trim(); if (n && s.indexOf(n) < 0) s.push(n); };
       try { const u = window.UttektUndirritun || {}; baeta(u.skodunaradili); (u.listi || []).forEach(baeta); } catch (_) {}
@@ -1198,7 +1200,7 @@
             '<div class="b274-hr">' +
               (meta.dags ? '<span class="b274-plata dokk">📅 Skoðað ' + esc(fmtDags(meta.dags)) + '</span>' : '') +
               '<div class="b274-hb">' +
-                (bladHtml && erLokid ? '<button type="button" class="_bkc-act ' + (_aflaest ? 'b274-graenn' : 'b274-malmur') + '" id="_bkc-aflaesa" title="' + (_aflaest ? 'Læsa blaðinu aftur og uppfæra PDF-skýrsluna' : 'Skýrslan er lokin — aflæstu til að breyta tölum og hökum beint á blaðinu') + '">' + (_aflaest ? '🔒 Læsa skýrslu' : '🔓 Aflæsa skýrslu') + '</button>' : '') +
+                // (🔓 Aflæsa skýrslu / 🔒 Læsa skýrslu stóð hér til 27.11.2026 — tekið út að ósk Agnars: engar læsingar)
                 // 01.10.2026 (Agnar): „Í skýrslu" úr Línum reiknings færður hingað og heitir „Vinnuhamur" — opnar skýrsluna
                 // í vinnuham (verðlistaval, efni úr innkaupum). Sami [data-open]-hlustari og áður.
                 // „Skoðunarskýrsla"/„Halda áfram" (efst í Skýrslu og reikningi) gerði það sama og var fjarlægt (Agnar) —
@@ -1211,7 +1213,7 @@
           '<div class="b274-stal">' +
             '<div class="b274-rod"><span class="b274-merki">Skýrslan' + (skyrslaNafn ? ' · ' + esc(skyrslaNafn) : '') + '</span>' +
               (repNow ? '<span class="b274-plata ' + skyrslaPc + '"><i></i>' + (repNow.status === 'final' ? 'Lokið' : 'Drög') + '</span>' : '') +
-              '<span class="b274-sp"></span><span class="b274-hint">' + (bladHtml ? (opid ? (erLokid ? 'Aflæst — breytingar vistast beint á skýrsluna' : 'Smelltu á reit á blaðinu til að breyta — vistast sjálfkrafa') : 'Lokin skýrsla — aflæstu til að breyta á blaðinu') : 'Blaðið er vinnuformið — reitirnir fyllast í skýrslunni sjálfri') + '</span></div>' +
+              '<span class="b274-sp"></span><span class="b274-hint">' + (bladHtml ? 'Smelltu á reit á blaðinu til að breyta — vistast sjálfkrafa' : 'Blaðið er vinnuformið — reitirnir fyllast í skýrslunni sjálfri') + '</span></div>' +
             // ramminn: ÓBREYTTUR (sama iframe, sömu breytur) — eða tómt blað sem býður í næstu skoðun
             (bladHtml ?
               '<div class="b274-rammi b274-blad' + (opid ? ' _aflaest' : '') + '" id="_bkc-blad">' + bladHtml +
