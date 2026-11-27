@@ -42,7 +42,7 @@ og slóðin á `…-samanburdur.png`.
 | Valkostur | Hvað |
 |---|---|
 | `--vefur slokk\|bh\|kjarni\|<url>` | grunnur fyrir `#sýn` og `/slóð` (sjálfgefið slokk) |
-| `--taeki` | `360` `390` `412` `430` · `tafla` (834 px) · `tafla-l` (spjaldtölva á hlið, 1.112 px) · `tolvu` (sími í tölvuútgáfu, 1.230 px) · `tolva` (1.440 px) |
+| `--taeki` | `360` `390` `412` `430` · `tafla` (834 px) · `tafla-l` (spjaldtölva á hlið, 1.112 px) · `lenovo` / `lenovo-p` (Lenovo Tab 10,1″ bílstjórans á hlið 1.280 × 720 / upprétt 800 × 1.160 — ÁÆTLAÐ af skjástærð, ekki mælt á tækinu) · `tolvu` (sími í tölvuútgáfu, 1.230 px) · `tolva` (1.440 px) |
 | `--heil` | öll síðan, ekki aðeins fyrsti skjárinn |
 | `--bid 12000` | lengri bið þegar síðan sýnir enn „Sæki…" á myndinni |
 | `--js "<kóði>"` | keyrt fyrir myndatöku: opna flipa, skruna, smella á takka sem þú ÞEKKIR |
@@ -91,6 +91,20 @@ eða vafraspjaldið með `resize_window preset: mobile`.
   `--hamur enginn` sýnir það sem spjaldtölva fær áður en nokkur velur Töflu.
 - **Síðuzoom:** Slökkvitæki ber vistaða stærðarstillingu fyrir síma (333, `simi_sidustaerd`). Hún gildir líka í herminum.
 - Talning á of smáu letri og kreistum dálkum er `tools/simasopur.cjs`. Hermirinn SÝNIR, sópurinn TELUR.
+
+## Óbirt breyting (localhost)
+
+Staðbundinn þjónn (`preview_start` → `slokkvitaeki-dev`, port 5599) á engin föll, svo appið stoppar á innskráningarskjá.
+Hermirinn leysir það sjálfur: þegar markið er `http://localhost…` sækir hann `/api/` og `/.netlify/functions/` af lifandi
+vefnum (`--vefur`) með lotukökunni. **Aðeins lestur** — öllu öðru en GET er svarað með tómu `{}` og fer aldrei af vélinni.
+Supabase-köll vafrans fara áfram beint í grunninn, eins og á lifandi síðu: skoðaðu, smelltu ekki á vistun.
+
+```bash
+node tools/simahermir.cjs skot "http://localhost:5599/#bilstjori" --taeki 390,tafla,tafla-l --hamur thvinga
+```
+
+Á localhost velur appið annan sýnarham en á lifandi síðunni (mælt: `mobile` á 834 px staðbundið, `desktop` lifandi).
+Notaðu `--hamur thvinga` þegar þú berð saman við lifandi mynd.
 
 ## Gildrur (allar mældar 27.11.2026)
 
