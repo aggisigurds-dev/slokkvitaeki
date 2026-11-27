@@ -283,6 +283,7 @@ fært, orðrétt. Hver þeirra hleðst AÐEINS þegar hann er kallaður til.
 | theme.css hönnunarkerfið + per-page skeletons | `thema` |
 | AI-aðstoðarmanninn (Customer brief, watchlist, Aðstoðarmiðstöð) | `adstod` |
 | Útlit, farsímaskjái, brotna/þrönga skjái, endurhönnun — hönnuðurinn 🃏 | `joker` |
+| ChatGPT-mockup af hluta síðu limt inn, „gerðu svona“ — quality hrynur á venjulegu leiðinni | `joker` + skill `mockup-i-sidu` |
 | QR-merki, miðaprentun (Brother PT-P750W), raðnúmer, skannann | `prentun` |
 | Kort, Leaflet, mapfix-merkin, geocode/Nominatim, kill-dots | `kort` |
 | Ársskoðun-perur, 📅 SOURCE vs FILTER, FULLBÚIÐ, útreikningar, skjöl, öll borð, data-elon, as-built (`docs/RAFKERFI.md`) | `elon-musk` |

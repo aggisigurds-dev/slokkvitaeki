@@ -78,6 +78,7 @@ base 293, Hlaðvarpinn, Steypustöðin 2026.
 | `árs` / `ársreitur` / `pera` / `FULLBÚIÐ` / `VANTAR` / `SOURCE` / `FILTER` | `elon-musk` | As-built: `docs/RAFKERFI.md` fyrst. **Ekki breyta 153/187-reikningum.** |
 | `öryggisnet` / `er óhætt` / `brýtur þetta` / `audit-all` | `netvordur` | Kortið + `node tools/audit-all.cjs`. SAFE eða CUTS-A-WIRE. |
 | `útlit` / `sími` / `mobile` / `þröngt` / `endurhanna` | `joker` | Farsímaskjár, appham, takkar, letur. Ekki grind (það er 153). |
+| `mockup` / `fylgja mockupi` / `eins og á myndinni` / `chatgpt mockup` | `joker` + skill `mockup-i-sidu` | Venjulega leiðin: ChatGPT-mynd af hluta → skurðaðgerð. SKIPUN, krókar, `--bera`. Ekki endurskrifa síðuna. |
 | `þema` / `skinna` / `Brunastál` / `theme.css` | `thema` | Hönnunarkerfi + per-page skeletons. |
 | `flipi` / `borð` / `nav` / `bílstjóri` / `aksturslisti` / `bakk` | `bord-flettur` | Nýr flipi, deep-link, bakk (3 lög). |
 | `muna` / `skrá` / `Charlize` / `hvernig var þetta` | `charlize` | Lesa áður en breytt er, skrifa áður en lokað er. |
