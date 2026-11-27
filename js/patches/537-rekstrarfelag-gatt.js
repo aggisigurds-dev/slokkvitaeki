@@ -55,6 +55,10 @@
       P + '.rfg-r label{display:flex;align-items:center;gap:7px;min-height:30px;font-size:12.5px;color:#141822;cursor:pointer}',
       P + '.rfg-r input{width:17px;height:17px;flex:none;accent-color:#141822}',
       P + '.rfg-s{font-size:11.5px;color:#5b5f6b;margin-top:6px;min-height:16px}',
+      P + '.rfg-d{margin-top:8px;padding:10px 12px;background:#fff;border:1px solid rgba(20,24,34,.14);border-radius:8px;max-height:420px;overflow:auto}',
+      P + '.rfg-u{font-size:12px;font-weight:700;color:#141822;margin:10px 0 2px}',
+      P + '.rfg-u:first-child{margin-top:0}',
+      P + '.rfg-r2{grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}',
       P + '.rfg-g + .rfg-g{margin-top:12px;padding-top:12px;border-top:1px dashed rgba(20,24,34,.2)}',
     ].join('\n');
     document.head.appendChild(st);
@@ -77,7 +81,11 @@
         '<div class="rfg-m">Erindi í gátt: <b>' + opin + '</b> opin · <b>' + lokid + '</b> lokið (öll félög hópsins)</div>' +
         '<div class="rfg-t" style="margin-top:10px">Það sem kúnninn sér</div>' +
         '<div class="rfg-r">' + ROFAR.map((r) => '<label><input type="checkbox" data-rfg-syn="' + r[0] + '"' + ((typeof syn[r[0]] === 'boolean' ? syn[r[0]] : !SJALFGEFID_AF[r[0]]) ? ' checked' : '') + '>' + esc(r[1]) + '</label>').join('') + '</div>' +
-        '<div class="rfg-s" data-rfg-st></div></div>';
+        '<div class="rfg-s" data-rfg-st></div>' +
+        '<div class="rfg-t" style="margin-top:8px">Skjöl og eignir</div>' +
+        '<div class="rfg-m">Hakaðu af það sem kúnninn á ekki að sjá. Ekkert eyðist; hakað aftur birtist það á ný.</div>' +
+        '<div style="margin-top:6px"><button type="button" class="rfg-b" data-rfg-gogn>Sýna skjöl og eignir</button></div>' +
+        '<div class="rfg-d" data-rfg-d hidden></div></div>';
     }).join('');
     el.querySelectorAll('.rfg-g').forEach((g) => {
       const id = g.getAttribute('data-rfg-id'), a = gattir.filter((x) => String(x.id) === id)[0], st = g.querySelector('[data-rfg-st]');
@@ -86,6 +94,37 @@
         // glugginn opnast strax við smellinn (annars lokar vafrinn honum sem sprettiglugga) og fær slóðina þegar hún berst
         const w = window.open('about:blank', '_blank');
         senda({ action: 'impersonate', id }).then((r) => { b.disabled = false; if (r.ok && r.j && r.j.url) { if (w) w.location = r.j.url; else location.href = r.j.url; } else { if (w) w.close(); st.textContent = 'Tókst ekki að opna: ' + ((r.j && r.j.error) || 'villa'); } });
+      });
+      // Skjöl og eignir: sótt þegar beðið er um það (listinn getur verið langur); vistun við hvert hak
+      const TEG = { uttektarskyrsla: 'Úttektarskýrsla', brunakerfi: 'Brunakerfisskýrsla', reikningur: 'Reikningur', samningur: 'Samningur' };
+      const gk = g.querySelector('[data-rfg-gogn]'), gd = g.querySelector('[data-rfg-d]');
+      gk.addEventListener('click', () => {
+        if (!gd.hidden) { gd.hidden = true; gk.textContent = 'Sýna skjöl og eignir'; return; }
+        gd.hidden = false; gk.textContent = 'Fela lista';
+        if (gd.dataset.sott) return; gd.dataset.sott = '1'; gd.innerHTML = '<div class="rfg-m">Sæki…</div>';
+        senda({ action: 'gogn', id }).then((r) => {
+          if (!r.ok || !r.j || !r.j.ok) { gd.innerHTML = '<div class="rfg-m">Náði ekki í listann: ' + esc((r.j && r.j.error) || 'villa') + '</div>'; delete gd.dataset.sott; return; }
+          const d = r.j, fs = new Set(d.falin_skjol || []), fe = new Set(d.faldar_eignir || []), nafn = {}; (d.eignir || []).forEach((e) => { nafn[e.id] = e.nafn; });
+          const skjalLina = (x) => '<label><input type="checkbox" data-rfg-skjal="' + x.id + '"' + (fs.has(x.id) ? '' : ' checked') + '>' +
+            esc(TEG[x.tegund] || x.tegund || 'Skjal') + (x.nr ? ' ' + esc(x.nr) : '') + ' · ' + esc(x.man || (x.dags || '').slice(0, 7) || x.ar || '') + (x.upphaed != null ? ' · ' + Math.round(x.upphaed).toLocaleString('is-IS') + ' kr.' : '') + '</label>';
+          const hopar = {}; (d.skjol || []).forEach((x) => { const k = x.fid != null && nafn[x.fid] ? x.fid : 0; (hopar[k] = hopar[k] || []).push(x); });
+          gd.innerHTML = '<div class="rfg-u">Eignir í gáttinni (' + (d.eignir || []).length + ')</div><div class="rfg-r">' +
+            (d.eignir || []).map((e) => '<label><input type="checkbox" data-rfg-eign="' + e.id + '"' + (fe.has(e.id) ? '' : ' checked') + '>' + esc(e.nafn) + (e.er_i_thjonustu === false ? ' <span class="rfg-m">(utan þjónustu)</span>' : '') + '</label>').join('') + '</div>' +
+            Object.keys(hopar).sort((a, b) => String(nafn[a] || 'ö').localeCompare(String(nafn[b] || 'ö'), 'is')).map((k) => '<div class="rfg-u">' + esc(nafn[k] || 'Ótengt eign') + ' (' + hopar[k].length + ')</div><div class="rfg-r rfg-r2">' + hopar[k].map(skjalLina).join('') + '</div>').join('') +
+            (d.falin_reikningar && d.falin_reikningar.length ? '<div class="rfg-m" style="margin-top:6px">Faldir reikningar eftir númeri (eldri stilling): ' + esc(d.falin_reikningar.join(', ')) + '</div>' : '') +
+            '<div class="rfg-s" data-rfg-gst></div>';
+          const gst = gd.querySelector('[data-rfg-gst]');
+          const vista = (c) => {
+            const falin = [...gd.querySelectorAll('[data-rfg-skjal]')].filter((x) => !x.checked).map((x) => +x.getAttribute('data-rfg-skjal'));
+            const faldar = [...gd.querySelectorAll('[data-rfg-eign]')].filter((x) => !x.checked).map((x) => +x.getAttribute('data-rfg-eign'));
+            gst.textContent = 'Vista…';
+            senda({ action: 'gogn-vista', id, falin_skjol: falin, faldar_eignir: faldar }).then((r2) => {
+              if (r2.ok && r2.j && r2.j.ok) gst.textContent = 'Vistað — ' + falin.length + ' skjöl og ' + faldar.length + ' eignir falin í gáttinni.';
+              else { c.checked = !c.checked; gst.textContent = 'Vistun mistókst: ' + ((r2.j && r2.j.error) || 'villa') + ' — ekkert breyttist.'; }
+            });
+          };
+          gd.querySelectorAll('[data-rfg-skjal],[data-rfg-eign]').forEach((c) => c.addEventListener('change', () => vista(c)));
+        });
       });
       g.querySelectorAll('[data-rfg-syn]').forEach((c) => c.addEventListener('change', () => {
         const k = c.getAttribute('data-rfg-syn'), nytt = Object.assign({}, a.syn || {}); nytt[k] = c.checked;

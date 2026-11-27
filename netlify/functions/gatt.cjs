@@ -874,7 +874,14 @@ exports.handler = async (event) => {
   try {
     // 1) Byggingar félagsins (í þjónustu) beint úr fyrirtaeki
     const fr = await P.sbGet(`fyrirtaeki?${BF('customer_base_id')}&deleted_at=is.null&select=id,nafn,heimilisfang,er_i_thjonustu,status,eign,stadur_nr,customer_base_id&order=nafn`);
-    const sites = (fr.ok ? await fr.json() : []).filter((s) => !leyfd || leyfd.has(Number(s.id)));
+    // 27.11.2026 (Agnar: „sem við ráðum hvaða skjöl þau sjá og hvað ekki og önnur gögn"): starfsfólk felur einstök skjöl og
+    //    eignir úr rekstrarfélagskortinu (537) — portal_users.stillingar.falin_skjol = [customer_documents.id, …] og
+    //    faldar_eignir = [fyrirtaeki.id, …]. Ekkert eytt; tekið af listanum sést það aftur. gatt-doc ver sömu skjöl.
+    const tolur = (L) => new Set((Array.isArray(L) ? L : []).map(Number).filter((x) => Number.isFinite(x) && x > 0));
+    const falinSkjol = tolur(acct && acct.stillingar && acct.stillingar.falin_skjol);
+    const faldarEignir = tolur(acct && acct.stillingar && acct.stillingar.faldar_eignir);
+    const falinNr = new Set();
+    const sites = (fr.ok ? await fr.json() : []).filter((s) => (!leyfd || leyfd.has(Number(s.id))) && !faldarEignir.has(Number(s.id)));
     const siteIds = sites.map((s) => s.id);
     // ── 26.10.2026 (Agnar: „gáttin er leiðinlega lengi að opnast"): mælt 28 raðbundnar fyrirspurnir, 3,2 s af 4,0 s, þótt
     //    22 þeirra þurfi aðeins base/sites. Þær fara nú af stað SAMHLIÐA hér og hver kafli bíður síns loforðs (Q.*).
@@ -940,7 +947,13 @@ exports.handler = async (event) => {
     let docs = [];
     try {
       const dr = await Q.docs;
-      if (dr.ok) docs = (await dr.json()).filter((d) => !leyfd || (d.fyrirtaeki_id != null && leyfd.has(Number(d.fyrirtaeki_id))));
+      if (dr.ok) docs = (await dr.json()).filter((d) => {
+        if (leyfd && !(d.fyrirtaeki_id != null && leyfd.has(Number(d.fyrirtaeki_id)))) return false;
+        const falid = falinSkjol.has(Number(d.id)) || (d.fyrirtaeki_id != null && faldarEignir.has(Number(d.fyrirtaeki_id)));
+        // falinn reikningur má ekki koma aftur inn um sölukerfið eða Payday undir sama númeri (sjá falin_reikningar neðar)
+        if (falid && d.invoice_number) falinNr.add(normNr(d.invoice_number));
+        return !falid;
+      });
     } catch (_) {}
     // 26.10.2026 (rekstrarfélög): skjal félagsins getur vísað á stað sem er EKKI í gáttinni (R-107909: Heimaleiga greiddi
     //    úttekt á Laugavegi 42, stað húsfélags undir Eignaumsjón). Nafnið fylgir reikningnum — staðurinn kemur ekki inn.
@@ -1543,7 +1556,8 @@ exports.handler = async (event) => {
     //    portal_users.stillingar.falin_reikningar = ["R-107909", …]. Ekkert eytt; takist listinn úr sést reikningurinn aftur.
     try {
       const falin = new Set(((acct && acct.stillingar && Array.isArray(acct.stillingar.falin_reikningar)) ? acct.stillingar.falin_reikningar : []).map((x) => normNr(x)).filter(Boolean));
-      if (falin.size) for (let i = invoices.length - 1; i >= 0; i--) { if (falin.has(normNr(invoices[i].nr))) invoices.splice(i, 1); }
+      falinNr.forEach((x) => { if (x) falin.add(x); });
+      if (falin.size || faldarEignir.size) for (let i = invoices.length - 1; i >= 0; i--) { if (falin.has(normNr(invoices[i].nr)) || (invoices[i].fid != null && faldarEignir.has(Number(invoices[i].fid)))) invoices.splice(i, 1); }
     } catch (_) {}
     // Eignasafn: eignir félagsins UTAN þjónustu sem bera eign-upplýsingar (skráðar viljandi sem
     // fasteignir, t.d. Reitir 11.10.2026) — kúnninn getur skráð þær í þjónustu í gáttinni.
