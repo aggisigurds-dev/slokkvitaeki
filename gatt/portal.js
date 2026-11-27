@@ -2017,9 +2017,9 @@
        eldvarnabók = mánaðarlegt eigið eftirlit (723/2017, 26. gr.) — tafla eldvarnabok, skrif um gatt.cjs
      Ekkert er fyllt í með ágiskun: kerfi sem enginn hefur staðfest heitir „Óskráð". */
   var KERFI_ROD = ['slokkvitaeki', 'slongukefli', 'reykskynjarar', 'brunavidvorunarkerfi', 'vatnsudakerfi', 'neydarlysing', 'utljos',
-    'reyklosun', 'eldvarnarteppi', 'brunathettingar', 'eldvarnaeftirlit', 'slokkvikerfi_eldhus', 'rymingaruppdrattur', 'fjoldaskilti'];
+    'reyklosun', 'stigleidsla', 'eldvarnarteppi', 'brunathettingar', 'eldvarnaeftirlit', 'slokkvikerfi_eldhus', 'rymingaruppdrattur', 'fjoldaskilti'];
   var KERFI_HEITI = { slokkvitaeki: 'Slökkvitæki', slongukefli: 'Slöngukefli', reykskynjarar: 'Reykskynjarar', brunavidvorunarkerfi: 'Brunaviðvörunarkerfi',
-    vatnsudakerfi: 'Vatnsúðakerfi', neydarlysing: 'Neyðarlýsing', utljos: 'Útljós og leiðamerkingar', reyklosun: 'Reyklosun', eldvarnarteppi: 'Eldvarnarteppi',
+    vatnsudakerfi: 'Vatnsúðakerfi', neydarlysing: 'Neyðarlýsing', utljos: 'Útljós og leiðamerkingar', reyklosun: 'Reyklosun', stigleidsla: 'Stigleiðsla', eldvarnarteppi: 'Eldvarnarteppi',
     brunathettingar: 'Brunaþéttingar', eldvarnaeftirlit: 'Eldvarnaeftirlit (árlegt)', slokkvikerfi_eldhus: 'Slökkvikerfi í eldhúsháfi',
     rymingaruppdrattur: 'Rýmingaruppdráttur', fjoldaskilti: 'Fjöldaskilti' };
   var KST_HEITI = { okkar: 'Í þjónustu hjá okkur', til: 'Til staðar', vantar: 'Skylt — vantar', ekki: 'Ekki til staðar', oskrad: 'Óskráð' };

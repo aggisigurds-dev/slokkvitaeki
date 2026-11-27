@@ -570,7 +570,7 @@ exports.handler = async (event) => {
   //    „Kerfi og þjónusta" í appinu les (450) — röðin verður handvirk (gikkur), skrad_af = Þjónustuvefur · notandi.
   //    Aldrei verð/visbending/tækifæri: þeir dálkar eru ekki snertir. ÓVITAÐ-tækifærið (c) hverfur um leið og kúnninn svarar.
   const KERFI_LEYFD = ['slokkvitaeki', 'slongukefli', 'reykskynjarar', 'brunavidvorunarkerfi', 'vatnsudakerfi', 'neydarlysing', 'utljos',
-    'reyklosun', 'eldvarnarteppi', 'brunathettingar', 'eldvarnaeftirlit', 'slokkvikerfi_eldhus', 'rymingaruppdrattur', 'fjoldaskilti'];
+    'reyklosun', 'stigleidsla', 'eldvarnarteppi', 'brunathettingar', 'eldvarnaeftirlit', 'slokkvikerfi_eldhus', 'rymingaruppdrattur', 'fjoldaskilti'];
   async function skraKerfi(b) {
     if (!syn.kerfi) return P.json(403, { error: 'Kerfin eru ekki opin á þessum aðgangi' });
     const sid = parseInt(b.site_id, 10), f0 = await eignFelags(sid, 'id,nafn');
