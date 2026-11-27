@@ -277,6 +277,33 @@ exports.handler = async (event) => {
       return P.json(200, { ok: true, row: pubRow((await r.json())[0]) });
     }
 
+    // 27.11.2026 (537): hvað kúnninn sér af skjölum og eignum — listinn og falda mengið
+    if (action === 'gogn' || action === 'gogn-vista') {
+      const id = String(body.id || '');
+      const ur = await P.sbGet(`portal_users?id=eq.${encodeURIComponent(id)}&select=id,base_id,stillingar&limit=1`);
+      const u = ur.ok ? (await ur.json())[0] : null;
+      if (!u) return P.json(404, { error: 'Aðgangur fannst ekki' });
+      const st = (u.stillingar && typeof u.stillingar === 'object') ? u.stillingar : {};
+      const tolur = (L) => [...new Set((Array.isArray(L) ? L : []).map(Number).filter((x) => Number.isInteger(x) && x > 0))].slice(0, 3000);
+      if (action === 'gogn-vista') {
+        const ny = Object.assign({}, st);
+        if (Array.isArray(body.falin_skjol)) ny.falin_skjol = tolur(body.falin_skjol);
+        if (Array.isArray(body.faldar_eignir)) ny.faldar_eignir = tolur(body.faldar_eignir);
+        const pr = await P.sbPatch(`portal_users?id=eq.${encodeURIComponent(id)}&select=id`, { stillingar: ny });
+        if (!pr.ok) return P.json(pr.status, { error: 'Vistun mistókst', detail: await pr.text() });
+        return P.json(200, { ok: true, falin_skjol: ny.falin_skjol || [], faldar_eignir: ny.faldar_eignir || [] });
+      }
+      const hopur = await P.baseHopur(u.base_id);
+      const ids = hopur.ids.join(',');
+      const er = await P.sbGet(`fyrirtaeki?customer_base_id=in.(${ids})&deleted_at=is.null&select=id,nafn,heimilisfang,er_i_thjonustu&order=nafn`);
+      const eignir = er.ok ? await er.json() : [];
+      const fids = eignir.map((e) => e.id);
+      const sia = fids.length ? `or=(customer_base_id.in.(${ids}),fyrirtaeki_id.in.(${fids.join(',')}))` : `customer_base_id=in.(${ids})`;
+      const dr = await P.sbGet(`customer_documents?${sia}&is_duplicate=not.is.true&select=id,doc_type,year,doc_date,invoice_number,amount,fyrirtaeki_id,skodun_ar_man&order=doc_date.desc.nullslast&limit=3000`);
+      const skjol = (dr.ok ? await dr.json() : []).map((d) => ({ id: d.id, tegund: d.doc_type, ar: d.year, dags: d.doc_date, nr: d.invoice_number, upphaed: d.amount, fid: d.fyrirtaeki_id, man: d.skodun_ar_man }));
+      return P.json(200, { ok: true, eignir, skjol, falin_skjol: tolur(st.falin_skjol), faldar_eignir: tolur(st.faldar_eignir), falin_reikningar: Array.isArray(st.falin_reikningar) ? st.falin_reikningar : [] });
+    }
+
     if (action === 'toggle') {
       const id = String(body.id || '');
       const r = await P.sbPatch(`portal_users?id=eq.${id}&select=*`, { active: !!body.active });

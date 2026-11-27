@@ -56,6 +56,14 @@ exports.handler = async (event) => {
       owns = !!(frows[0] && hopur.ids.includes(Number(frows[0].customer_base_id)));
     }
     if (!owns) return P.json(403, { error: 'Óheimill aðgangur' });
+    // 27.11.2026: skjal eða eign sem starfsfólk hefur falið í gátt félagsins (stillingar.falin_skjol / faldar_eignir) er
+    // ekki afhent heldur, þótt einhver eigi gamla slóð.
+    try {
+      const sr = await P.sbGet(`portal_users?base_id=eq.${Number(baseId)}&select=stillingar&limit=1`);
+      const st = ((sr.ok ? await sr.json() : [])[0] || {}).stillingar || {};
+      const inni = (L, v) => Array.isArray(L) && v != null && L.map(Number).includes(Number(v));
+      if (inni(st.falin_skjol, doc.id) || inni(st.faldar_eignir, doc.fyrirtaeki_id)) return P.json(404, { error: 'Skjal finnst ekki' });
+    } catch (_) {}
     // Notandi með afmarkaðar eignir (leigutaki, eldvarnarfulltrúi einnar eignar): aðeins skjöl þeirra eigna
     if (session && Array.isArray(session.eignir) && session.eignir.length && !(doc.fyrirtaeki_id != null && session.eignir.includes(Number(doc.fyrirtaeki_id)))) return P.json(403, { error: 'Óheimill aðgangur' });
 
