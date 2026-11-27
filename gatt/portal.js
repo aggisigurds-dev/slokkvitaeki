@@ -813,6 +813,22 @@
         // smellur opnar eignasíðuna á erindakaflanum (sendingarglugginn aðeins þegar engin erindi eru til).
         '<button type="button" class="pdf" data-erindi-b="' + bi + '" title="' + esc(erindiEignar(b).length ? erindiEignar(b).length + ' erindi · ' + opinErindi(b) + ' opin — opna eignasíðuna' : opinErindiTitill(b)) + '">' + svgIc('erindi') + 'Erindi' + (erindiEignar(b).length ? '<i class="nb' + (opinErindi(b) ? '' : ' nb-lokid') + '">' + erindiEignar(b).length + '</i>' : '') + '</button></div></td></tr>';
     }).join('') || '<tr><td colspan="7" class="empty">Engar byggingar skráðar</td></tr>';
+    // 28.11.2026 (Agnar: „þau þurfa samt að sjást svo þau geti sett í þjónustu"): eignir félagsins UTAN þjónustu standa í
+    // SÖMU töflu, neðan við þær sem eru í þjónustu, með takkanum „Skrá í þjónustu". Þær voru áður aðeins sem spjöld neðar
+    // á síðunni og sáust ekki nema skrunað væri fram hjá erindunum. Engin data-i: síurnar og eignasíðan snerta þær ekki.
+    var utanT = (state.data && state.data.eignir_utan) || [];
+    if ((bldgs || []).length && utanT.length) {
+      $('#yf-body').innerHTML += '<tr class="yf-utan-h"><td colspan="7">Ekki í þjónustu enn — ' + utanT.length + (utanT.length === 1 ? ' eign' : ' eignir') + '</td></tr>' +
+        utanT.map(function (b, j) {
+          return '<tr class="yf-utan"><td><div class="bcell" data-utan="' + j + '" style="cursor:pointer" title="Skoða eign">' + (b.eign && b.eign.mynd ? '<span class="bic ph" style="background-image:url(\'' + esc(imgW(b.eign.mynd, 360)) + '\')"></span>' : '<span class="bic">' + svgIc('Byggingar') + '</span>') +
+            '<div><div class="bname">' + esc(b.nafn) + '</div><div class="baddr">' + esc(b.heimilisfang || '') + '</div>' +
+              // takkinn stendur undir heitinu svo hann sjáist í síma án þess að skruna töfluna til hliðar
+              (b.beidni ? '<span class="eok">' + svgIc('hak', 2) + 'Beiðni móttekin</span>' : '<button type="button" class="kbtn xs yf-utan-b" data-skra="' + j + '">Skrá í þjónustu</button>') + '</div></div></td>' +
+            '<td class="num">—</td><td class="num">—</td>' +
+            '<td colspan="3"><span class="dim">' + esc((b.eign && b.eign.tegund) || 'Ekki í þjónustu') + '</span></td>' +
+            '<td class="r"></td></tr>';
+        }).join('');
+    }
     foot('#yf-foot', (bldgs || []).length, (bldgs || []).length, ['bygging', 'byggingar'], ['byggingu', 'byggingum'], '');
     if (yfSia.q || yfSia.s) yfSiaBeita();
   }
@@ -1795,8 +1811,8 @@
       if (ebb && erindiEignar(ebb).length) { openDrawer(ebi); skrunaAdErindum(); } else openErindi(ebi, 'fyrirspurn');
       return;
     }
-    var ut = t.closest && t.closest('[data-utan]'); if (ut) { openUtan(+ut.getAttribute('data-utan')); return; }
     var sk = t.closest && t.closest('[data-skra]'); if (sk) { openErindiB(utanAt(+sk.getAttribute('data-skra')), 'thjonusta'); return; }
+    var ut = t.closest && t.closest('[data-utan]'); if (ut) { openUtan(+ut.getAttribute('data-utan')); return; }
     if (t.closest && t.closest('#es-skra')) { openSkra(); return; }
     var tr = t.closest && t.closest('#yf-body tr.clk');
     if (tr && !t.closest('a,button')) openDrawer(Number(tr.getAttribute('data-i')));
