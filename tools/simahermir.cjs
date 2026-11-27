@@ -75,6 +75,17 @@ const TAEKI = {
 };
 TAEKI.taflaL = TAEKI['tafla-l'];   // sama heiti og í Stílstjóra
 
+/* Sérsnið: "--taeki 1024x768" býr til snertitæki í þeirri stærð (undir 600 px breidd telst sími, annars spjaldtölva). */
+function skraSersnid(lyklar) {
+  lyklar.forEach(l => {
+    const m = /^(\d{3,4})x(\d{3,4})$/.exec(l);
+    if (!m || TAEKI[l]) return;
+    const w = +m[1], h = +m[2], simi = w < 600;
+    TAEKI[l] = { heiti: 'Sérsnið ' + w + ' × ' + h, w, h, dsf: simi ? 2 : 1, ua: simi ? UA_ANDROID : UA_TAFLA, snerting: true, farsimi: true, simi,
+      vm: simi ? 'mobile' : 'table', rammi: simi ? 'simi' : (w > h ? 'taflaL' : 'tafla') };
+  });
+}
+
 function rokin(argv) {
   const o = { skipun: argv[2], mork: [], vefur: 'slokk', taeki: null, heil: false, bid: 7000, js: null, hamur: 'sjalf', ut: null, kaka: process.env.HERMIR_KAKA || null };
   for (let i = 3; i < argv.length; i++) {
@@ -256,6 +267,7 @@ async function samanburdur(vafri, mark, nidurstodur, ut, o) {
 async function skot(o) {
   if (!o.mork.length) { console.error('Notkun: node tools/simahermir.cjs skot "#bord" [--vefur slokk|bh|kjarni] [--taeki 360,390,412] [--heil]'); process.exit(2); }
   const lyklar = (o.taeki || '360,390,412').split(',').map(x => x.trim()).filter(Boolean);
+  skraSersnid(lyklar);
   const othekkt = lyklar.filter(l => !TAEKI[l]);
   if (othekkt.length) { console.error('Óþekkt tæki: ' + othekkt.join(', ') + '. Til: ' + Object.keys(TAEKI).join(', ')); process.exit(2); }
   const ut = o.ut ? path.resolve(o.ut) : path.join(os.tmpdir(), 'simahermir', new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19));
@@ -286,6 +298,7 @@ async function skot(o) {
 
 async function opna(o) {
   const lykill = (o.taeki || '390').split(',')[0].trim();
+  skraSersnid([lykill]);
   const t = TAEKI[lykill];
   if (!t) { console.error('Óþekkt tæki: ' + lykill + '. Til: ' + Object.keys(TAEKI).join(', ')); process.exit(2); }
   let slod = slodFyrir(o.mork[0] || '/', o);

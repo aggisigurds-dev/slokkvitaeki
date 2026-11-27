@@ -190,6 +190,10 @@
       'html body #view-bilstjori #_bs-list .stop__name{padding-right:22px!important}',
       // „Spyrja sérfræðing“ (494) af listanum yfir á neðra vinstra horn kortsins
       'html.bs-spjald body .sa494{left:434px!important;bottom:22px!important}',
+      // Fyrirtækjaspjaldið opið: það tekur kortdálkinn og á eigin fót þar („Á leið“ · „Klára úttekt“) — takkinn aftur til
+      // vinstri svo hann liggi ekki ofan á fætinum, og dagstölurnar í hausnum víkja (6 px rönd af þeim stóð út undan spjaldinu).
+      'html.bs-spjald.bs-fyrirtaeki-opid body .sa494{left:12px!important;bottom:12px!important}',
+      'html body #view-bilstjori._spjald-opid ._bs-root>[data-bs-svaedi="vakt-haus"]{visibility:hidden!important}',
       // Listinn er flex-dálkur með fasta hæð: án flex:none ÞJAPPAST spjöldin niður í 0 px í stað þess að skruna (mælt: auður listi).
       R + '>[data-bs-svaedi="listi"]>*{flex:none!important}',
       // Kortið fyllir dálkinn niður úr (hæðin kemur af reitnum, ekki af 100vh-reikningi)
@@ -388,7 +392,12 @@
     // Sýnin fær/missir .active við skipti — þá fylgir html.bs-spjald strax (annars sæti „Spyrja sérfræðing“ færður á næstu síðu).
     new MO(() => { try { merkja(); } catch (_) {} }).observe(v, { attributes: true, attributeFilter: ['class'] });
     // Fyrirtækjaspjaldið (._bs-sheet) fær .in þegar það rennur inn — þá fær sýnin _spjald-opid og kortið víkur.
-    const spjaldVakt = () => { const inn = !!document.querySelector('._bs-sheet.in'); if (v.classList.contains('_spjald-opid') !== inn) v.classList.toggle('_spjald-opid', inn); };
+    const spjaldVakt = () => {
+      const inn = !!document.querySelector('._bs-sheet.in');
+      if (v.classList.contains('_spjald-opid') !== inn) v.classList.toggle('_spjald-opid', inn);
+      const h = document.documentElement;   // 27.11.2026: líka á <html>, því „Spyrja sérfræðing“ (494) býr utan sýnarinnar
+      if (h.classList.contains('bs-fyrirtaeki-opid') !== inn) h.classList.toggle('bs-fyrirtaeki-opid', inn);
+    };
     new MO(ms => { for (const m of ms) { if (m.target.classList && m.target.classList.contains('_bs-sheet')) { spjaldVakt(); return; } } }).observe(document.body, { attributes: true, attributeFilter: ['class'], subtree: true });
     spjaldVakt();
     // Agnar 07.10: „að það kannski skiptist þegar maður ýtir á Keyra leið dagsins“ — á spjaldtölvu með lykil
