@@ -458,6 +458,8 @@
       '<button type="button" class="btn iv sm" data-baf="ath-vista" data-id="' + v.id + '" aria-label="Vista athugasemd"' + (S.athBusy === v.id ? ' disabled' : '') + '>' + (S.athBusy === v.id ? 'Vista…' : 'Vista') + '</button></div>' +
       '<div class="baf-af"><span class="baf-am" role="status">' + esc(S.athSkilabod && S.athSkilabod.id === v.id ? S.athSkilabod.texti : v.athugasemd ? 'Vistað ' + klTxt(v.athugasemd_at) + (v.athugasemd_af ? ' · ' + v.athugasemd_af : '') : '') + '</span></div></section></div>';
     if (S.skilabod && S.skilabod.id === v.id) h += '<div class="baf-msg villa" role="alert">' + esc(S.skilabod.texti) + '</div>';
+    // 27.11.2026: stöðvuð tilraun er VISTUÐ á þjóninum (sést eftir endurhleðslu og í öðru tæki) — aldrei óvissa um hvort fór.
+    else if (v.sidasta_tilraun) h += '<div class="baf-msg villa" role="alert">' + esc(v.sidasta_tilraun) + '</div>';
     h += '<div class="baf-ft">' +
       '<button type="button" class="btn iv sm" data-baf="seinna" data-id="' + v.id + '"' + (upptekid ? ' disabled' : '') + ' title="Færir verkið aftar í röðina">Seinna</button>' +
       '<button type="button" class="btn iv sm' + (vopnS ? ' baf-vopn' : '') + '" data-baf="sleppa" data-id="' + v.id + '"' + (upptekid ? ' disabled' : '') +
@@ -492,6 +494,8 @@
     if (S.villa) h += '<div class="baf-msg villa" role="status">' + esc(S.villa.texti) + ' — sýni síðustu stöðu' + (S.at ? ' frá ' + klTxt(new Date(S.at).toISOString()) : '') + '.</div>';
     if (!S.tilbuin.length) return h + '<div class="baf-tomt"><b>Allt afgreitt.</b> Ný verk birtast hér þegar þau eru tilbúin og standast athuganirnar.</div></div>';
     var tel = teljaFlokka(S.tilbuin);
+    // 27.11.2026: það sem var sent/gert í þessari setu, efst og grænt, svo aldrei sé vafi hvort það fór.
+    if (S.gert && S.gert.length) h += S.gert.map(function (g) { return '<div class="baf-msg ok" role="status">' + esc(g.texti) + '</div>'; }).join('');
     h += '<div class="baf-fl" role="group" aria-label="Flokkar verka">' + FLOKKAR.filter(function (k) { return k === 'allt' || tel[k] || S.flokkur === k; }).map(function (k) {
       return '<button type="button" class="baf-f" data-baf="fl" data-f="' + k + '" aria-pressed="' + (S.flokkur === k) + '">' + (k === 'allt' ? 'Allt' : (TEG[k] || FLOKKHEITI[k])) + ' <b>' + (tel[k] || 0) + '</b></button>';
     }).join('') + '</div>';
@@ -511,7 +515,13 @@
     afvopna(); S.busy = v.id; S.skilabod = null; notify();
     return kall({ id: v.id, adgerd: 'framkvaema', texti: v.tegund === 'tolvupostur' ? textiNu(v) : undefined }).then(function (j) {
       S.busy = null;
-      if (j._status === 200 && j.ok) { fjarlaegja(v.id); toast('Gert: ' + v.titill); }
+      if (j._status === 200 && j.ok) {
+        // 27.11.2026: græn lína efst sem STENDUR (ekki bara toast sem hverfur) — „Sent til X kl. HH:MM".
+        var d = new Date(), kl = ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+        var til = v.tegund === 'tolvupostur' && v.post && v.post.to && v.post.to.length ? ' til ' + v.post.to.join(', ') : '';
+        S.gert = [{ texti: (v.tegund === 'tolvupostur' ? '✓ SENT' + til : '✓ GERT') + ' kl. ' + kl + ' — ' + v.titill }].concat(S.gert || []).slice(0, 5);
+        fjarlaegja(v.id); toast((v.tegund === 'tolvupostur' ? 'Sent' + til : 'Gert') + ': ' + v.titill);
+      }
       else if (j.urelt) { fjarlaegja(v.id); toast((j.error || 'Verkið á ekki lengur við') + ' — tekið úr röðinni.', true); }
       else {
         S.skilabod = { id: v.id, texti: (j.error || ('Villa ' + j._status)) };
@@ -702,6 +712,7 @@
       '.baf-msg{margin:10px 14px 0;padding:8px 11px;border-radius:4px;font-size:14px;font-weight:600}',
       '.baf-d .baf-msg{margin:12px 0 0}',
       '.baf-msg.villa{border:1px solid rgba(180,35,24,.5);background:#fff3f1;color:#8a1c12}',
+      '.baf-msg.ok{border:1px solid rgba(22,120,60,.5);background:#eefaf1;color:#135c2e}',
       '.baf-ft{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule2)}',
       '.baf-grow{flex:1 1 auto}',
       '.baf-stopp{font-size:13px;font-weight:700;color:#8a1c12}',

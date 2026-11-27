@@ -107,7 +107,8 @@ test('framkvæmd: fyrri smellur vopnar, seinni sendir — með textanum eins og 
   assert.strictEqual(post.length, 1);
   assert.deepStrictEqual(post[0].body, { id: 22, adgerd: 'framkvaema', texti: 'Góðan dag. Breytt.' });
   assert.strictEqual(BA.S.tilbuin.length, 1, 'verkið hverfur af listanum þegar þjónninn staðfestir');
-  assert.deepStrictEqual(tost, [{ t: 'Gert: Svara fyrirspurn', villa: false }]);
+  // 27.11.2026: póstur segir hvert hann fór (Agnar vissi ekki hvort sendingin virkaði).
+  assert.deepStrictEqual(tost, [{ t: 'Sent til kunni@example.is: Svara fyrirspurn', villa: false }]);
   BA.S.vopnT && clearTimeout(BA.S.vopnT);
 });
 

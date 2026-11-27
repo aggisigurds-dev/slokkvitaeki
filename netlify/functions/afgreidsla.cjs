@@ -111,7 +111,9 @@ async function notandi(event) {
 async function lesaPostholf(account) {
   const k = (f) => fetch('https://brunaholf.netlify.app/api/gmail-ingest?account=' + encodeURIComponent(account) + '&days=3' + f, { signal: AbortSignal.timeout(12000) })
     .then((r) => r.ok).catch(() => false);
-  const [inn, ut] = await Promise.all([k(''), k('&folder=sent')]);
+  let [inn, ut] = await Promise.all([k(''), k('&folder=sent')]);
+  // 27.11.2026: ein endurtilraun — lestur sem bregst einu sinni (kaldræsing, birting í gangi) á ekki að stöðva sendingu.
+  if (!inn || !ut) [inn, ut] = await Promise.all([inn || k(''), ut || k('&folder=sent')]);
   return inn && ut;
 }
 
@@ -378,7 +380,8 @@ async function synilegt(row, visir, V) {
     af_hverju: rok.map((x) => { const s = x && x.opna ? leysa(x.opna) : null; return s ? Object.assign({}, x, { slod: s }) : x; }),
     virdi_kr: row.virdi_kr, created_at: row.created_at, created_by: row.created_by,
     forgangur: row.forgangur == null ? null : Number(row.forgangur), vip: vipFyrir(g, row.tegund, visir),
-    athugasemd: row.athugasemd || null, athugasemd_af: row.athugasemd_af || null, athugasemd_at: row.athugasemd_at || null, ...ath };
+    athugasemd: row.athugasemd || null, athugasemd_af: row.athugasemd_af || null, athugasemd_at: row.athugasemd_at || null,
+    sidasta_tilraun: /^Tilraun kl\./.test(String(row.astaeda || '')) ? row.astaeda : null, ...ath };
   // Dyr: takkar sem opna málið, reikninginn, félagið eða hringja — bregðist uppflettingin kemur liðurinn samt, án dyra.
   try { Object.assign(o, DYR.dyrFyrir(row, V || await DYR.saekja([row], lesa).catch(() => null))); } catch (_) { o.dyr = []; o.listi = []; }
   if (row.tegund === 'tolvupostur') {
@@ -480,8 +483,12 @@ async function framkvaema(id, body, event) {
     const ath = await athuga(row, { lesaNu: true });
     if (!ath.ok) {
       if (ath.urelt) { await skila('urelt', { astaeda: ath.urelt }); return P.json(409, { error: ath.urelt, urelt: true, athuganir: ath.athuganir }); }
-      await skila('tilbuid');
-      return P.json(409, { error: 'Athugun stóðst ekki — ekkert var sent.', athuganir: ath.athuganir });
+      // 27.11.2026 (Agnar: „ýtti á senda en hef ekki andsk. hugmynd hvort það virkaði"): ástæðan VISTAST á verkið svo hún
+      // sjáist líka eftir endurhleðslu og í öðru tæki (synilegt → sidasta_tilraun). Ekkert sent.
+      const fall = ath.athuganir.filter((x) => !x.ok).map((x) => x.texti).join(' · ');
+      const kl = new Date().toISOString().slice(11, 16);   // Ísland = UTC allt árið; toLocale* lýgur á Node án ICU
+      await skila('tilbuid', { astaeda: ('Tilraun kl. ' + kl + ' stöðvaðist — EKKERT SENT: ' + fall).slice(0, 300) });
+      return P.json(409, { error: 'EKKERT SENT — ' + (fall || 'athugun stóðst ekki'), athuganir: ath.athuganir });
     }
     const hver = await notandi(event);
     let nidurstada;
