@@ -1931,7 +1931,8 @@
     const go = () => { renderTop(); renderWork(); setMode('work'); savedNote(''); };
     // 27.11.2026: óloki drög sem eru opnuð fá verðlínurnar samræmdar við talda búnaðinn strax (vistast með sjálfvistun)
     let samr = false;
-    if (S.data && existing && S.status !== 'final') { try { samr = samraemaNyttS(true); } catch (_) {} }
+    // (drög sem bera enga línu eru ekki fyllt við opnun eina — þau fyllast við fyrstu talningu eða ⚡)
+    if (S.data && existing && S.status !== 'final' && S.data.verd && (S.data.verd.linur || []).length) { try { samr = samraemaNyttS(true); } catch (_) {} }
     if (S.data) { go(); if (samr) markDirty(); }
     else nextNr().then(nr => {
       S.data = blank(co, nr); go();

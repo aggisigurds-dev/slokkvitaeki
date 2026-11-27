@@ -662,8 +662,9 @@
       r('input.b274-metainn:focus', 'border-color:#2a78d6;box-shadow:inset 0 2px 5px rgba(0,0,0,.12),0 0 0 3px rgba(42,120,214,.22);background:#fff'),
       r('label.b274-rl', 'cursor:pointer'),
       // dagsreiturinn kemur vafinn í umgjörð 149 (DD/MM/ÁÁÁÁ-texti + 📅) — sama áferð og hæð og hinir reitirnir
-      r('.b274-thri .dd-date-wrap', 'display:flex;width:100%;height:40px'),
-      r('.b274-thri .dd-date-wrap input.dd-date-text', 'height:40px;background:#eef1f6;border:1px solid rgba(20,24,34,.14);border-right:0;border-radius:4px 0 0 4px;box-shadow:inset 0 2px 5px rgba(0,0,0,.18);padding:10px 12px;font-family:' + MONO + ';font-size:13px;font-weight:600;color:#141822'),
+      r('.b274-thri > div', 'min-width:0'),   // á síma (1fr 1fr) ýtti eðlisbreidd dagsreitsins Skoðunaraðila niður í 102 px
+      r('.b274-thri .dd-date-wrap', 'display:flex;width:100%;min-width:0;height:40px'),
+      r('.b274-thri .dd-date-wrap input.dd-date-text', 'width:100%;min-width:0;height:40px;background:#eef1f6;border:1px solid rgba(20,24,34,.14);border-right:0;border-radius:4px 0 0 4px;box-shadow:inset 0 2px 5px rgba(0,0,0,.18);padding:10px 12px;font-family:' + MONO + ';font-size:13px;font-weight:600;color:#141822'),
       r('.b274-thri .dd-date-wrap input.dd-date-text:focus', 'border-color:#2a78d6;background:#fff'),
       r('.b274-thri .dd-date-wrap button.dd-date-btn', 'height:40px;border:1px solid rgba(20,24,34,.14);border-radius:0 4px 4px 0;background:#dfe4ec'),
       r('.b274-note', 'background:#eef1f6!important;border:1px solid rgba(20,24,34,.14)!important;border-radius:8px!important;box-shadow:inset 0 2px 5px rgba(0,0,0,.18)!important;color:#141822!important;font-family:' + SANS + '!important;font-size:13px!important;min-height:56px!important;width:100%;padding:10px 12px!important;resize:vertical'),
@@ -949,8 +950,10 @@
       if (_bks && _bks.samraemaNytt) C.reports.forEach(r => {
         if (!(r && r.data)) return;
         // „Þar af nýtt" — og (27.11.2026) skoðunarlínur ólokinna draga fylgja talda búnaðinum strax við opnun;
-        // lokin skýrsla er aldrei snert við hleðslu, svo sendir reikningar haggast ekki
-        const samr = _bks.samraemaNytt(C.co, r, r.status !== 'final');
+        // lokin skýrsla er aldrei snert við hleðslu, svo sendir reikningar haggast ekki. Drög sem bera ENGA línu eru
+        // heldur ekki fyllt við það eitt að opna félagið (gömul, yfirgefin drög) — þau fyllast við fyrstu talningu.
+        const medSk = r.status !== 'final' && !!(r.data.verd && Array.isArray(r.data.verd.linur) && r.data.verd.linur.length);
+        const samr = _bks.samraemaNytt(C.co, r, medSk);
         const rodun = _bks.radaLinum ? _bks.radaLinum(r.data.verd && r.data.verd.linur) : false;    // skoðun → vörur → vinna → akstur
         if (!samr && !rodun) return;
         // lykkjuvörn: SAMA niðurstaða er ekki vistuð aftur innan mínútu (t.d. ef vistun festist ekki og næsta
