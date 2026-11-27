@@ -138,7 +138,10 @@
   function efniAn(v, a, texti) {
     if (v.tegund === 'tolvupostur' && v.post) {
       var e = eydur(texti), sv = v.svar_vid;
-      return (sv ? '<details class="ts-rok"><summary>Skeytið sem þú svarar · ' + esc(sv.fra) + '</summary><div class="ts-skeyti"><b>' + esc(sv.efni) + '</b><pre>' + esc(sv.texti) + '</pre></div></details>' : '') +
+      // 27.11.2026 (Agnar: „Vantar kannski bara að vita hver skilaboðin voru"): skeytið frá kúnnanum OPIÐ sjálfgefið, með
+      // tíma, og „Svarið þitt" skilur það frá drögunum — áður var það samanbrotið og viðhengi svarsins virtist tilheyra því.
+      return (sv ? '<details class="ts-rok" open><summary>Skeytið frá ' + esc(sv.fra) + (sv.dags ? ' · ' + esc(sv.dags) : '') + '</summary><div class="ts-skeyti"><b>' + esc(sv.efni) + '</b><pre>' + esc(sv.texti) + '</pre></div></details>' : '') +
+        '<div class="ts-svh">Svarið þitt</div>' +
         '<div class="ts-efni-h">Efni: <b>' + esc(v.post.subject) + '</b>' + ((v.post.vidhengi || []).length ? ' · viðhengi: ' + vidhengiHtml(v.post) : '') + '</div>' +
         (e.length ? '<div class="ts-eyda" role="alert">Fylltu inn: ' + e.map(function (x) { return '<code>' + esc(x) + '</code>'; }).join(' ') + '</div>' : '') +
         '<textarea class="ts-ta' + (e.length ? ' _eyda' : '') + '" data-baf-texti="' + v.id + '" data-ritun="1" rows="' + (a && a.linur ? a.linur(texti) : 10) + '" spellcheck="true" aria-label="Textinn sem fer út">' + esc(texti) + '</textarea>';
@@ -277,6 +280,7 @@
       V + ' .ts-pre{padding:10px 12px;border:1px solid rgba(20,24,34,.15);border-radius:8px;background:#fffdf7}',
       V + ' .ts-efni{margin-top:10px}',
       V + ' .ts-efni-h{font-size:13px;color:#3a4250;margin:8px 0 6px;overflow-wrap:anywhere}',
+      V + ' .ts-svh{margin:14px 0 2px;font:800 12px ' + SANS + ';letter-spacing:.08em;text-transform:uppercase;color:#3a4250}',
       V + ' .ts-ta{display:block;width:100%;padding:10px 12px;border:1px solid rgba(20,24,34,.25);border-radius:8px;background:#fff;font:16px/1.5 ' + SANS + ';color:#141822;resize:vertical}',
       V + ' .ts-ta._eyda{border:2px solid #b42318;background:#fff7f6}',
       V + ' .ts-ta._lag{min-height:72px}',
