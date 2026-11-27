@@ -41,7 +41,7 @@ export default async (req) => {
 
   const fmtKr = (n) => (Math.round(Number(n) || 0)).toLocaleString('is-IS') + ' kr';
   const invLines = invoices.map(v =>
-    `  • ${v.num || '—'}${v.date ? ' (' + v.date + ')' : ''} — ${fmtKr(v.samtals)}${v.paid ? ' · GREITT' : ' · ógreitt'}`
+    `  • ${v.num || '—'}${v.nafn ? ' ' + v.nafn : ''}${v.date ? ' (' + v.date + ')' : ''} — ${fmtKr(v.samtals)}${v.paid ? ' · GREITT' : ' · ógreitt'}${v.sent ? ' · krafa send í banka ' + v.sent : ''}`
   ).join('\n');
 
   const ctx =

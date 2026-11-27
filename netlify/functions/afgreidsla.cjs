@@ -50,6 +50,7 @@ const M = require('./_merkja.cjs');
 const PSV = require('./_postsvar-rod.cjs');   // póstsvar Claude → röð í afgreidsla (sameiginlegt með 519)      // 519 Merkja og keyra — merki á línum Þjónustuborðsins (sama Biddu Claude-vél)
 const DYR = require('./_afgreidsla-dyr.cjs');   // 18.11.2026: dyr á hverjum lið — beint á staðinn þar sem verkið er unnið
 const SAM = require('./_afgreidsla-sameina.cjs');   // tegund 'sameina' (Verkefnavaktin) — hrein rökfræði, prófanleg sér
+const FERSK = require('./_afgreidsla-ferskleiki.cjs');   // 27.11.2026: verk/símtöl endurmæld við hverja opnun
 
 const THROSKULDUR_KR = 10000;
 const POSTHOLF = /^(eldklar|bokhald)@eldklar\.is$/i;
@@ -215,6 +216,11 @@ async function athuga(row, { lesaNu = false } = {}) {
     }
   } else if (row.tegund === 'sameina') {
     const s = await SAM.sameinaAthuganir(row.gogn || {}, lesa);
+    for (const x of s.a) a.push(x);
+    if (s.urelt) urelt = s.urelt;
+  } else if (row.tegund === 'verk' || row.tegund === 'simtal') {
+    // 27.11.2026: Dagsverk og símtöl endurmæld við hverja opnun (drög farin? reikningur greiddur? aldur) — sjá _afgreidsla-ferskleiki.
+    const s = await FERSK.athugaFerskleika(row, lesa).catch(() => ({ a: [], urelt: null }));
     for (const x of s.a) a.push(x);
     if (s.urelt) urelt = s.urelt;
   }

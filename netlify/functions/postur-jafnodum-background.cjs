@@ -97,14 +97,38 @@ async function kunni(netfang) {
   } catch (_) { return null; }
 }
 
+// 27.11.2026 (Agnar: „heimsk svör, engin hjálp"): drögin fengu `invoices: []` og gátu því aðeins skrifað „við skoðum
+// málið" — Bílabúð Benna spurði um reikning á kt. 520402-2410 með eindaga 2/12, og R-001367 (78.750 kr, krafa send
+// 24.11) stóð í grunninum. Nú fylgja reikningar á kennitölurnar sem nefndar eru í póstinum (og kt sendanda) með.
+const KT_RE = /\b(\d{6})-?(\d{4})\b/g;
+function ktIPosti(e) {
+  const t = [e.subject, e.body_preview, e.snippet].filter(Boolean).join('\n');
+  return [...new Set([...t.matchAll(KT_RE)].map((m) => m[1] + '-' + m[2]))].slice(0, 4);
+}
+async function reikningarFyrir(kts) {
+  if (!kts.length) return [];
+  try {
+    const fra = new Date(Date.now() - 400 * 864e5).toISOString();
+    const s = await lesa(`solur?select=num,created_at,samtals,paid_at,krafa_sent_at,customer_nafn,status,is_credit` +
+      `&customer_kt=in.(${kts.map(q).join(',')})&created_at=gt.${q(fra)}&status=eq.final&order=created_at.desc&limit=12`);
+    return s.filter((x) => !x.is_credit && x.num).map((x) => ({
+      num: x.num, date: dagsIs(x.created_at), samtals: x.samtals, paid: !!x.paid_at,
+      sent: x.krafa_sent_at ? dagsIs(x.krafa_sent_at) : null, nafn: x.customer_nafn || '',
+    }));
+  } catch (_) { return []; }
+}
+
 // Semja drög með sömu vél og „Reikninga-póstur" (/api/postur-reply) — innri tóki í stað köku. Skilar { subject, body, summary }.
 async function semjaDrog(e) {
   const hausar = Object.assign({ 'Content-Type': 'application/json' }, await HUB.innriHausar());
+  const customer = await kunni(e.sender_email);
+  const kts = ktIPosti(e);
+  if (customer && customer.kt && !kts.includes(customer.kt)) kts.push(customer.kt);
   const r = await fetch(grunnur() + '/api/postur-reply', {
     method: 'POST', headers: hausar, signal: AbortSignal.timeout(22000),
     body: JSON.stringify({
       email: { sender_name: e.sender_name || '', sender_email: e.sender_email || '', subject: e.subject || '', body: e.body_preview || e.snippet || '' },
-      customer: await kunni(e.sender_email), invoices: [],
+      customer, invoices: await reikningarFyrir(kts),
     }),
   });
   const j = await r.json().catch(() => ({}));
