@@ -1665,9 +1665,20 @@
           if (window.Toast && Toast.show) Toast.show('↻ Engin handvirk verð að núllstilla — verðin koma þegar frá hóp/verðlista.');
           return;
         }
-        if (!confirm('Núllstilla öll handvirk verð og afslætti á þessari heimsókn?\n\nAllt reiknast þá upp á nýtt frá afsláttarhóp / tilboðsverði / verðlista. Tækjaval, nótur og mánuður haldast óbreytt.')) return;
-        st.line_price = {};
-        st.line_disc = {};
+        // 27.11.2026 (Agnar, Hjálparsveit skáta 173.223 → 202.760): staðfestingin sagði
+        // ekki HVAÐ hyrfi. Nú nefnir hún línuafsláttinn sem fer, svo 15 % hverfi ekki óvart.
+        const afslGildi = Object.values(st.line_disc || {}).map(v => +v || 0).filter(v => v > 0);
+        const afslLina = afslGildi.length
+          ? '\n\n⚠ Línuafsláttur hverfur af ' + afslGildi.length + ' línum (' +
+            Array.from(new Set(afslGildi)).sort((a, b) => b - a).map(v => v + ' %').join(', ') + ').'
+          : '';
+        if (!confirm('Núllstilla öll handvirk verð og afslætti á þessari heimsókn?' + afslLina + '\n\nAllt reiknast þá upp á nýtt frá afsláttarhóp / tilboðsverði / verðlista. Tækjaval, nótur og mánuður haldast óbreytt.')) return;
+        // 27.11.2026: null, ekki {}. 227 sendir ferðina í app_settings_merge sem
+        // DEEP-MERGE-ar: tómt {} eyddi engum lykli í skýinu, svo gamli 15 % afslátturinn
+        // sat þar áfram og vél B sýndi aðra upphæð en vél A. Explicit null skrifast yfir
+        // allan hlutinn (sama leið og clearTrip í 165); lesendur fara með null sem {}.
+        st.line_price = null;
+        st.line_disc = null;
         saveTripState(coId, st);
         try { if (window.TripCloudSync && TripCloudSync.saveNow) TripCloudSync.saveNow(coId); } catch (_) {}
         _tierCache = { coId: null, tier: null };
