@@ -1085,13 +1085,14 @@
     var cnt = { '': all.length, opid: 0, svarad: 0, lokid: 0 };
     all.forEach(function (e) { if (e.stada !== 'lokid') cnt.opid++; if (e.stada === 'svarad') cnt.svarad++; if (e.stada === 'lokid') cnt.lokid++; });
     var ST = [['', 'Allt'], ['opid', 'Opið'], ['svarad', 'Svarað'], ['lokid', 'Lokið']];
-    var tegs = {}; all.forEach(function (e) { tegs[e.tegund] = 1; });
+    // 27.11.2026: sían notar skýra flokkinn (fl:<lykill>) þegar erindið ber hann, annars almennu tegundina
+    var tegs = {}; all.forEach(function (e) { tegs[erFlLykill(e)] = e.flokkur_heiti || ER_TEG[e.tegund] || e.tegund; });
     var teg = Object.keys(tegs);
     var eignir = {}; all.forEach(function (e) { if (e.fid) { var b = eignAfId(e.fid); if (b) eignir[e.fid] = b.nafn; } });
     if (chips) {
       chips.innerHTML = ST.map(function (s) { return '<button type="button" class="chip' + (erFilt.s === s[0] ? ' on' : '') + '" data-ef-s="' + s[0] + '">' + s[1] + ' · ' + cnt[s[0]] + '</button>'; }).join('') +
         (teg.length > 1 ? '<span class="ef-sep"></span>' + '<button type="button" class="chip' + (erFilt.t === '' ? ' on' : '') + '" data-ef-t="">Allar tegundir</button>' +
-          teg.map(function (t) { return '<button type="button" class="chip' + (erFilt.t === t ? ' on' : '') + '" data-ef-t="' + esc(t) + '">' + esc(ER_TEG[t] || t) + '</button>'; }).join('') : '') +
+          teg.map(function (t) { return '<button type="button" class="chip' + (erFilt.t === t ? ' on' : '') + '" data-ef-t="' + esc(t) + '">' + esc(tegs[t] || ER_TEG[t] || t) + '</button>'; }).join('') : '') +
         '<span class="ef-sep"></span><button type="button" class="chip' + (erFilt.h ? ' on' : '') + '" data-ef-h="1" title="Flokka erindin eftir eign">Eftir eign</button>' +
         (Object.keys(eignir).length > 1 ? '<select class="svc-in ef-sel" id="ef-eign"><option value="">Allar eignir</option>' + Object.keys(eignir).map(function (k) { return '<option value="' + k + '"' + (String(erFilt.e) === k ? ' selected' : '') + '>' + esc(eignir[k]) + '</option>'; }).join('') + '</select>' : '');
     }
@@ -1099,7 +1100,7 @@
       if (erFilt.s === 'opid' && e.stada === 'lokid') return false;
       if (erFilt.s === 'svarad' && e.stada !== 'svarad') return false;
       if (erFilt.s === 'lokid' && e.stada !== 'lokid') return false;
-      if (erFilt.t && e.tegund !== erFilt.t) return false;
+      if (erFilt.t && erFlLykill(e) !== erFilt.t) return false;
       if (erFilt.e && String(e.fid) !== String(erFilt.e)) return false;
       return true;
     }).sort(function (a, c) { return (a.stada === 'lokid') - (c.stada === 'lokid') || String(c.dags).localeCompare(String(a.dags)); });
@@ -2028,6 +2029,7 @@
   var ER_TEG = { verkbeidni: 'Verkbeiðni', thjonusta: 'Þjónusta', fyrirspurn: 'Fyrirspurn', eldvarnabok: 'Eldvarnabók', gogn: 'Gagnabeiðni', annad: 'Annað', reikningur: 'Reikningur', verkefni: 'Verkefni', pontun: 'Pöntun' };
   var ER_SKREF = [['mottekid', 'Móttekið'], ['i_vinnslu', 'Í vinnslu'], ['svarad', 'Svarað'], ['lokid', 'Lokið']];
 
+  function erFlLykill(e) { return e && e.flokkur ? 'fl:' + e.flokkur : (e && e.tegund) || ''; }
   function kerfiStada(k) {
     if (k.adili === 'okkar') return 'okkar';
     // 27.11.2026 (Agnar: „skýrðu bara þjónusta í vinnslu, blátt"): samningur um kerfið er í vinnslu — thjonustuadili „okkar — í vinnslu"
@@ -2085,7 +2087,7 @@
   function opinErindiTitill(b) {
     var L = erindiEignar(b).filter(function (e) { return e.stada !== 'lokid'; });
     if (!L.length) return 'Senda fyrirspurn eða bæta við þjónustu';
-    return L.map(function (e) { return (ER_TEG[e.tegund] || 'Erindi') + ': ' + (e.titill || '') + ' — ' + erOpidSkyring(e); }).join('\n');
+    return L.map(function (e) { return (e.flokkur_heiti || ER_TEG[e.tegund] || 'Erindi') + ': ' + (e.titill || '') + ' — ' + erOpidSkyring(e); }).join('\n');
   }
 
   // ── Kerfi á yfirliti: ein rönd per kerfi (litur = staða) + „x af y skráð" ──
@@ -2175,7 +2177,7 @@
     var i = 0; ER_SKREF.forEach(function (s, j) { if (s[0] === e.stada) i = j; });
     var eign = medEign ? eignAfId(e.fid) : null;
     var vis = (e.visun || []).map(visunHtml).join('');
-    return '<div class="erow"><div class="er-h"><span class="tb plain">' + esc(ER_TEG[e.tegund] || 'Erindi') + '</span>' +
+    return '<div class="erow"><div class="er-h"><span class="tb plain">' + esc(e.flokkur_heiti || ER_TEG[e.tegund] || 'Erindi') + '</span>' +
       '<b>' + esc(e.titill || '') + '</b>' + (eign ? '<span class="er-e">' + esc(eign.nafn) + '</span>' : '') +
       // 23.10.2026 (Agnar: „rennur allt of mikið saman … fært check/done merkið til hægri"): Lokið er merki í hausnum
       (e.stada === 'lokid' ? '<span class="er-ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Lokið' + (e.lokid ? ' ' + esc(fmtDate(e.lokid)) : '') + '</span>' : '') +

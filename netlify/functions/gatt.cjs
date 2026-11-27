@@ -145,6 +145,14 @@ function vidbotHreint(v) {
     vinnublad: txt(v.vinnublad), munur: txt(v.munur) };
   return (out.taeki.length || out.unnid.length || out.vinnublad.length || out.munur.length) ? out : null;
 }
+// 27.11.2026 (Agnar: „reyna skýra fleiri nöfnum flokkana — Ársskoðun brunakerfis, Brunakerfi – viðgerð, Brunakerfi – viðbót"):
+// kúnna-sýnilegur flokkur erindis, valinn með tagi `fl:<lykill>` á málinu. Aðeins lyklar af þessum lista fara út.
+const ERINDI_FLOKKAR = {
+  'arsskodun-brunakerfis': 'Ársskoðun brunakerfis', 'brunakerfi-vidgerd': 'Brunakerfi – viðgerð', 'brunakerfi-vidbot': 'Brunakerfi – viðbót',
+  'brunakerfi-uppsetning': 'Brunakerfi – uppsetning', 'brunakerfi-gogn': 'Brunakerfi – staðfesting og gögn',
+  'arsskodun-slokkvitaekja': 'Ársskoðun slökkvitækja', 'slokkvitaeki-vidbot': 'Slökkvitæki – ný tæki og merkingar', 'slokkvitaeki-vidhald': 'Slökkvitæki – lagfæring',
+  brunathettingar: 'Brunaþéttingar', reyklosun: 'Reyklosun', stigleidsla: 'Stigleiðsla', vatnsudakerfi: 'Vatnsúðakerfi', neydarlysing: 'Neyðarlýsing',
+  samningur: 'Þjónustusamningur', kjor: 'Kjör og afsláttur', tilbod: 'Tilboð', reikningur: 'Reikningar', gogn: 'Gögn og staðfestingar', utanumhald: 'Þjónusta og utanumhald' };
 function erindiRod(r, slod) {
   const tags = Array.isArray(r.tags) ? r.tags : [];
   const mynd = (L) => (Array.isArray(L) ? L : []).map((m) => m && m.path && slod[m.path] ? { url: slod[m.path], w: m.w || null, h: m.h || null, at: m.at || null } : null).filter(Boolean);
@@ -153,7 +161,9 @@ function erindiRod(r, slod) {
   const stada = lokad ? 'lokid' : (r.svarad_at ? 'svarad' : (ERINDI_SKREF[r.status] || 'mottekid'));
   const tegund = tags.includes('eldvarnabok') ? 'eldvarnabok' : tags.includes('verkbeidni') ? 'verkbeidni' : tags.includes('verkefni') ? 'verkefni'
     : tags.includes('thjonusta') ? 'thjonusta' : tags.includes('gogn') ? 'gogn' : tags.includes('reikningur') ? 'reikningur' : tags.includes('pontun') ? 'pontun' : tags.includes('annad') ? 'annad' : 'fyrirspurn';
+  const flTag = tags.find((t) => typeof t === 'string' && t.indexOf('fl:') === 0 && ERINDI_FLOKKAR[t.slice(3)]);
   return { id: r.id, fid: r.fyrirtaeki_id, titill: erindiTitill(r.title), lysing: r.summary || null, stada, rstada: r.status, tegund,
+    flokkur: flTag ? flTag.slice(3) : null, flokkur_heiti: flTag ? ERINDI_FLOKKAR[flTag.slice(3)] : null,
     dags: r.created_at, uppf: r.updated_at, frestur: r.due_at || null,
     abyrgd: ABYRGD.includes(r.abyrgd) ? r.abyrgd : 'okkar', punktur: r.punktur && typeof r.punktur === 'object' ? r.punktur : null,
     myndir: mynd(r.myndir), eftirmyndir: mynd(r.eftirmyndir), lokid: r.lokid_at || null, lokid_lysing: r.lokid_lysing || null,
