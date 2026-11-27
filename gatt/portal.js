@@ -969,11 +969,15 @@
   /* ══ ERINDI 22.10.2026 (generalprufa Center Hótel) ══════════════════════════
      Forsíðan fær „Senda erindi“ hægra megin: Verkbeiðni · Gagnabeiðni · Fyrirspurn · Annað. Hvert erindi verður mál með stöðu
      (Móttekið → Í vinnslu → Svarað → Lokið), eign, lýsingu og vísun í reikning/skýrslu. Allt birtist undir flipanum Erindi. */
-  var RAIL_TEG = [['verkbeidni', 'Verkbeiðni'], ['gogn', 'Gagnabeiðni'], ['fyrirspurn', 'Fyrirspurn'], ['annad', 'Annað']];
+  // 27.11.2026 (Agnar: „af hverju settirðu ekki allt inn"): sama úrval og í erindisglugganum — þjónusta, pöntun, reikningar og kjör
+  var RAIL_TEG = [['verkbeidni', 'Verkbeiðni'], ['thjonusta', 'Bæta við þjónustu'], ['pontun', 'Pöntun'], ['gogn', 'Gagnabeiðni'], ['reikningur', 'Reikningar og kjör'], ['fyrirspurn', 'Fyrirspurn'], ['annad', 'Annað']];
+  var THJ_LIDIR = ['Árleg skoðun slökkvitækja', 'Ný slökkvitæki / viðbót', 'Skoðun brunaslangna', 'Brunaviðvörunarkerfi — skoðun og eftirlit', 'Neyðarlýsing', 'Vatnsúðakerfi (sprinkler)', 'Stigleiðsla', 'Reyklosun', 'Slökkvikerfi í eldhúsháfi', 'Brunaþéttingar', 'Eldvarnateppi og reykskynjarar', 'Úttekt / ráðgjöf um brunavarnir', 'Annað'];
+  var PONT_LIDIR = ['Slökkvitæki — léttvatn', 'Slökkvitæki — duft', 'Slökkvitæki — kolsýra (CO₂)', 'Veggfestingar', 'Skilti og merkingar', 'Eldvarnateppi', 'Reykskynjarar', 'Brunaslanga / slöngukefli', 'Annað'];
+  var REIKN_LIDIR = ['Afrit af reikningi', 'Spurning um reikning', 'Reikningur á aðra kennitölu', 'Afsláttur — vantar eða leiðrétting', 'Greiðslufrestur / eindagi', 'Óska eftir tilboði', 'Kjör og afsláttarkjör', 'Annað'];
   var VB_LIDIR = ['Auka herbergi / viðbót við kerfi', 'Áfylling / endurhleðsla', 'Tæki notað eða bilað', 'Vantar tæki', 'Skipta um tæki', 'Brunaslanga', 'Skilti og merkingar', 'Brunakerfi — bilun eða boð', 'Annað'];
   var GOGN_LIDIR = ['Úttektarskýrslur (slökkvitæki)', 'Brunakerfisskýrslur', 'Staðfesting á reyklosun', 'Reikningar / afrit', 'Þjónustusamningur', 'Skýrsla fyrir byggingarfulltrúa eða slökkvilið', 'Annað'];
-  var RAIL_LBL = { verkbeidni: 'Lýsing (valfrjálst)', gogn: 'Nánar (valfrjálst)', fyrirspurn: 'Fyrirspurn', annad: 'Erindi' };
-  var RAIL_PH = { verkbeidni: 'T.d. hvaða herbergi, hvenær hentar að koma…', gogn: 'T.d. hvaða ár, hvaða eignir, hver þarf gögnin…', fyrirspurn: 'Skrifaðu fyrirspurnina hér…', annad: 'Skrifaðu erindið hér…' };
+  var RAIL_LBL = { thjonusta: 'Nánari lýsing (valfrjálst)', pontun: 'Nánar (valfrjálst)', reikningur: 'Nánar (valfrjálst)', verkbeidni: 'Lýsing (valfrjálst)', gogn: 'Nánar (valfrjálst)', fyrirspurn: 'Fyrirspurn', annad: 'Erindi' };
+  var RAIL_PH = { thjonusta: 'T.d. fjöldi tækja, hæð, hvenær hentar…', pontun: 'T.d. fjöldi, stærð, hvert á að afhenda og hver tekur á móti…', reikningur: 'T.d. reikningsnúmer, hvaða kennitala, hvað á að leiðrétta…', verkbeidni: 'T.d. hvaða herbergi, hvenær hentar að koma…', gogn: 'T.d. hvaða ár, hvaða eignir, hver þarf gögnin…', fyrirspurn: 'Skrifaðu fyrirspurnina hér…', annad: 'Skrifaðu erindið hér…' };
   var KIND_HEAD = { fyrirspurn: 'Fyrirspurn', verkbeidni: 'Verkbeiðni', thjonusta: 'Beiðni um þjónustu', gogn: 'Gagnabeiðni', annad: 'Annað', reikningur: 'Reikningur', pontun: 'Pöntun' };
   var KIND_TOAST = { verkbeidni: 'Verkbeiðnin er móttekin — við höfum samband', gogn: 'Gagnabeiðnin er móttekin', fyrirspurn: 'Fyrirspurnin er send', annad: 'Erindið er sent', thjonusta: 'Beiðnin er send — við höfum samband', reikningur: 'Erindið er sent', pontun: 'Pöntunin er móttekin — við staðfestum verð og afhendingu' };
   var railKind = 'fyrirspurn', erVisun = null;
@@ -1041,7 +1045,7 @@
     if (!kinds.some(function (k) { return k[0] === railKind; })) railKind = kinds[0][0];
     var bl = (state.data.buildings || []);
     var sel = '<option value="">Almennt erindi (allar eignir)</option>' + bl.map(function (b) { return '<option value="' + b.id + '"' + (String(b.id) === String(old.eign) ? ' selected' : '') + '>' + esc(b.nafn) + '</option>'; }).join('');
-    var lid = railKind === 'verkbeidni' ? VB_LIDIR : railKind === 'gogn' ? GOGN_LIDIR : null;
+    var lid = railKind === 'verkbeidni' ? VB_LIDIR : railKind === 'gogn' ? GOGN_LIDIR : railKind === 'thjonusta' ? THJ_LIDIR : railKind === 'pontun' ? PONT_LIDIR : railKind === 'reikningur' ? REIKN_LIDIR : null;
     var er = ((state.data.erindi) || []).slice().sort(function (a, c) { return (a.stada === 'lokid') - (c.stada === 'lokid') || String(c.dags).localeCompare(String(a.dags)); });
     // 23.10.2026 (Agnar: „svissa gluggunum … þegar hann kemur að senda erindi þá helst hann með niður"):
     // Næstu skoðanir efst, Senda erindi þar undir — og formið festist (sticky) þegar skrunið nær því.
