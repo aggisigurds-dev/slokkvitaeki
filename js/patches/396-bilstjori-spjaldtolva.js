@@ -237,11 +237,20 @@
       else if (+a.field_inspected_year === cy) vinnsla++;
       else eftir++;
     });
+    // 27.11.2026 (Agnar: „vantar alveg filterinn til að geta valið það sem er t.d. eftir í mánuðinum“): tölurnar eru
+    // TAKKAR sem sía listann og kortið. Talningin kemur þá úr lista 219 sjálfum (BsListi.manudur), svo talan á
+    // flísinni er nákvæmlega fjöldinn sem birtist; eigin talning hér að ofan er aðeins varaleið ef 219 er eldri.
+    const L = window.BsListi;
+    if (L && L.manudur) { try { const t = L.manudur(); buid = t.buid; vinnsla = t.vinnsla; eftir = t.eftir; } catch (_) {} }
     const alls = buid + vinnsla + eftir;
-    const html = '<span class="mn">' + MAN[cm - 1] + '</span><span><b>' + alls + '</b> á skoðun</span>' +
-      '<span><i style="background:#e23232"></i><b>' + eftir + '</b> eftir</span>' +
-      '<span><i style="background:#e0a93e"></i><b>' + vinnsla + '</b> í vinnslu</span>' +
-      '<span><i style="background:#1f9d57"></i><b>' + buid + '</b> búið</span>' +
+    const valid = (L && L.seg && String(L.seg()).indexOf('m_') === 0) ? String(L.seg()).slice(2) : '';
+    const flis = (k, inn) => (L && L.velja)
+      ? '<button type="button" data-bs-man="' + k + '"' + (valid === k ? ' class="_on" aria-pressed="true"' : ' aria-pressed="false"') + '>' + inn + '</button>'
+      : '<span>' + inn + '</span>';
+    const html = '<span class="mn">' + MAN[cm - 1] + '</span>' + flis('allt', '<b>' + alls + '</b> á skoðun') +
+      flis('eftir', '<i style="background:#e23232"></i><b>' + eftir + '</b> eftir') +
+      flis('vinnsla', '<i style="background:#e0a93e"></i><b>' + vinnsla + '</b> í vinnslu') +
+      flis('buid', '<i style="background:#1f9d57"></i><b>' + buid + '</b> búið') +
       '<span class="sl">' + (alls ? Math.round((buid + vinnsla) / alls * 100) : 0) + ' % hafið</span>';
     let el = document.getElementById('_bs-manudur');
     if (!el) { el = document.createElement('div'); el.id = '_bs-manudur'; vakt.appendChild(el); }

@@ -346,6 +346,18 @@
   let _synaBuin = false;   // 07.10.2026 (Agnar: „taka allt þetta græna út“): búin/tekin út falin á Dagsins verk og Akstur-listum nema beðið sé um þau
   let _search = '';
   const DUE = { overdue:0, duenow:1, scheduled:2, in_progress:3, done:4, unknown:5 };
+  // Mánaðarskoðunin: félag með skoðunarmánuð = núverandi mánuður fellur í EINN flokk — buid (í lagi í ár), vinnsla
+  // (tekið út, skjöl eftir) eða eftir. Annað → null. Ein skilgreining fyrir talninguna í strimlinum OG síuna á
+  // listanum, svo talan á flísinni er alltaf fjöldinn sem birtist þegar ýtt er á hana.
+  function manFlokkur(x) {
+    if (+((x.ars || {}).inspect_month) !== new Date().getMonth() + 1) return null;
+    return x.status.key === 'done' ? 'buid' : x.status.key === 'in_progress' ? 'vinnsla' : 'eftir';
+  }
+  window.BsListi = {
+    seg: () => _seg,
+    velja: s => { _seg = s; renderList(); renderPins(); },
+    manudur: () => { const t = { eftir: 0, vinnsla: 0, buid: 0 }; buildList().forEach(x => { const f = manFlokkur(x); if (f) t[f]++; }); t.alls = t.eftir + t.vinnsla + t.buid; return t; }
+  };
   function currentList() {
     if (!(window.Companies && Companies.list)) return { ready:false, list:[] };
     let list = buildList();
@@ -353,9 +365,12 @@
     else if (_seg === 'today') list = list.filter(x => x.status.key === 'overdue' || x.status.key === 'duenow' || x.priority);
     else if (_seg === 'month') { const cm = new Date().getMonth() + 1; list = list.filter(x => +((x.ars || {}).inspect_month) === cm && x.status.key !== 'done'); }
     else if (_seg === 'overdue') list = list.filter(x => x.status.key === 'overdue');
+    // 27.11.2026 (Agnar: „vantar alveg filterinn til að geta valið það sem er t.d. eftir í mánuðinum“): tölurnar í
+    // mánaðarstrimlinum (396) eru síur — m_allt · m_eftir · m_vinnsla · m_buid. Sama flokkun og manFlokkur() telur.
+    else if (_seg.indexOf('m_') === 0) { const k = _seg.slice(2); list = list.filter(x => { const f = manFlokkur(x); return f && (k === 'allt' || f === k); }); }
     // Búin (🔵 tekið út í ár / 🟢 í lagi) eru á listanum aðeins undir „Allir í þjónustu“ eða með „Sýna búin“.
     let buinFalin = 0;
-    if (_seg !== 'all' && !_synaBuin) { const n = list.length; list = list.filter(x => !(x.status.key === 'done' || x.status.key === 'in_progress')); buinFalin = n - list.length; }
+    if (_seg !== 'all' && _seg.indexOf('m_') !== 0 && !_synaBuin) { const n = list.length; list = list.filter(x => !(x.status.key === 'done' || x.status.key === 'in_progress')); buinFalin = n - list.length; }
     const q = _search.trim().toLowerCase();
     // 30.09.2026: kennitölu-greinin var óvarin. Bókstafaleit („hraun") verður ''
     // þegar tölustafir eru strípaðir, og `"6602190480".includes("")` er alltaf
@@ -370,7 +385,7 @@
     // 07.10.2026 (Agnar: „Þessi mánuður sorted by póstnúmer — 100 efst og síðan upp“): mánaðarlistinn raðast eftir
     // póstnúmeri (dálkurinn, annars 3 tölustafir úr heimilisfanginu), án póstnúmers aftast; nafn innan sama númers.
     const postnr = x => { const c = x.co || {}; const m = String(c.postnumer || '').match(/\d{3}/) || String(c.heimilisfang || '').match(/\b(\d{3})\b/); return m ? +m[0] : 9999; };
-    if (_seg === 'month') list.sort((a, b) => (postnr(a) - postnr(b)) || String(a.co.nafn).localeCompare(b.co.nafn, 'is'));
+    if (_seg === 'month' || _seg.indexOf('m_') === 0) list.sort((a, b) => (postnr(a) - postnr(b)) || String(a.co.nafn).localeCompare(b.co.nafn, 'is'));
     else list.sort((a, b) =>
       ((+b.priority || 0) - (+a.priority || 0)) ||   // higher forgangur first (3→2→1→0)
       ((DUE[a.status.key] ?? 9) - (DUE[b.status.key] ?? 9)) ||
