@@ -449,7 +449,29 @@
     '#companies-main .p2-msimi{display:block;padding:12px 12px 4px;background:linear-gradient(180deg,#e8ebf0,#d6dbe3);border-top:1px solid #000}' +
     '#companies-main .p2-msimi .p2-mynd{padding:0}' +
     '#companies-main .p2-msimi .p2-mynd .ram{min-height:220px}' +
-    '#companies-main .p2-glugg .p2-mynd{display:none}';
+    '#companies-main .p2-glugg .p2-mynd{display:none}' +
+    /* 27.11.2026 (Agnar, símaskjámynd með rauðu yfir spjaldinu: „geturðu þjappað þessu betur saman") — lægri raðir,
+       minna loft milli kafla, athugasemdareiturinn ein lína á meðan hann er tómur. */
+    '#companies-main .p2-dalk{padding:0 14px 5px;margin-bottom:6px}' +
+    '#companies-main .p2-sec{padding:0 0 4px;margin-bottom:1px}' +
+    '#companies-main .p2-kv{padding:3px 0}' +
+    '#companies-main .p2-kv.p2-tom{display:none}' +   /* lína sem segir aðeins „—" tekur ekki röð í síma */
+    '#companies-main .p2-athug{padding:6px 14px 8px}' +
+    '#companies-main .p2-athug textarea:placeholder-shown{height:34px!important;min-height:34px}' +
+    '#companies-main .p2-athug .alt{margin-top:7px}' +
+    G + ' .p2-glugg{padding:14px 12px 24px!important}';
+
+  /* Sími með pláss fyrir tvo dálka (gámur ≥ 500 px; við 70 % síðustærð er hann ~550 px): „Húsið" og „Á staðnum" hlið við
+     hlið, stuttar línur í „Staður og samband" tvær í röð. Heimilisfang og netfang (.p2-br) halda fullri breidd. */
+  var TVEIR =
+    '#companies-main .p2-glugg{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}' +
+    '#companies-main .p2-d1,#companies-main .p2-athug,#companies-main .p2-mynd{grid-column:1 / -1!important}' +
+    '#companies-main .p2-d2{grid-column:1!important;border-right:1px solid #c3cad5}' +
+    '#companies-main .p2-d3{grid-column:2!important}' +
+    '#companies-main .p2-d1{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:18px;grid-auto-flow:dense}' +
+    '#companies-main .p2-d1 .p2-sec,#companies-main .p2-d1 .p2-br{grid-column:1 / -1}' +
+    '#companies-main .p2-d1 .p2-kv:last-child{border-bottom:1px solid rgba(20,24,34,.06)}' +
+    '#companies-main .p2-kv .k{width:86px}';
 
   function stilar() {
     if (document.getElementById('p2-css')) return;
@@ -458,7 +480,7 @@
     // 26.11.2026 (Agnar: heimilisfang „Völuteigur 29" braut einn staf á línu á síma): 4-dálka p2-glugg með föstum 520px
     // myndadálki sveltir textadálkana — mælt braut gildi staf-fyrir-staf undir ~1000px gáma (27 línur við 800), og
     // collapse-markið var aðeins 760px. Hækkað í 1100px svo þröng/símabreidd falli í hreina 1-dálks NARROW-útlitið.
-    s.textContent = css + '#companies-main.p2{container:p2c/inline-size}@container p2c (max-width:1100px){' + NARROW + '}@media (max-width:900px){' + NARROW + '}';
+    s.textContent = css + '#companies-main.p2{container:p2c/inline-size}@container p2c (max-width:1100px){' + NARROW + '}@media (max-width:900px){' + NARROW + '}@container p2c (min-width:500px) and (max-width:1100px){' + TVEIR + '}';
     document.head.appendChild(s);
   }
 
@@ -628,7 +650,8 @@
     return false;
   }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-  function kv(k, v, bekkur) { return v ? '<div class="p2-kv"><span class="k">' + esc(k) + '</span><span class="v' + (bekkur || '') + '">' + v + '</span></div>' : ''; }
+  var KV_BREID = { 'Heimilisfang': 1, 'Netfang': 1 };
+  function kv(k, v, bekkur) { return v ? '<div class="p2-kv' + (KV_BREID[k] ? ' p2-br' : '') + (v === '—' ? ' p2-tom' : '') + '"><span class="k">' + esc(k) + '</span><span class="v' + (bekkur || '') + '">' + v + '</span></div>' : ''; }
   var HAK = '<span class="p2-ck"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg></span>';
 
   function haus(d) {

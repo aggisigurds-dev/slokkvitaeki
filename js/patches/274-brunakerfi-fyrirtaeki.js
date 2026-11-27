@@ -754,6 +754,17 @@
       r('.b274-p', 'display:inline-flex;align-items:center;height:20px;padding:0 7px;margin-left:8px;border-radius:3px;background:rgba(255,255,255,.12);font-family:' + MONO + ';font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#d5dbe6'),
       r('.b274-ny', 'width:auto!important;margin:0!important;padding:0 12px!important;height:32px;font-size:12.5px!important;border-radius:4px!important'),
       r('.b274-graenn', 'height:36px!important;min-height:0!important;padding:0 14px!important;border-radius:4px!important;font-family:' + SANS + '!important;font-size:13px!important;font-weight:700!important;display:inline-flex;align-items:center;gap:7px;background:linear-gradient(145deg,#010d05 0%,#06331a 20%,#0e5a2e 43%,#16783f 53%,#073a1d 74%,#010f06 100%)!important;border:1px solid rgba(52,168,98,.55)!important;color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 0 14px -5px rgba(22,140,72,.65),0 2px 5px rgba(0,0,0,.3)!important;text-shadow:0 1px 1px rgba(0,0,0,.55)'),
+      // 27.11.2026 (Agnar, símaskjámynd: „geturðu þjappað þessu betur saman"): í símaham stöfluðust plöturnar, línufjöldinn
+      // og Vista-takkinn hægra megin hver í sína röð og hausinn varð 230 px. Nú: titill · tala + Í vinnslu + takkar í einni
+      // röð · plöturnar í einni röð undir (mælt 120 px). Spjaldið svarar EIGIN breidd (síminn segist 980 px). AÐEINS símahamur:
+      // á tölvu er spjaldið líka um 590 px (tveir dálkar í 1440) og þar stendur uppsetningin frá 02.10.2026 óbreytt.
+      r('.b274-k', 'container:b274k / inline-size'),
+      '@container b274k (max-width:640px){' + ['html[data-viewmode="mobile"] ', 'body.appmode '].map(F => [
+        ['.b274-hd-h', 'gap:8px 12px;padding:12px 16px 10px'],
+        ['.b274-hd-h .b274-hl', 'display:contents'],
+        ['.b274-hd-h .b274-hr', 'order:1;flex:0 1 auto;margin-left:auto;align-self:center;flex-direction:row;justify-content:flex-end'],
+        ['.b274-hd-h .b274-plotur', 'order:2;flex:1 1 100%;flex-direction:row;flex-wrap:wrap;align-items:center;gap:6px 8px;margin-left:0;text-align:left']
+      ].map(x => F + P + x[0] + '{' + x[1] + '}').join('')).join('') + '}',
       // mjórra (sími / þröngt): einn dálkur
       '@media (max-width:1100px){#_bkc-overlay ._bkc-grid.b274{grid-template-columns:1fr}' + P + '.b274-thri{grid-template-columns:1fr 1fr}}'
     ].join('\n');
