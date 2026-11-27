@@ -914,8 +914,27 @@
     const m = model();
     return priceItems()
       .filter(it => it.link && (!adeins || adeins(it)))
-      .map(it => ({ name: it.name, qty: String(magnTengingar(m, it.link)), price: String(it.price), teg: it.teg || tegAgiskun(it.name), sjalfNytt: erNytt(it.link) ? it.link : undefined }))
+      .map(it => {
+        const q = String(magnTengingar(m, it.link));
+        const l = { name: it.name, qty: q, price: String(it.price), teg: it.teg || tegAgiskun(it.name), sjalfNytt: erNytt(it.link) ? it.link : undefined };
+        // 27.11.2026: skoðunarlína tengd búnaði ber tenginguna, svo hún fylgi teljaranum áfram (og hverfi við 0)
+        if (it.link !== 'fast' && !erNytt(it.link)) { l.sjalfLink = it.link; l.sjalfMagn = q; }
+        return l;
+      })
       .filter(l => +l.qty > 0);
+  }
+  // 27.11.2026: lína sem notandinn EYÐIR sjálfur kemur ekki aftur við næstu talningu — tengingin er munuð í
+  // verd.sleppt. „⚡ Reikna út frá skýrslunni" hreinsar listann; lína sem er sett inn aftur (úr verðlista) líka.
+  function linkLinu(l) {
+    if (!l) return '';
+    if (l.sjalfLink) return l.sjalfLink;
+    const it = priceItems().find(x => x.link && x.link !== 'fast' && !erNytt(x.link) && lidLykill(x.name) === lidLykill(l.name));
+    return it ? it.link : '';
+  }
+  function merkjaSleppt(verd, l) {
+    const k = linkLinu(l); if (!k || !verd) return;
+    if (!Array.isArray(verd.sleppt)) verd.sleppt = [];
+    if (verd.sleppt.indexOf(k) < 0) verd.sleppt.push(k);
   }
 
   // „Þar af nýtt" STÝRIR vörulínunum (Agnar 01.10: „láta útreikningana sækja verðin og uppfærast miðað við fjöldann sem
@@ -928,15 +947,34 @@
   // tengdar búnaði (t.d. reykhita = reyk- + hitaskynjarar) fylgja nú teljurunum líka — en AÐEINS þegar skýrslan er
   // ritstýrð (medSkodun), aldrei við hleðslu yfir allar skýrslur félagsins, svo sendir reikningar fyrri ára haggast
   // ekki. Handslegin tala heldur sér: lína fylgir búnaðinum meðan qty === sjalfMagn (síðasta sjálfvirka talan).
-  // Engri línu er bætt við né eytt — aðeins magni línu sem er þegar til.
-  function samraemaSkodunS(m, linur) {
+  // 27.11.2026 (Agnar: „Vinnuhamur uppfærir verðin ekki · ekki heldur í aðal"): áður var engri línu bætt við né eytt —
+  // aðeins magni línu sem var þegar til. Ný skýrsla fékk því ENGA skoðunarlínu þótt búnaður væri talinn (26-0017:
+  // boðbúnaður 1, handboðar 1, bjöllur 1 — þrjár fastar línur og ekkert annað). Nú: talinn búnaður með tengdan lið í
+  // verðlistanum fær línu á verðlistaverði, og sjálfvirk lína sem enginn hefur handbreytt hverfur þegar talið er niður
+  // í 0. Lína sem notandinn eyddi sjálfur (verd.sleppt) kemur ekki aftur; handslegið magn stendur.
+  // LOKIN skýrsla heldur gömlu reglunni óbreyttri (aðeins magn línu sem er til) — reikningur hennar er þegar farinn
+  // út og línum er hvorki bætt við né eytt sjálfkrafa þar.
+  function samraemaSkodunS(m, linur, verd) {
     let breytt = false;
+    const lokid = !!(S && S.status === 'final');
+    const sl = (verd && Array.isArray(verd.sleppt)) ? verd.sleppt : [];
     priceItems().filter(it => it.link && it.link !== 'fast' && !erNytt(it.link)).forEach(it => {
       const n = magnTengingar(m, it.link);
-      if (n <= 0) return;
       let ix = linur.findIndex(l => l && l.sjalfLink === it.link);
       if (ix < 0) ix = linur.findIndex(l => l && !l.sjalfNytt && !l.sjalfLink && lidLykill(l.name) === lidLykill(it.name));
-      if (ix < 0) return;
+      if (n <= 0) {
+        if (ix >= 0 && !lokid) {
+          const l0 = linur[ix];
+          if (l0.sjalfLink === it.link && l0.sjalfMagn != null && (num(l0.qty) || 0) === (num(l0.sjalfMagn) || 0)) { linur.splice(ix, 1); breytt = true; }
+        }
+        return;
+      }
+      if (ix < 0) {
+        if (lokid || sl.indexOf(it.link) >= 0) return;
+        linur.push({ name: it.name, qty: String(n), price: String(it.price), afsl: '', teg: it.teg || tegAgiskun(it.name), sjalfLink: it.link, sjalfMagn: String(n) });
+        breytt = true; return;
+      }
+      const si = sl.indexOf(it.link); if (si >= 0) sl.splice(si, 1);   // línan er komin aftur (sett inn handvirkt) → ekki lengur sleppt
       const l = linur[ix];
       if (l.sjalfLink === it.link && l.sjalfMagn != null && (num(l.qty) || 0) !== (num(l.sjalfMagn) || 0)) return;
       if ((num(l.qty) || 0) !== n || l.sjalfLink !== it.link) { l.qty = String(n); l.sjalfLink = it.link; l.sjalfMagn = String(n); breytt = true; }
@@ -947,7 +985,7 @@
     const m = model();
     const verd = S.data.verd = S.data.verd || { linur: [] };
     const linur = verd.linur = verd.linur || [];
-    let breytt = medSkodun ? samraemaSkodunS(m, linur) : false;
+    let breytt = medSkodun ? samraemaSkodunS(m, linur, verd) : false;
     priceItems().filter(it => erNytt(it.link)).forEach(it => {
       const n = magnTengingar(m, it.link);
       let ix = linur.findIndex(l => l && l.sjalfNytt === it.link);
@@ -1038,7 +1076,7 @@
       const lines = autoVerdLines();
       if (!lines.length) { toast('Enginn búnaður talinn enn — eða engir liðir tengdir í verðlistanum (🏷).', true); return; }
       if (S.data.verd.linur.length && !confirm('Skipta út núverandi verðlínum fyrir reiknaðar línur úr skýrslunni?')) return;
-      S.data.verd.linur = lines; markDirty(); rerender();
+      S.data.verd.linur = lines; S.data.verd.sleppt = []; markDirty(); rerender();
       toast('⚡ ' + lines.length + ' línur reiknaðar úr búnaðaryfirlitinu');
     });
     const pick = box.querySelector('#_bks-v-pick');
@@ -1082,6 +1120,7 @@
     const edit = box.querySelector('#_bks-v-edit');
     if (edit) edit.addEventListener('click', () => openPriceEditor(rerender));
     box.querySelectorAll('[data-vdel]').forEach(b => b.addEventListener('click', () => {
+      merkjaSleppt(S.data.verd, S.data.verd.linur[+b.dataset.vdel]);
       S.data.verd.linur.splice(+b.dataset.vdel, 1); markDirty(); rerender();
     }));
     box.querySelectorAll('[data-vk]').forEach(inp => inp.addEventListener('input', () => {
@@ -1321,13 +1360,13 @@
     // fela/sýna lið í þessari skýrslu
     w.querySelectorAll('[data-eqhide]').forEach(b => b.addEventListener('click', () => {
       const i = +b.dataset.eqhide, r = S.data.bunadur[i]; if (!r) return;
-      r.hidden = !r.hidden; markDirty(); renderWork(); updStats();
+      r.hidden = !r.hidden; markDirty(); try { samraemaNyttS(true); } catch (_) {} renderWork(); updStats();
     }));
     // fjarlægja sérsniðinn lið alveg
     w.querySelectorAll('[data-eqdel]').forEach(b => b.addEventListener('click', () => {
       const i = +b.dataset.eqdel;
       if (!confirm('Fjarlægja „' + (S.data.bunadur[i] || {}).label + '" úr skýrslunni?')) return;
-      S.data.bunadur.splice(i, 1); markDirty(); renderWork(); updStats();
+      S.data.bunadur.splice(i, 1); markDirty(); try { samraemaNyttS(true); } catch (_) {} renderWork(); updStats();
     }));
     wireAthForm(w);
     wireVerd(w);
@@ -1890,7 +1929,10 @@
     ov.style.display = 'block';
     document.body.style.overflow = 'hidden';
     const go = () => { renderTop(); renderWork(); setMode('work'); savedNote(''); };
-    if (S.data) go();
+    // 27.11.2026: óloki drög sem eru opnuð fá verðlínurnar samræmdar við talda búnaðinn strax (vistast með sjálfvistun)
+    let samr = false;
+    if (S.data && existing && S.status !== 'final') { try { samr = samraemaNyttS(true); } catch (_) {} }
+    if (S.data) { go(); if (samr) markDirty(); }
     else nextNr().then(nr => {
       S.data = blank(co, nr); go();
       // 23.10.2026 (Agnar: „ef ég fer til baka úr vinnuham þá sloknar á … þarf að velja eitthvað og ýta á reikna"): ný skýrsla var
@@ -2109,7 +2151,7 @@
   }
   // 14.10.2026: priceItems + savePriceItems opin svo 410 (Brunak. verð-glugginn í Vörur og þjónusta) geti breytt
   // verðum beint í listanum — sama geymsla, sami úreldingarvörður (Agnar: „fyrri listinn ætti að geta breytt verðunum").
-  window.BrunakerfiSkyrsla = { openFlow, openForm, stofnaDrog, openPriceEditor, renderSheet, rebuildPdf, pdfBlob, verdlistiMedTegund, nyttLinur, tegAgiskun, samraemaNytt, radaLinum, priceItems, savePriceItems };
+  window.BrunakerfiSkyrsla = { openFlow, openForm, stofnaDrog, openPriceEditor, renderSheet, rebuildPdf, pdfBlob, verdlistiMedTegund, nyttLinur, tegAgiskun, samraemaNytt, merkjaSleppt, radaLinum, priceItems, savePriceItems };
   console.log('[patch-273] Brunakerfi skoðunarskýrsla v2 (PDF + verð) installed');
 })();
 /* === END BRUNAKERFI SKOÐUNARSKÝRSLA === */

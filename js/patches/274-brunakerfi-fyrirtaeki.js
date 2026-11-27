@@ -139,6 +139,16 @@
       if (rep.data.bunadur) d.bunadur = rep.data.bunadur;
       if (rep.data.hljod) d.hljod = rep.data.hljod;
       if (rep.data.stod) { d.stod = d.stod || {}; d.stod.checks = rep.data.stod.checks; }
+      // 27.11.2026: dagsetning, skoðunaraðili og samantekt voru sett í minni en ALDREI skrifuð — vistunin bar aðeins
+      // búnað, hljóð og stöðvarhök. Breytingin sást á skjánum og hvarf við næstu hleðslu. Nú fylgja lyklarnir sem
+      // var breytt hér (rep._bladLyklar) með í sömu skrift; öðrum hlutum meta er ekki haggað.
+      const br = rep._bladLyklar || {};
+      if ((br.dags || br.madur) && rep.data.meta) {
+        d.meta = d.meta || {};
+        if (br.dags) d.meta.dags = rep.data.meta.dags;
+        if (br.madur) d.meta.madur = rep.data.meta.madur;
+      }
+      if (br.samantekt) d.samantekt = rep.data.samantekt || '';
       // 01.10.2026: „Þar af nýtt" stýrir vörulínunum — samræmt hér og vistað Í SÖMU skrift og búnaðartölurnar,
       // svo tvær vistanir (blað + verðlínur) geti ekki skrifað hvor yfir aðra.
       let linurBreyttar = false;
@@ -147,14 +157,28 @@
         if (_bks && _bks.samraemaNytt) linurBreyttar = _bks.samraemaNytt(C.co, rep, true);   // búnaðurinn breyttist → skoðunarlínur fylgja
         if (_bks && _bks.radaLinum && rep.data.verd && _bks.radaLinum(rep.data.verd.linur)) linurBreyttar = true;
       } catch (_) {}
-      if (linurBreyttar) { d.verd = d.verd || {}; d.verd.linur = (rep.data.verd && rep.data.verd.linur) || []; }
-      const r = await sb.from('brunakerfi_skyrslur').update({ data: d, updated_at: new Date().toISOString() }).eq('id', rep.id);
+      // 27.11.2026: +/− á blaðinu samræmir línurnar STRAX í minni (verðið sést um leið) og merkir br.linur — þá er hér
+      // ekkert eftir að samræma, en línurnar verða samt að fara með í skriftina.
+      const linurMerkt = !!br.linur;
+      if (linurBreyttar || linurMerkt) {
+        d.verd = d.verd || {}; d.verd.linur = (rep.data.verd && rep.data.verd.linur) || [];
+        if (rep.data.verd && Array.isArray(rep.data.verd.sleppt)) d.verd.sleppt = rep.data.verd.sleppt;
+      }
+      // skoðunardagurinn ræður ári skýrslunnar (sama regla og yearOf í 273) — annars lenti hún á röngu ári í yfirlitum
+      const upd = { data: d, updated_at: new Date().toISOString() };
+      if (br.dags) { const am = String((d.meta && d.meta.dags) || '').match(/^(\d{4})/); if (am) upd.year = +am[1]; }
+      const r = await sb.from('brunakerfi_skyrslur').update(upd).eq('id', rep.id);
       if (r.error) { toast('Skýrslan vistaðist EKKI: ' + r.error.message, true); return; }
-      toast(linurBreyttar ? 'Skýrsla vistuð ✓ · verðlínur uppfærðar eftir „Þar af nýtt"' : 'Skýrsla vistuð ✓');
+      if (upd.year) rep.year = upd.year;
+      toast((linurBreyttar || linurMerkt) ? 'Skýrsla vistuð ✓ · verðlínur fylgja búnaðinum' : 'Skýrsla vistuð ✓');
       if (linurBreyttar) { try { render(); } catch (_) {} }
     } catch (e) { toast('Skýrslan vistaðist EKKI: ' + ((e && e.message) || e), true); }
   }
-  function vistaBladSidar(rep) { _bladBreytt = true; _bladBid = rep; if (_bladT) clearTimeout(_bladT); _bladT = setTimeout(() => { _bladT = null; vistaBlad(rep); }, 900); }
+  function vistaBladSidar(rep) {
+    _bladBreytt = true; _bladBid = rep; if (_bladT) clearTimeout(_bladT); _bladT = setTimeout(() => { _bladT = null; vistaBlad(rep); }, 900);
+    // lokin skýrsla sem er breytt utan aflæsingar (reitirnir hægra megin) → bjóða nýtt PDF á staðnum
+    try { const pr = document.getElementById('_bkc-pdfupp-rod'); if (pr && !_aflaest) pr.style.display = ''; } catch (_) {}
+  }
   async function vistaVerdlinur(rep) {
     const sb = SB(); if (!sb || !rep) return;
     try {
@@ -164,6 +188,7 @@
       d.verd = d.verd || {};
       d.verd.linur = (rep.data && rep.data.verd && rep.data.verd.linur) || [];
       if (rep.data && rep.data.verd && rep.data.verd.afslattur != null) d.verd.afslattur = rep.data.verd.afslattur;   // B30
+      if (rep.data && rep.data.verd && Array.isArray(rep.data.verd.sleppt)) d.verd.sleppt = rep.data.verd.sleppt;       // 27.11: eyddar skoðunarlínur koma ekki aftur
       const r = await sb.from('brunakerfi_skyrslur').update({ data: d, updated_at: new Date().toISOString() }).eq('id', rep.id);
       if (r.error) { toast('Verðlínur vistuðust EKKI: ' + r.error.message, true); return; }
       toast('Verðlínur vistaðar ✓');
@@ -630,6 +655,17 @@
       r('.b274-rl small', 'font-family:' + SANS + ';font-weight:400;letter-spacing:0;text-transform:none;color:#6b7483;font-size:11.5px'),
       r('.b274-reitur', 'background:#eef1f6;border:1px solid rgba(20,24,34,.14);border-radius:8px;box-shadow:inset 0 2px 5px rgba(0,0,0,.18);padding:10px 12px;font-size:13px;color:#141822;min-height:40px'),
       r('.b274-reitur.mono', 'font-family:' + MONO), r('.b274-reitur.tomt', 'color:#6b7483'),
+      // 27.11.2026: Skoðunaraðili / Framkvæmd eru innsláttarreitir — sama útlit og kassinn var, en ritanlegir
+      r('input.b274-metainn', 'display:block;width:100%;height:40px;margin:0;font-family:' + SANS + ';font-size:13px;line-height:1.3;font-weight:600;color:#141822;outline:0;-webkit-appearance:none;appearance:none;cursor:text'),
+      r('input.b274-metainn.mono', 'font-family:' + MONO),
+      r('input.b274-metainn:hover', 'border-color:rgba(20,24,34,.34)'),
+      r('input.b274-metainn:focus', 'border-color:#2a78d6;box-shadow:inset 0 2px 5px rgba(0,0,0,.12),0 0 0 3px rgba(42,120,214,.22);background:#fff'),
+      r('label.b274-rl', 'cursor:pointer'),
+      // dagsreiturinn kemur vafinn í umgjörð 149 (DD/MM/ÁÁÁÁ-texti + 📅) — sama áferð og hæð og hinir reitirnir
+      r('.b274-thri .dd-date-wrap', 'display:flex;width:100%;height:40px'),
+      r('.b274-thri .dd-date-wrap input.dd-date-text', 'height:40px;background:#eef1f6;border:1px solid rgba(20,24,34,.14);border-right:0;border-radius:4px 0 0 4px;box-shadow:inset 0 2px 5px rgba(0,0,0,.18);padding:10px 12px;font-family:' + MONO + ';font-size:13px;font-weight:600;color:#141822'),
+      r('.b274-thri .dd-date-wrap input.dd-date-text:focus', 'border-color:#2a78d6;background:#fff'),
+      r('.b274-thri .dd-date-wrap button.dd-date-btn', 'height:40px;border:1px solid rgba(20,24,34,.14);border-radius:0 4px 4px 0;background:#dfe4ec'),
       r('.b274-note', 'background:#eef1f6!important;border:1px solid rgba(20,24,34,.14)!important;border-radius:8px!important;box-shadow:inset 0 2px 5px rgba(0,0,0,.18)!important;color:#141822!important;font-family:' + SANS + '!important;font-size:13px!important;min-height:56px!important;width:100%;padding:10px 12px!important;resize:vertical'),
       r('.b274-hero', LINE + ';padding:4px 12px 10px'),
       r('.b274-hero ._bkc-new', 'margin-top:8px'),
@@ -912,7 +948,9 @@
       const _bks = window.BrunakerfiSkyrsla;
       if (_bks && _bks.samraemaNytt) C.reports.forEach(r => {
         if (!(r && r.data)) return;
-        const samr = _bks.samraemaNytt(C.co, r);                                                   // „Þar af nýtt"
+        // „Þar af nýtt" — og (27.11.2026) skoðunarlínur ólokinna draga fylgja talda búnaðinum strax við opnun;
+        // lokin skýrsla er aldrei snert við hleðslu, svo sendir reikningar haggast ekki
+        const samr = _bks.samraemaNytt(C.co, r, r.status !== 'final');
         const rodun = _bks.radaLinum ? _bks.radaLinum(r.data.verd && r.data.verd.linur) : false;    // skoðun → vörur → vinna → akstur
         if (!samr && !rodun) return;
         // lykkjuvörn: SAMA niðurstaða er ekki vistuð aftur innan mínútu (t.d. ef vistun festist ekki og næsta
@@ -999,7 +1037,8 @@
       return ur;
     };
     // Ritill, ekki tafla: hver lína er reitir sem má breyta beint hér.
-    const verdHtml = verds.length ?
+    // fall (27.11.2026) svo línurnar megi endurteikna á staðnum þegar búnaður er talinn á blaðinu — sjá endurteiknaLinur
+    const smidaVerdHtml = () => verds.length ?
       verds.map(x =>
         '<div data-vrep="' + esc(x.r.id) + '">' +
         '<div style="font-size:11.5px;font-weight:800;color:#59606c;padding:2px 0 8px">' +
@@ -1042,6 +1081,7 @@
       : (newest
           ? '<div class="_bkc-empty">Engar verðlínur enn — smelltu á „✏️ Kostnaðarliðir" hér fyrir neðan.</div>'
           : '<div class="_bkc-empty">Útreikningarnir bíða í skoðunarskýrslunni.<br><button type="button" class="_bkc-act" id="_bkc-verdny" style="background:#141619;margin-top:9px">＋ Byrja skoðun ' + NOW + '</button></div>');
+    const verdHtml = smidaVerdHtml();
 
     // búnaðarskrá úr nýjustu skýrslu
     let bunHtml = '<div class="_bkc-empty">Engin skýrsla enn — búnaðarskráin fyllist sjálfkrafa úr fyrstu skoðunarskýrslu.</div>';
@@ -1115,6 +1155,21 @@
     const skyrslaPc = repNow ? (repNow.status === 'final' ? 'ok' : 'vinnsla') : 'vantar';
     const skyrslaTxt = repNow ? ('Skýrsla ' + (repNow.uttekt_nr || NOW) + (repNow.status === 'final' ? ' lokið' : ' drög')) : 'Skýrsla ' + NOW + ' vantar';
     const reitur = (lbl, val, mono, tomt) => '<div><div class="b274-rl">' + lbl + '</div><div class="b274-reitur' + (mono ? ' mono' : '') + (tomt ? ' tomt' : '') + '">' + val + '</div></div>';
+    // 27.11.2026 (Agnar: „ég get ekkert breytt skoðunaraðili" · „vill ekki þessar helv læsingar út um allt"):
+    //   • Skoðunaraðili og Framkvæmd voru kassar sem LITU ÚT eins og reitir en voru fastur texti. Nú eru þeir reitir
+    //     sem skrifað er í beint — vistast á skýrsluna (data.meta), engin aflæsing.
+    //   • Drög eru ALLTAF opin á blaðinu. Aðeins lokin (send) skýrsla heldur aflæsingarhnappnum, því breyting á henni
+    //     kallar á nýtt PDF — og sé reitunum hér breytt á lokinni skýrslu birtist „Uppfæra PDF" við hlið þeirra.
+    const erLokid = !!(repNow && repNow.status === 'final');
+    const opid = !!repNow && (_aflaest || !erLokid);
+    const madurNofn = (function () {
+      const s = []; const baeta = n => { n = String(n || '').trim(); if (n && s.indexOf(n) < 0) s.push(n); };
+      try { const u = window.UttektUndirritun || {}; baeta(u.skodunaradili); (u.listi || []).forEach(baeta); } catch (_) {}
+      C.reports.forEach(r => baeta(r && r.data && r.data.meta && r.data.meta.madur));
+      return s;
+    })();
+    const reiturInn = (lbl, k, val, type, auka) => '<div><label class="b274-rl" for="_bkc-meta-' + k + '">' + lbl + '</label>' +
+      '<input class="b274-reitur b274-metainn' + (type === 'date' ? ' mono' : '') + '" id="_bkc-meta-' + k + '" data-metak="' + k + '" type="' + type + '" value="' + esc(val || '') + '" autocomplete="off"' + (auka || '') + '></div>';
     w.innerHTML =
       '<div class="_bkc-cust">' +
         '<div class="_bkc-custL">' +
@@ -1140,7 +1195,7 @@
             '<div class="b274-hr">' +
               (meta.dags ? '<span class="b274-plata dokk">📅 Skoðað ' + esc(fmtDags(meta.dags)) + '</span>' : '') +
               '<div class="b274-hb">' +
-                (bladHtml ? '<button type="button" class="_bkc-act ' + (_aflaest ? 'b274-graenn' : 'b274-malmur') + '" id="_bkc-aflaesa" title="' + (_aflaest ? 'Læsa blaðinu aftur' + (repNow.status === 'final' ? ' og uppfæra PDF-skýrsluna' : '') : 'Breyta tölum og hökum beint á blaðinu') + '">' + (_aflaest ? '🔒 Læsa skýrslu' : '🔓 Aflæsa skýrslu') + '</button>' : '') +
+                (bladHtml && erLokid ? '<button type="button" class="_bkc-act ' + (_aflaest ? 'b274-graenn' : 'b274-malmur') + '" id="_bkc-aflaesa" title="' + (_aflaest ? 'Læsa blaðinu aftur og uppfæra PDF-skýrsluna' : 'Skýrslan er lokin — aflæstu til að breyta tölum og hökum beint á blaðinu') + '">' + (_aflaest ? '🔒 Læsa skýrslu' : '🔓 Aflæsa skýrslu') + '</button>' : '') +
                 // 01.10.2026 (Agnar): „Í skýrslu" úr Línum reiknings færður hingað og heitir „Vinnuhamur" — opnar skýrsluna
                 // í vinnuham (verðlistaval, efni úr innkaupum). Sami [data-open]-hlustari og áður.
                 // „Skoðunarskýrsla"/„Halda áfram" (efst í Skýrslu og reikningi) gerði það sama og var fjarlægt (Agnar) —
@@ -1153,11 +1208,11 @@
           '<div class="b274-stal">' +
             '<div class="b274-rod"><span class="b274-merki">Skýrslan' + (skyrslaNafn ? ' · ' + esc(skyrslaNafn) : '') + '</span>' +
               (repNow ? '<span class="b274-plata ' + skyrslaPc + '"><i></i>' + (repNow.status === 'final' ? 'Lokið' : 'Drög') + '</span>' : '') +
-              '<span class="b274-sp"></span><span class="b274-hint">' + (bladHtml ? (_aflaest ? 'Aflæst — breytingar vistast beint á skýrsluna' : 'Aflæstu blaðið til að breyta tölum og hökum beint') : 'Blaðið er vinnuformið — reitirnir fyllast í skýrslunni sjálfri') + '</span></div>' +
+              '<span class="b274-sp"></span><span class="b274-hint">' + (bladHtml ? (opid ? (erLokid ? 'Aflæst — breytingar vistast beint á skýrsluna' : 'Smelltu á reit á blaðinu til að breyta — vistast sjálfkrafa') : 'Lokin skýrsla — aflæstu til að breyta á blaðinu') : 'Blaðið er vinnuformið — reitirnir fyllast í skýrslunni sjálfri') + '</span></div>' +
             // ramminn: ÓBREYTTUR (sama iframe, sömu breytur) — eða tómt blað sem býður í næstu skoðun
             (bladHtml ?
-              '<div class="b274-rammi b274-blad' + (_aflaest ? ' _aflaest' : '') + '" id="_bkc-blad">' + bladHtml +
-                (_aflaest ? '<div class="b274-bladhint">Smelltu á tölu í búnaðaryfirlitinu (+ / −), á dB-reit, eða á „Í lagi / Ekki í lagi“-reit til að haka. Vistast sjálfkrafa.</div>' : '') +
+              '<div class="b274-rammi b274-blad' + (opid ? ' _aflaest' : '') + '" id="_bkc-blad">' + bladHtml +
+                (opid ? '<div class="b274-bladhint">Smelltu beint á blaðið til að breyta: dagsetningu, tölu í búnaðaryfirlitinu (+ / −), dB-reit, „Í lagi / Ekki í lagi“ eða samantektina. Vistast sjálfkrafa.</div>' : '') +
               '</div>'
             : skyrslaSrc ?
               '<div class="b274-rammi">' +
@@ -1202,10 +1257,14 @@
           '</header>' +
           '<div class="b274-stal">' +
             '<div class="b274-thri">' +
-              reitur('Skoðunaraðili', meta.madur ? esc(meta.madur) : 'skráð í skýrslunni', false, !meta.madur) +
-              reitur('Framkvæmd', meta.dags ? esc(fmtDags(meta.dags)) : '—', true, !meta.dags) +
+              (repNow
+                ? reiturInn('Skoðunaraðili', 'madur', meta.madur, 'text', ' list="_bkc-madur-dl" placeholder="Nafn skoðunaraðila"') +
+                  '<datalist id="_bkc-madur-dl">' + madurNofn.map(n => '<option value="' + esc(n) + '">').join('') + '</datalist>' +
+                  reiturInn('Framkvæmd', 'dags', String(meta.dags || '').slice(0, 10), 'date', '')
+                : reitur('Skoðunaraðili', 'skráð í skýrslunni', false, true) + reitur('Framkvæmd', '—', true, true)) +
               reitur('Úttekt nr.', meta.nr ? esc(meta.nr) : ((repNow && repNow.uttekt_nr) ? esc(repNow.uttekt_nr) : '—'), true, !(meta.nr || (repNow && repNow.uttekt_nr))) +
             '</div>' +
+            (erLokid ? '<div class="b274-rod" id="_bkc-pdfupp-rod"' + (_bladBreytt && !_aflaest ? '' : ' style="display:none"') + '><span class="b274-hint">Lokinni skýrslu var breytt — PDF-skjalið er enn það gamla.</span><span class="b274-sp"></span><button type="button" class="_bkc-act b274-graenn" id="_bkc-pdfupp">↻ Uppfæra PDF</button></div>' : '') +
             '<div><div class="b274-rl">Minnispunktur <small>vistast sjálfkrafa, sést á öllum tækjum</small></div>' +
               '<textarea class="_bkc-note b274-note" id="_bkc-note" placeholder="t.d. Lykill í hólfi hjá húsverði · hringja á undan…">' + esc(C.note) + '</textarea></div>' +
             // línur reiknings — ritillinn (sömu [data-vrep]-blokkir) sem tafla
@@ -1245,7 +1304,7 @@
     // víring
     // Ritillinn: innsláttur uppfærir línuna og heildartölurnar Á STAÐNUM (enginn
     // endurteikning meðan skrifað er — Stöðugt viðmót), og vistast 0,9 sek síðar.
-    w.querySelectorAll('[data-vrep]').forEach(blokk => {
+    const viraLinur = () => w.querySelectorAll('[data-vrep]').forEach(blokk => {
       const rep = C.reports.find(r => String(r.id) === blokk.dataset.vrep); if (!rep) return;
       const linur = () => ((rep.data && rep.data.verd && rep.data.verd.linur) || []);
       const uppfaeraTolur = () => {
@@ -1282,6 +1341,7 @@
       blokk.querySelectorAll('[data-vdel]').forEach(b => b.addEventListener('click', async () => {
         const l = linur()[+b.dataset.vdel]; if (!l) return;
         if (!confirm('Eyða línunni „' + (l.name || '') + '"?')) return;
+        try { if (BKS.merkjaSleppt) BKS.merkjaSleppt(rep.data.verd, l); } catch (_) {}   // eydd skoðunarlína kemur ekki aftur við næstu talningu
         linur().splice(+b.dataset.vdel, 1);
         render(); vistaSidar(rep);
       }));
@@ -1343,6 +1403,32 @@
         render(); vistaSidar(rep); skrifaI(ny);
       });
     });
+    viraLinur();
+    // 27.11.2026 (Agnar: „og láta síðan verðið uppfærast strax"): þegar búnaður er talinn á blaðinu eru línur reiknings
+    // og samtölurnar endurteiknaðar Á STAÐNUM — ekki eftir 0,9 sek vistunartöf og ferskan lestur. Blaðið sjálft er
+    // ósnert (＋/− glugginn helst opinn), svo hægt er að smella áfram.
+    const endurteiknaLinur = () => {
+      const box = w.querySelector('.b274-linur'); if (!box) return;
+      box.innerHTML = smidaVerdHtml(); viraLinur();
+      const heild = C.reports.map(r => verdOf(r)).filter(v => v.lines > 0);
+      const an = heild.reduce((a, v) => a + v.sum, 0), med = heild.reduce((a, v) => a + v.total, 0);
+      const rb = w.querySelector('._bkc-reikn');
+      if (rb) {
+        const b = rb.querySelectorAll('.b274-undir b'), big = rb.querySelector('._big span:last-child');
+        if (b[0]) b[0].textContent = fmtKr(an);
+        if (b[1]) b[1].textContent = fmtKr(an * VAT_PCT / 100);
+        if (big) big.textContent = fmtKr(med);
+      }
+      const hd = w.querySelector('.b274-hd-h');
+      if (hd) {
+        const n = hd.querySelector('.b274-tala .n'); if (n) n.textContent = fmtKr(med).replace(/ kr$/, '');
+        const hi = hd.querySelector('.b274-plotur .b274-hint');
+        if (hi) {
+          const ein = ((repNow && repNow.data && repNow.data.bunadur) || []).reduce((t, x) => t + (x.hidden ? 0 : (+x.iLagi || 0) + (+x.ekki || 0)), 0);
+          hi.textContent = heild.reduce((t, v) => t + v.lines, 0) + ' línur' + (ein ? ' · ' + ein + ' einingar' : '');
+        }
+      }
+    };
     const repNy = w.querySelector('#_bkc-repny');
     if (repNy) repNy.addEventListener('click', () => { const b = w.querySelector('#_bkc-new'); if (b) b.click(); });
     const verdNy = w.querySelector('#_bkc-verdny');
@@ -1405,6 +1491,62 @@
       }
       _aflaest = true; render();
     });
+    // ── 27.11.2026: Skoðunaraðili og Framkvæmd — skrifað beint í reitina, vistast á skýrsluna, engin aflæsing ──
+    const merkjaLykil = k => { if (repNow) (repNow._bladLyklar = repNow._bladLyklar || {})[k] = 1; };
+    const DAGS_RE = /^20\d\d-\d\d-\d\d$/;   // dagsreitur sendir hálfslegið ártal (0002-…) meðan skrifað er — því er hafnað
+    const isoUrTexta = t => {   // DD/MM/ÁÁÁÁ · DD.MM.ÁÁÁÁ · D-M-ÁÁ → ÁÁÁÁ-MM-DD ('' ef ekki raunverulegur dagur)
+      const m = String(t || '').trim().match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})$/); if (!m) return '';
+      const dd = +m[1], mm = +m[2], yy = m[3].length === 2 ? 2000 + (+m[3]) : +m[3];
+      const dt = new Date(yy, mm - 1, dd);
+      if (dt.getFullYear() !== yy || dt.getMonth() !== mm - 1 || dt.getDate() !== dd) return '';
+      return yy + '-' + String(mm).padStart(2, '0') + '-' + String(dd).padStart(2, '0');
+    };
+    const synaDags = () => {
+      const dg = String((repNow && repNow.data && repNow.data.meta && repNow.data.meta.dags) || '');
+      const pl = w.querySelector('.b274-hr .b274-plata.dokk'); if (pl && dg) pl.textContent = '📅 Skoðað ' + fmtDags(dg);
+      const ri = w.querySelector('[data-metak="dags"]'); if (!ri) return;
+      // 149 sýnir dagsreitinn sem DD/MM/ÁÁÁÁ-textareit við hliðina á falda ISO-reitnum — báðir uppfærðir
+      const tx = ri.parentElement && ri.parentElement.querySelector('.dd-date-text');
+      if (document.activeElement !== ri) ri.value = dg.slice(0, 10);
+      if (tx && document.activeElement !== tx) { tx.value = dg ? fmtDags(dg) : ''; tx.classList.remove('invalid'); }
+    };
+    // blaðið endurteiknað á staðnum — hlustarinn hangir á #_bkc-blad sjálfu og lifir það af
+    const synaBlad = () => {
+      const bl = w.querySelector('#_bkc-blad'); const B = window.BrunakerfiSkyrsla;
+      if (!bl || !repNow || !B || !B.renderSheet) return;
+      let html = ''; try { html = B.renderSheet(co, repNow); } catch (_) { return; }
+      if (!html) return;
+      const hint = bl.querySelector('.b274-bladhint'); const st = bl.scrollTop;
+      bl.innerHTML = html; if (hint) bl.appendChild(hint); bl.scrollTop = st;
+    };
+    if (repNow) w.querySelectorAll('[data-metak]').forEach(inp => {
+      const k = inp.dataset.metak;
+      const setja = () => {
+        const dd = repNow.data = repNow.data || {}; dd.meta = dd.meta || {};
+        const v = k === 'dags' ? String(inp.value || '').slice(0, 10) : String(inp.value || '').trim();
+        if (k === 'dags' && !DAGS_RE.test(v)) return false;   // tóm eða hálfslegin dagsetning er ekki vistuð
+        if (String(dd.meta[k] || '') === v) return false;
+        dd.meta[k] = v; merkjaLykil(k); return true;
+      };
+      inp.addEventListener('input', () => { if (setja()) vistaBladSidar(repNow); });
+      inp.addEventListener('change', () => {
+        if (setja()) vistaBladSidar(repNow);
+        synaBlad(); if (k === 'dags') synaDags();
+        if (_bladT) { clearTimeout(_bladT); _bladT = null; vistaBlad(repNow); }
+      });
+    });
+    const pdfUpp = w.querySelector('#_bkc-pdfupp');
+    if (pdfUpp && repNow) pdfUpp.addEventListener('click', async () => {
+      if (pdfUpp.disabled) return;
+      pdfUpp.disabled = true; pdfUpp.textContent = '⏳ Endurgeri PDF…';
+      if (_bladT) { clearTimeout(_bladT); _bladT = null; }
+      try {
+        await vistaBlad(repNow);
+        if (!(window.BrunakerfiSkyrsla && BrunakerfiSkyrsla.rebuildPdf)) throw new Error('skýrslupappinn (273) er ekki hlaðinn');
+        await BrunakerfiSkyrsla.rebuildPdf(co, repNow);
+      } catch (e) { toast('PDF uppfærðist EKKI: ' + ((e && e.message) || e), true); pdfUpp.disabled = false; pdfUpp.textContent = '↻ Uppfæra PDF'; return; }
+      _bladBreytt = false; reload();
+    });
     const blad = w.querySelector('#_bkc-blad._aflaest');
     if (blad && repNow) {
       const d = repNow.data;
@@ -1416,10 +1558,23 @@
         // dagsetning skoðunar → dagsval (beint á blaðinu)
         if (td.dataset.meta === 'dags' && !td.querySelector('input')) {
           if (!d.meta) d.meta = {};
-          const inp = document.createElement('input'); inp.type = 'date'; inp.value = String(d.meta.dags || '').slice(0, 10); inp.className = 'b274-dbinn'; inp.style.minWidth = '132px';
-          td.textContent = ''; td.appendChild(inp); inp.focus();
-          const lok = () => { if (inp.value) d.meta.dags = inp.value; td.textContent = fmtDags(d.meta.dags) || '—'; vistaBladSidar(repNow); };
-          inp.addEventListener('change', lok); inp.addEventListener('blur', lok);
+          // TEXTAREITUR (DD/MM/ÁÁÁÁ), ekki type=date: papp 149 vefur hvern dagsreit í eigin umgjörð og FÆRIR hann í DOM-inu —
+          // reiturinn missti þá fókus um leið og hann birtist og ritillinn lokaðist áður en nokkuð var skrifað (mælt 27.11).
+          const inp = document.createElement('input'); inp.type = 'text'; inp.inputMode = 'numeric'; inp.placeholder = 'DD/MM/ÁÁÁÁ'; inp.maxLength = 10;
+          inp.value = d.meta.dags ? fmtDags(d.meta.dags) : ''; inp.className = 'b274-dbinn'; inp.style.width = '112px'; inp.style.textAlign = 'left';
+          td.textContent = ''; td.appendChild(inp); inp.focus(); try { inp.select(); } catch (_) {}
+          let buid = false;
+          const lok = () => {
+            if (buid) return; buid = true;
+            const hratt = String(inp.value || '').trim();
+            const v = isoUrTexta(hratt);
+            const breytt = DAGS_RE.test(v) && v !== String(d.meta.dags || '').slice(0, 10);
+            if (hratt && !DAGS_RE.test(v)) toast('Dagsetningin skildist ekki — skrifaðu DD/MM/ÁÁÁÁ', true);
+            if (breytt) { d.meta.dags = v; merkjaLykil('dags'); }
+            td.textContent = fmtDags(d.meta.dags) || '—';
+            if (breytt) { synaDags(); vistaBladSidar(repNow); }
+          };
+          inp.addEventListener('blur', lok);
           inp.addEventListener('keydown', ev => { if (ev.key === 'Enter') inp.blur(); });
           return;
         }
@@ -1429,7 +1584,12 @@
           const ta = document.createElement('textarea'); ta.value = String(d.samantekt || ''); ta.className = 'b274-dbinn';
           ta.style.cssText = 'width:100%;min-height:72px;resize:vertical;font:inherit;line-height:1.5;padding:6px 8px';
           stx.textContent = ''; stx.appendChild(ta); ta.focus();
-          const lok = () => { d.samantekt = String(ta.value || '').trim(); stx.innerHTML = d.samantekt ? esc(d.samantekt).replace(/\n/g, '<br>') : '<span style="color:#9aa1ac">Smelltu til að lýsa úttektinni…</span>'; vistaBladSidar(repNow); };
+          const lok = () => {
+            const v = String(ta.value || '').trim(); const breytt = v !== String(d.samantekt || '').trim();
+            if (breytt) { d.samantekt = v; merkjaLykil('samantekt'); }
+            stx.innerHTML = d.samantekt ? esc(d.samantekt).replace(/\n/g, '<br>') : '<span style="color:#9aa1ac">Smelltu til að lýsa úttektinni…</span>';
+            if (breytt) vistaBladSidar(repNow);
+          };
           ta.addEventListener('blur', lok);
           return;
         }
@@ -1447,7 +1607,10 @@
             pop.querySelector('b').textContent = row[k];
             td.firstChild.nodeValue = String(row[k]);
             const sam = tr.querySelector('[data-bsam]'); if (sam) sam.textContent = (+row.iLagi || 0) + (+row.ekki || 0);
-            tolur(); vistaBladSidar(repNow);
+            tolur();
+            // verðlínurnar fylgja talningunni STRAX (í minni) og sjást um leið; vistunin ber þær með (br.linur)
+            try { if (BKS.samraemaNytt && BKS.samraemaNytt(co, repNow, true)) { merkjaLykil('linur'); endurteiknaLinur(); } } catch (_) {}
+            vistaBladSidar(repNow);
           });
           return;
         }
@@ -1764,6 +1927,12 @@
     document.body.style.overflow = 'hidden';
     const same = !!(C && C.co && +C.co.id === +coId && document.getElementById('_bkc-wrap') && document.getElementById('_bkc-wrap').children.length && !document.getElementById('_bkc-wrap').textContent.includes('Hleð…'));
     if (same && !opts.force) return;
+    // 27.11.2026: annað félag opnað → óvistað blað fyrra félagsins skolast FYRST (vistunin les C.co), og aflæsing /
+    // „PDF úrelt"-merkið fylgja ekki með yfir á næsta félag
+    if (!(C && C.co && +C.co.id === +coId)) {
+      if (_bladT && _bladBid) { clearTimeout(_bladT); _bladT = null; try { await vistaBlad(_bladBid); } catch (_) {} }
+      _aflaest = false; _bladBreytt = false;
+    }
     const gen = ++_bkcGen;
     if (!opts.keepScroll) {
       document.getElementById('_bkc-wrap').innerHTML = '<div style="padding:50px;text-align:center;color:#8b93a1">Hleð…</div>';
