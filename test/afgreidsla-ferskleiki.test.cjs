@@ -44,6 +44,16 @@ function lesaMock(svor) {
     assert.ok(s.a.some((x) => /R-001198 \(364\.807 kr\) er enn ógreiddur/.test(x.texti)), JSON.stringify(s.a));
   });
 
+  await t('27.11: verk sem vísar í lokað mál #1636 → úrelt; opið mál → stendur', async () => {
+    const row = { tegund: 'verk', titill: 'Öryggismiðstöðin: afhenda kolsýrutæki í Askalind 2a Í DAG og senda reikning (mál #1636)', gogn: {} };
+    const s1 = await F.athugaFerskleika(row, lesaMock([['thjonustubeidni', [{ id: 1636, status: 'lokad', deleted_at: null }]]]), NU);
+    assert.ok(s1.urelt && /Mál #1636 er lokað/.test(s1.urelt), String(s1.urelt));
+    const s2 = await F.athugaFerskleika(row, lesaMock([['thjonustubeidni', [{ id: 1636, status: 'nytt', deleted_at: null }]]]), NU);
+    assert.strictEqual(s2.urelt, null);
+    const s3 = await F.athugaFerskleika(row, lesaMock([['thjonustubeidni', []]]), NU);   // fannst ekki → ekki giskað
+    assert.strictEqual(s3.urelt, null);
+  });
+
   await t('Drög enn ófarin → ekki úrelt, lína „mælt núna"', async () => {
     const lesa = lesaMock([['invoice_drafts', [DROG]], ['invoices', []]]);
     const s = await F.athugaFerskleika({ tegund: 'verk', titill: 'Drög #342 bíða', gogn: {}, created_at: '2026-11-26T10:00:00Z' }, lesa, NU);

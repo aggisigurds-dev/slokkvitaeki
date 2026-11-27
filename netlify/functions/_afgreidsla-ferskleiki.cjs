@@ -35,7 +35,8 @@ function tilvisanir(texti) {
   for (const m of t.matchAll(/\breikning(?:ur|i|s|num)?\s+(?:nr\.?\s*)?(\d{3,6})\b/gi)) reikn.add(Number(m[1]));
   const upphaedir = new Set();
   for (const m of t.matchAll(/(\d{1,3}(?:\.\d{3})+|\d{4,})\s*(?:kr|m\.kr)/gi)) upphaedir.add(Number(m[1].replace(/\./g, '')));
-  return { drog, reikn: [...reikn].filter((n) => n > 0), upphaedir: [...upphaedir] };
+  const mal = [...new Set([...t.matchAll(/\bmál\w*\s*#\s*(\d{2,6})\b/gi)].map((m) => Number(m[1])))];
+  return { drog, reikn: [...reikn].filter((n) => n > 0), upphaedir: [...upphaedir], mal };
 }
 
 const passar = (upph, a) => upph.some((u) => Math.abs(u - kr(a)) <= 1);
@@ -44,6 +45,9 @@ async function athugaFerskleika(row, lesa, nu) {
   const a = [];
   let urelt = null;
   const { drog, reikn, upphaedir } = tilvisanir(textiVerks(row));
+  // Mál aðeins úr TITLINUM — í meginmáli er „mál #N" oft heimild (Center Hotels #90 vísar í lokað rannsóknarmál #1522
+  // en 1,2 m.kr. standa enn), í titlinum er það verkið sjálft.
+  const mal = tilvisanir(row.titill).mal;
 
   // 1. Drög. Farin drög loka AÐEINS sínum hluta: nefni verkið líka ógreiddan reikning (Nesdekk #65: drög #342 farin, en
   //    R-001198 enn ógreiddur) stendur verkið, með línu um að drögin séu farin. Sjá `dregUrelt` neðst.
@@ -88,6 +92,16 @@ async function athugaFerskleika(row, lesa, nu) {
         const yfir = f.eindagi ? dagarFra(f.eindagi, nu) : null;
         a.push({ texti: f.heiti + ' (' + krIs(f.kr) + ') er enn ógreiddur' + (yfir != null && yfir > 0 ? ', ' + yfir + ' dögum eftir eindaga' : '') + ' — mælt núna', ok: true });
       }
+    }
+  }
+
+  // 4. Mál sem verkið vísar í („mál #1636"). 27.11.2026 (Agnar: „löngu búið" um Öryggismiðstöðina): verkið stóð 8 daga
+  //    eftir að mál #1636 var lokað. Séu ÖLL málin sem það nefnir lokuð er verkið úrelt.
+  if (!urelt && mal.length) {
+    const m = await lesa(`thjonustubeidni?select=id,status,deleted_at&id=in.(${mal.slice(0, 6).join(',')})`).catch(() => []);
+    const LOKAD = /^(lokad|lokid|afgreitt|closed|done)$/i;
+    if (m.length === Math.min(mal.length, 6) && m.every((x) => x.deleted_at || LOKAD.test(String(x.status || '')))) {
+      urelt = (m.length === 1 ? 'Mál #' + m[0].id + ' er lokað' : 'Mál ' + m.map((x) => '#' + x.id).join(', ') + ' eru lokuð') + ' — verkið er búið';
     }
   }
 
