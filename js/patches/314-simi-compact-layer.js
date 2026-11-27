@@ -77,6 +77,11 @@
     g(' .thm .app-page .stat-card__icon') + '{width:36px!important;height:36px!important;border-radius:11px!important;font-size:16px!important}',
     g(' .thm .app-page .stat-card__value') + '{font-size:16px!important;white-space:nowrap!important}',
     g(' .page-title') + '{flex-direction:column!important;align-items:stretch!important;gap:10px!important;margin-bottom:12px!important}',
+    // 27.11.2026: `.thm .page-title__lead{flex:1 1 280px}` var skrifad fyrir ROD.
+    // Thegar reglan ad ofan snyr hausnum i DALK verdur flex-basis ad HAED - 280 px
+    // af tomu plassi efst a hverri sidu (maelt 224 px eftir shrink a #vorur,
+    // sama a #krofuyfirlit). Agnar 27.11: „faera ofar". Basis aftur i auto.
+    g(' .page-title__lead') + '{flex:0 0 auto!important;min-width:0!important;width:100%!important}',
     g(' .page-title__tools') + '{justify-content:flex-start!important;flex-wrap:wrap!important;width:100%!important;gap:7px!important}',
     g(' .page-title h1') + '{font-size:20px!important;line-height:1.15!important}',
     g(' .frow2') + '{grid-template-columns:1fr!important}',

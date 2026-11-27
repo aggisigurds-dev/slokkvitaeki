@@ -207,11 +207,11 @@
       return '<div style="margin-bottom:24px">' +
         // SOLID dökk pilla með hvítum texta — rgba-gegnsæið gamla rann saman við
         // gráa hluta bandsins („grey on grey", verkefnalisti 2026-07-11).
-        '<div style="display:inline-flex;align-items:center;gap:10px;margin-bottom:10px;padding:6px 14px;border-radius:99px;background:#14171d;border:1px solid rgba(255,255,255,.22);box-shadow:0 2px 8px -2px rgba(0,0,0,.4)">' +
-          '<span style="font-size:13px;font-weight:800;color:#ffffff;text-transform:uppercase;letter-spacing:0.05em">'+esc(cat)+'</span>' +
-          '<span style="font-size:11px;color:#ffffff;background:rgba(255,255,255,.24);padding:1px 8px;border-radius:10px;font-weight:700">'+byCat[cat].length+'</span>' +
+        '<div class="vorur-flokkahaus" style="display:inline-flex;align-items:center;gap:10px;margin-bottom:10px;padding:6px 14px;border-radius:99px;background:#14171d;border:1px solid rgba(255,255,255,.22);box-shadow:0 2px 8px -2px rgba(0,0,0,.4)">' +
+          '<span class="vorur-flokkanafn" style="font-size:13px;font-weight:800;color:#ffffff;text-transform:uppercase;letter-spacing:0.05em">'+esc(cat)+'</span>' +
+          '<span class="vorur-flokkatala" style="font-size:11px;color:#ffffff;background:rgba(255,255,255,.24);padding:1px 8px;border-radius:10px;font-weight:700">'+byCat[cat].length+'</span>' +
         '</div>' +
-        '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:10px">' +
+        '<div class="vorur-grid-flokkur" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:10px">' +
           byCat[cat].map(renderCard).join('') +
         '</div>' +
       '</div>';
@@ -249,7 +249,7 @@
       // picture"). NB full-rammi (allar hliðar) var reyndur 2026-07-26 en Agnar
       // vildi HÁLFAN ramma → bakkað í vinstri-kant.
       var frame = tc ? ';border-left:3.6px solid '+tc+';box-sizing:border-box' : '';
-      var img = p.mynd ? '<img src="'+esc(p.mynd)+'" alt="" width="178" height="72" loading="lazy" decoding="async" style="width:100%;height:72px;object-fit:cover;border-radius:7px;background:#f8fafc'+frame+'">' : '<div style="width:100%;height:72px;background:#f8fafc;border-radius:7px;display:flex;align-items:center;justify-content:center;color:#cbd5e1;font-size:22px'+frame+'">📦</div>';
+      var img = p.mynd ? '<img class="vorur-kort-mynd" src="'+esc(p.mynd)+'" alt="" width="178" height="72" loading="lazy" decoding="async" style="width:100%;height:72px;object-fit:cover;border-radius:7px;background:#f8fafc'+frame+'">' : '<div class="vorur-kort-mynd" style="width:100%;height:72px;background:#f8fafc;border-radius:7px;display:flex;align-items:center;justify-content:center;color:#cbd5e1;font-size:22px'+frame+'">📦</div>';
       var isSvc = p.flokkur === 'Þjónusta';
       var badge = '<span style="display:inline-block;background:'+(isSvc?'#fef3c7':'#dbeafe')+';color:'+(isSvc?'#92400e':'#1e40af')+';font-size:10px;padding:2px 7px;border-radius:12px;font-weight:700;letter-spacing:0.03em">'+esc(p.flokkur||'')+'</span>';
       var stockInfo = !isSvc && p.birgdir!=null ? '<div style="font-size:11px;color:#64748b;margin-top:4px">🏷️ '+p.birgdir+' á lager</div>' : '';
@@ -426,7 +426,7 @@
     m.id = modalId;
     m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:10000;padding:20px';
     var p = product || {nafn:'',lysing:'',verd_an_vsk:0,vsk_prosenta:24,birgdir:0,flokkur:isSvc?'Þjónusta':'Slökkvitæki',mynd:'',virkt:true};
-    m.innerHTML = '<div style="background:#fff;border-radius:12px;max-width:600px;width:100%;max-height:90vh;overflow-y:auto;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.3)">' +
+    m.innerHTML = '<div class="vorur-modal-kassi" style="background:#fff;border-radius:12px;max-width:600px;width:100%;max-height:90vh;overflow-y:auto;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.3)">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">' +
         '<h2 style="margin:0;color:#0f172a;font-size:20px">'+(isNew?'Ný vara/þjónusta':'Breyta: '+esc(p.nafn))+'</h2>' +
         '<button id="vorur-close" style="background:none;border:none;font-size:24px;color:#64748b;cursor:pointer;padding:0 6px">×</button>' +
