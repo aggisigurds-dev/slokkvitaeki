@@ -237,12 +237,29 @@
     if (erApp && synilegt(hdr)) top = Math.round(hdr.getBoundingClientRect().bottom + 6);
     else if (synilegt(mini)) top = Math.max(8, Math.round(mini.getBoundingClientRect().bottom + 4));
 
+    // 27.11.2026: a 390 px er BORDINN efst ALVEG fullur — hamborgari (10-50),
+    // logo (59-155), hamtakkarnir (160-290), birtuskil (300-350), ^ (355-385).
+    // Fyrsta utgafan leitadi ad lareltu plassi OG settist tha ofan a logoid
+    // (maelt: pilla 133-183, div.bb-logo 59-155). Thad er ekkert lareltt plass:
+    // pillan fer UNDIR bordann i stad thess ad troda ser inn i hann.
+    try {
+      const bann = document.getElementById('bstal-banner') || document.querySelector('.bb-face');
+      if (bann && synilegt(bann)) {
+        const bb = bann.getBoundingClientRect();
+        if (bb.height > 20 && top < bb.bottom) top = Math.round(bb.bottom + 6);
+      }
+    } catch (_) {}
+
     const BREIDD = 50, HAED = 32;
     let haegri = 8;
     for (let n = 0; n < 3; n++) {
       const kassi = { t: top, b: top + HAED, l: innerWidth - haegri - BREIDD, r: innerWidth - haegri };
       let min = null;
-      document.querySelectorAll('button,a[href],input,select,[role="button"]').forEach(e => {
+      // 27.11.2026: logoid og nafn fyrirtaekisins eru ekki smellanleg, svo fyrsta
+      // utgafan ta pilluna ofan a „Brunaholf" (maelt i hermi 390 px). Merkin eru
+      // tekin med i listann thott enginn smelli a thau — thau eiga ad sjast.
+      document.querySelectorAll('button,a[href],input,select,[role="button"],' +
+        '.app-header__brand,.app-header__title,.bb-brand,.app-logo,[class*="logo"]').forEach(e => {
         if (el.contains(e)) return;
         const r = e.getBoundingClientRect();
         if (!r.width || !r.height) return;
