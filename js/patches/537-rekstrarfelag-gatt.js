@@ -59,10 +59,24 @@
       P + '.rfg-u{font-size:12px;font-weight:700;color:#141822;margin:10px 0 2px}',
       P + '.rfg-u:first-child{margin-top:0}',
       P + '.rfg-r2{grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}',
-      P + '.rfg-g + .rfg-g{margin-top:12px;padding-top:12px;border-top:1px dashed rgba(20,24,34,.2)}',
+      P + '.rfg-g + .rfg-g{margin-top:10px;padding-top:10px;border-top:1px dashed rgba(20,24,34,.2)}',
+      // 27.11.2026 (Agnar, símaskjámynd: „þetta er ömurlegt"): 19 hök stóðu alltaf opin á hverri gátt (mælt 1.177 px fyrir tvær
+      // gáttir í síma, á undan sjálfum stöðunum). Nú er hver gátt haus + ein stöðulína + tveir takkar; rofarnir og skjölin
+      // opnast við smell. Í síma lokað í byrjun, á tölvu opið eins og áður.
+      P + '.rfg-r[hidden]{display:none}',
+      P + '.rfg-s{min-height:0}', P + '.rfg-s:empty{display:none}',
+      P + '.rfg-v{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}',
+      P + '.rfg-f b{margin:0 4px}', P + '.rfg-f i{font-style:normal;margin-left:8px;opacity:.7}',
+      P + '.rfg-f[aria-expanded="true"]{background:linear-gradient(180deg,#3d4048,#1c1e23);border-color:#000;color:#fff}',
+      P + '.rfg-g{container-type:inline-size}',
+      '@container (max-width:620px){' + P + '.rfg-r{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}' + P + '.rfg-r2{grid-template-columns:1fr}' + P + '.rfg-k{margin-left:0;flex:1 1 100%}' + P + '.rfg-k .rfg-b{flex:1 1 0;justify-content:center}' + P + '.rfg-f{flex:1 1 0;justify-content:center}}',
     ].join('\n');
     document.head.appendChild(st);
   }
+  // rofalistinn: lokaður í byrjun í síma (símahamur / app), opinn á tölvu; smellur ræður eftir það
+  const _rofar = {};
+  const simi = () => { try { return document.documentElement.getAttribute('data-viewmode') === 'mobile' || document.body.classList.contains('appmode'); } catch (_) { return false; } };
+  const rofarOpnir = (id) => (id in _rofar ? _rofar[id] : !simi());
   const dags = (d) => { if (!d) return 'aldrei'; const t = new Date(d); return isNaN(t) ? 'aldrei' : ('0' + t.getDate()).slice(-2) + '.' + ('0' + (t.getMonth() + 1)).slice(-2) + '.' + t.getFullYear(); };
 
   function teikna(el, d, baseIds) {
@@ -76,15 +90,12 @@
       return '<div class="rfg-g" data-rfg-id="' + esc(a.id) + '">' +
         '<div class="rfg-h"><span class="rfg-t">Þjónustugátt</span><span class="rfg-n">' + esc(a.display_name || a.base_nafn || a.slug) + '</span>' +
           '<span class="rfg-p ' + (a.active ? (a.hasPassword ? 'gott' : 'vara') : '') + '">' + (a.active ? (a.hasPassword ? 'Með lykilorði' : 'Opin án lykilorðs') : 'Óvirk') + '</span>' +
-          '<span class="rfg-m">/g/' + esc(a.slug) + ' · síðast opnuð ' + esc(dags(a.last_login)) + '</span>' +
           '<span class="rfg-k"><button type="button" class="rfg-b" data-rfg-opna>Opna sem kúnni</button><a class="rfg-b" href="/gatt-admin/" target="_blank" rel="noopener">Gáttarstjórn</a></span></div>' +
-        '<div class="rfg-m">Erindi í gátt: <b>' + opin + '</b> opin · <b>' + lokid + '</b> lokið (öll félög hópsins)</div>' +
-        '<div class="rfg-t" style="margin-top:10px">Það sem kúnninn sér</div>' +
-        '<div class="rfg-r">' + ROFAR.map((r) => '<label><input type="checkbox" data-rfg-syn="' + r[0] + '"' + ((typeof syn[r[0]] === 'boolean' ? syn[r[0]] : !SJALFGEFID_AF[r[0]]) ? ' checked' : '') + '>' + esc(r[1]) + '</label>').join('') + '</div>' +
+        '<div class="rfg-m">/g/' + esc(a.slug) + ' · síðast opnuð ' + esc(dags(a.last_login)) + ' · erindi: <b>' + opin + '</b> opin · <b>' + lokid + '</b> lokið (öll félög hópsins)</div>' +
+        '<div class="rfg-v"><button type="button" class="rfg-b rfg-f" data-rfg-rofar aria-expanded="' + (rofarOpnir(a.id) ? 'true' : 'false') + '">Kúnninn sér<b data-rfg-n></b>af ' + ROFAR.length + '<i>' + (rofarOpnir(a.id) ? '▴' : '▾') + '</i></button>' +
+          '<button type="button" class="rfg-b rfg-f" data-rfg-gogn aria-expanded="false">Skjöl og eignir<i>▾</i></button></div>' +
+        '<div class="rfg-r" data-rfg-r' + (rofarOpnir(a.id) ? '' : ' hidden') + '>' + ROFAR.map((r) => '<label><input type="checkbox" data-rfg-syn="' + r[0] + '"' + ((typeof syn[r[0]] === 'boolean' ? syn[r[0]] : !SJALFGEFID_AF[r[0]]) ? ' checked' : '') + '>' + esc(r[1]) + '</label>').join('') + '</div>' +
         '<div class="rfg-s" data-rfg-st></div>' +
-        '<div class="rfg-t" style="margin-top:8px">Skjöl og eignir</div>' +
-        '<div class="rfg-m">Hakaðu af það sem kúnninn á ekki að sjá. Ekkert eyðist; hakað aftur birtist það á ný.</div>' +
-        '<div style="margin-top:6px"><button type="button" class="rfg-b" data-rfg-gogn>Sýna skjöl og eignir</button></div>' +
         '<div class="rfg-d" data-rfg-d hidden></div></div>';
     }).join('');
     el.querySelectorAll('.rfg-g').forEach((g) => {
@@ -99,8 +110,8 @@
       const TEG = { uttektarskyrsla: 'Úttektarskýrsla', brunakerfi: 'Brunakerfisskýrsla', reikningur: 'Reikningur', samningur: 'Samningur' };
       const gk = g.querySelector('[data-rfg-gogn]'), gd = g.querySelector('[data-rfg-d]');
       gk.addEventListener('click', () => {
-        if (!gd.hidden) { gd.hidden = true; gk.textContent = 'Sýna skjöl og eignir'; return; }
-        gd.hidden = false; gk.textContent = 'Fela lista';
+        if (!gd.hidden) { gd.hidden = true; gk.setAttribute('aria-expanded', 'false'); gk.querySelector('i').textContent = '▾'; return; }
+        gd.hidden = false; gk.setAttribute('aria-expanded', 'true'); gk.querySelector('i').textContent = '▴';
         if (gd.dataset.sott) return; gd.dataset.sott = '1'; gd.innerHTML = '<div class="rfg-m">Sæki…</div>';
         senda({ action: 'gogn', id }).then((r) => {
           if (!r.ok || !r.j || !r.j.ok) { gd.innerHTML = '<div class="rfg-m">Náði ekki í listann: ' + esc((r.j && r.j.error) || 'villa') + '</div>'; delete gd.dataset.sott; return; }
@@ -108,7 +119,7 @@
           const skjalLina = (x) => '<label><input type="checkbox" data-rfg-skjal="' + x.id + '"' + (fs.has(x.id) ? '' : ' checked') + '>' +
             esc(TEG[x.tegund] || x.tegund || 'Skjal') + (x.nr ? ' ' + esc(x.nr) : '') + ' · ' + esc(x.man || (x.dags || '').slice(0, 7) || x.ar || '') + (x.upphaed != null ? ' · ' + Math.round(x.upphaed).toLocaleString('is-IS') + ' kr.' : '') + '</label>';
           const hopar = {}; (d.skjol || []).forEach((x) => { const k = x.fid != null && nafn[x.fid] ? x.fid : 0; (hopar[k] = hopar[k] || []).push(x); });
-          gd.innerHTML = '<div class="rfg-u">Eignir í gáttinni (' + (d.eignir || []).length + ')</div><div class="rfg-r">' +
+          gd.innerHTML = '<div class="rfg-m" style="margin-bottom:8px">Hakaðu af það sem kúnninn á ekki að sjá. Ekkert eyðist; hakað aftur birtist það á ný.</div><div class="rfg-u">Eignir í gáttinni (' + (d.eignir || []).length + ')</div><div class="rfg-r">' +
             (d.eignir || []).map((e) => '<label><input type="checkbox" data-rfg-eign="' + e.id + '"' + (fe.has(e.id) ? '' : ' checked') + '>' + esc(e.nafn) + (e.er_i_thjonustu === false ? ' <span class="rfg-m">(utan þjónustu)</span>' : '') + '</label>').join('') + '</div>' +
             Object.keys(hopar).sort((a, b) => String(nafn[a] || 'ö').localeCompare(String(nafn[b] || 'ö'), 'is')).map((k) => '<div class="rfg-u">' + esc(nafn[k] || 'Ótengt eign') + ' (' + hopar[k].length + ')</div><div class="rfg-r rfg-r2">' + hopar[k].map(skjalLina).join('') + '</div>').join('') +
             (d.falin_reikningar && d.falin_reikningar.length ? '<div class="rfg-m" style="margin-top:6px">Faldir reikningar eftir númeri (eldri stilling): ' + esc(d.falin_reikningar.join(', ')) + '</div>' : '') +
@@ -126,13 +137,19 @@
           gd.querySelectorAll('[data-rfg-skjal],[data-rfg-eign]').forEach((c) => c.addEventListener('change', () => vista(c)));
         });
       });
+      // rofarnir: taldir á takkanum, opnast og lokast við smell (staðan munuð á meðan síðan er opin)
+      const rk = g.querySelector('[data-rfg-rofar]'), rr = g.querySelector('[data-rfg-r]');
+      const telja = () => { rk.querySelector('[data-rfg-n]').textContent = rr.querySelectorAll('[data-rfg-syn]:checked').length; };
+      telja();
+      rk.addEventListener('click', () => { const o = rr.hidden; rr.hidden = !o; _rofar[id] = o; rk.setAttribute('aria-expanded', o ? 'true' : 'false'); rk.querySelector('i').textContent = o ? '▴' : '▾'; });
+      g.querySelectorAll('[data-rfg-syn]').forEach((c) => c.addEventListener('change', telja));
       g.querySelectorAll('[data-rfg-syn]').forEach((c) => c.addEventListener('change', () => {
         const k = c.getAttribute('data-rfg-syn'), nytt = Object.assign({}, a.syn || {}); nytt[k] = c.checked;
         g.querySelectorAll('[data-rfg-syn]').forEach((x) => { x.disabled = true; }); st.textContent = 'Vista…';
         senda({ action: 'save', id, syn: nytt }).then((r) => {
           g.querySelectorAll('[data-rfg-syn]').forEach((x) => { x.disabled = false; });
           if (r.ok && r.j && r.j.row) { a.syn = r.j.row.syn || nytt; st.textContent = 'Vistað — gildir næst þegar kúnninn opnar gáttina.'; }
-          else { c.checked = !c.checked; st.textContent = 'Vistun mistókst: ' + ((r.j && r.j.error) || 'villa') + ' — ekkert breyttist.'; }
+          else { c.checked = !c.checked; telja(); st.textContent = 'Vistun mistókst: ' + ((r.j && r.j.error) || 'villa') + ' — ekkert breyttist.'; }
         });
       }));
     });

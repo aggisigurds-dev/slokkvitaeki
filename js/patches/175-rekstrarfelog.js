@@ -352,6 +352,15 @@
       // Fix #4 (26.11.2026): athugasemdin er EIN lína — föst hæð, engin dráttur (resize),
       // svo reiturinn blási ekki kortið út. Miðakerfi-dofin/rauð vantar-lína líka hér.
       P+'._rf_note{display:block;width:100%;height:36px;min-height:36px;resize:none;padding:8px 10px;border:1px solid rgba(20,24,34,.14);border-radius:8px;font:inherit;font-size:12.5px;line-height:18px;background:#fff;box-sizing:border-box;margin-bottom:11px;color:#141822;overflow:hidden;white-space:nowrap}',
+      // 27.11.2026 (Agnar, símaskjámynd af korti Bílabúðar Benna: „þetta er ömurlegt"): reiturinn var hugsaður sem EIN lína
+      // (nowrap + overflow:hidden) en ber nú heilt yfirlit (36 línur). Línurnar klipptust við hægri brún (mælt 554 af 1.957 px)
+      // og ekkert var hægt að lesa. Nú brotnar textinn, reiturinn er samanbrotinn (5 línur í síma, 220 px á tölvu) og
+      // „Sýna allt" flettir honum út. Takkinn sést aðeins þegar textinn kemst ekki fyrir.
+      P+'._rf_note{white-space:pre-wrap!important;overflow-wrap:anywhere;overflow-x:hidden!important;overflow-y:auto!important}',
+      P+'._rf_note._opid{max-height:none!important}',
+      'html[data-viewmode="mobile"] '+P+'._rf_note:not(._opid),body.appmode '+P+'._rf_note:not(._opid){max-height:108px!important}',
+      P+'._rf_note_meira{display:block;width:100%;min-height:30px;padding:0 16px;border:0;border-bottom:1px solid rgba(20,24,34,.14);background:rgba(20,24,34,.05);color:#141822;font:inherit;font-size:12px;font-weight:700;text-align:left;cursor:pointer}',
+      P+'._rf_note_meira[hidden]{display:none}',
       P+'._rf_vantar{font-size:12.5px}',
       P+'._rf_vantar_add{all:unset;cursor:pointer;color:#c92a2a;font-weight:600;font-size:12.5px}',
       P+'._rf_vantar_add:hover{text-decoration:underline}',
@@ -1764,6 +1773,7 @@
           // 2026-06-12 (Todoist): athugasemd beint á borðanum — vistast sjálfkrafa
           // 04.10.2026: fjöllína svo löng athugasemd sjáist öll (field-sizing:content í 442) — áður klipptist hún í einni línu
           '<textarea class="_rf_note ssp-reitur" rows="1" placeholder="Athugasemd um rekstraraðilann — vistast sjálfkrafa">'+esc(info.notes||'')+'</textarea>'+
+          '<button type="button" class="_rf_note_meira" hidden>Sýna allt ▾</button>'+
           // 27.11.2026: Þjónustugátt félagsins (537) — staða, erindi og hvað kúnninn sér; fyllt þegar kortið opnast
           '<div class="_rf_gatt"></div>'+
           '<div class="_rf_body"></div>'+
@@ -1777,7 +1787,12 @@
         if(open) _opin[name]=1; else delete _opin[name];
         if(open && !body.dataset.filled){ body.dataset.filled='1'; fillBody(body,name,info); }
         if(open) rfGattFylla();
+        if(open) noteMeira();
       }
+      // „Sýna allt" við athugasemdina: sést aðeins þegar textinn kemst ekki fyrir í samanbrotna reitnum (mælt þegar kortið er opið)
+      function noteMeira(){ try{ var n=card.querySelector('._rf_note'), mb=card.querySelector('._rf_note_meira'); if(!n||!mb) return;
+        requestAnimationFrame(function(){ var opid=n.classList.contains('_opid'); mb.hidden=!opid && n.scrollHeight<=n.clientHeight+4; mb.textContent=opid?'Fela ▴':'Sýna allt ▾'; }); }catch(e){} }
+      card.querySelector('._rf_note_meira').addEventListener('click',function(){ var n=card.querySelector('._rf_note'); n.classList.toggle('_opid'); if(!n.classList.contains('_opid')) n.scrollTop=0; noteMeira(); });
       function rfGattFylla(){ try{ if(window.RfGatt) RfGatt.fylla(card.querySelector('._rf_gatt'), blds.map(function(b){ return b.customer_base_id; })); }catch(e){} }
       card.querySelector('._rf_head').addEventListener('click',flip);
       var noteInp=card.querySelector('._rf_note');
