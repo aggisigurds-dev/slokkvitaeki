@@ -58,6 +58,34 @@ test('röðin: VIP efst, svo peningar, svo forgangur, svo virði', () => {
   assert.deepStrictEqual(T.rada(l).map((v) => v.id), [4, 5, 3, 2, 1]);
 });
 
+test('27.11: nýr póstur (≤3 d) fremst, nýjastur efst; annars nýrra á undan eldra', () => {
+  const { T } = heimur();
+  const NU = Date.parse('2026-11-27T10:00:00Z');
+  const l = [
+    verk({ id: 1, tegund: 'krafa', virdi_kr: 1006129, forgangur: 50, created_at: '2026-11-16T10:00:00Z' }),  // gamalt peningamál
+    verk({ id: 2, tegund: 'tolvupostur', post_at: '2026-11-26T11:09:00Z', created_at: '2026-11-26T12:00:00Z' }),
+    verk({ id: 3, vip: { felag: 'Dæmi' }, created_at: '2026-11-17T10:00:00Z' }),
+    verk({ id: 4, tegund: 'tolvupostur', post_at: '2026-11-27T08:00:00Z', created_at: '2026-11-27T08:30:00Z' }),
+    verk({ id: 5, tegund: 'tolvupostur', post_at: '2026-11-10T08:00:00Z', created_at: '2026-11-16T08:30:00Z' }),  // gamall póstur
+    verk({ id: 6, created_at: '2026-11-25T10:00:00Z' }),
+    verk({ id: 7, created_at: '2026-11-18T10:00:00Z' }),
+  ];
+  assert.deepStrictEqual(T.rada(l, NU).map((v) => v.id), [4, 2, 3, 1, 6, 7, 5]);
+});
+
+test('27.11: þjónninn raðar eins (radaTilbuin), sérflokkar aftast', () => {
+  const A = require('../netlify/functions/afgreidsla.cjs');
+  const NU = Date.parse('2026-11-27T10:00:00Z');
+  const l = [
+    { id: 1, tegund: 'simtal', forgangur: 50, created_at: '2026-11-16T10:00:00Z' },
+    { id: 9, tegund: 'verk', flokkur: 'dagsverk', created_at: '2026-11-27T09:00:00Z' },
+    { id: 2, tegund: 'tolvupostur', post_at: '2026-11-26T11:09:00Z', forgangur: 15, created_at: '2026-11-26T12:00:00Z' },
+    { id: 3, tegund: 'tolvupostur', post_at: '2026-11-24T10:44:00Z', forgangur: 1, created_at: '2026-11-27T02:00:00Z' },
+    { id: 4, tegund: 'verk', forgangur: 50, created_at: '2026-11-25T10:00:00Z' },
+  ];
+  assert.deepStrictEqual(A._radaTilbuin(l, NU).map((v) => v.id), [2, 3, 4, 1, 9]);
+});
+
 test('síur og teljarar eftir tegund', () => {
   const { T } = heimur();
   const l = [verk({ id: 1 }), verk({ id: 2, tegund: 'simtal' }), verk({ id: 3, tegund: 'simtal' }), verk({ id: 4, tegund: 'krafa' })];

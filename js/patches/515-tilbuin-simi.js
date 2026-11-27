@@ -62,13 +62,21 @@
     return m.filter(function (x, i) { return m.indexOf(x) === i; });
   }
   function erPeningar(v) { return v.tegund === 'krafa' || Number(v.virdi_kr) > 0; }
-  // 0 = VIP, 1 = peningar, 2 = annað
-  function hopur(v) { return v.vip ? 0 : erPeningar(v) ? 1 : 2; }
-  function rada(listi) {
+  // 27.11.2026 (Agnar: „Priority. Ég vil geta svarað nýjum póstum samdægurs … hættið að þvinga gömlu bulli fremst"):
+  // 0 = NÝR PÓSTUR (síðustu 3 daga, nýjastur efst), 1 = VIP, 2 = peningar, 3 = annað. Innan hóps: forgangur, virði, og
+  // svo NÝRRA á undan eldra (áður: elsta fyrst).
+  var NYR_POSTUR_MS = 3 * 864e5;
+  function tima(s) { return Date.parse(s || '') || 0; }
+  function erNyrPostur(v, nu) { return v.tegund === 'tolvupostur' && !!v.post_at && ((nu || Date.now()) - tima(v.post_at)) <= NYR_POSTUR_MS; }
+  function hopur(v, nu) { return erNyrPostur(v, nu) ? 0 : v.vip ? 1 : erPeningar(v) ? 2 : 3; }
+  function rada(listi, nu) {
     return (listi || []).map(function (v, i) { return [v, i]; }).sort(function (a, b) {
       var x = a[0], y = b[0];
+      var hx = hopur(x, nu), hy = hopur(y, nu);
+      if (hx !== hy) return hx - hy;
+      if (hx === 0) return tima(y.post_at) - tima(x.post_at) || a[1] - b[1];
       var fx = x.forgangur == null ? 50 : Number(x.forgangur), fy = y.forgangur == null ? 50 : Number(y.forgangur);
-      return hopur(x) - hopur(y) || fx - fy || (Number(y.virdi_kr) || 0) - (Number(x.virdi_kr) || 0) || a[1] - b[1];
+      return fx - fy || (Number(y.virdi_kr) || 0) - (Number(x.virdi_kr) || 0) || tima(y.created_at) - tima(x.created_at) || a[1] - b[1];
     }).map(function (p) { return p[0]; });
   }
   function sia(listi, f) { return (listi || []).filter(function (v) { return iFlokki(v, f); }); }

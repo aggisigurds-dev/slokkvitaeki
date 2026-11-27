@@ -350,6 +350,21 @@ async function iHopum(listi, n, fn) {
 const SERFLOKKAR = ['dagsverk', 'bokun'];
 const SER_THAK = 60;   // þak á HVERN sérflokk fyrir sig
 
+// 27.11.2026 (Agnar: „Priority. Ég vil geta svarað nýjum póstum samdægurs … hættið að fela það allt einhvers staðar og
+// þvinga einhverju gömlu bulli fremst"): 1) póstur sem kom síðustu NYR_POSTUR_DAGAR daga, nýjastur efst; 2) annað eftir
+// forgangi, NÝRRA á undan eldra. Sérflokkarnir (Dagsverk, Bókanir) standa áfram aftast í sinni röð.
+const NYR_POSTUR_DAGAR = 3;
+function radaTilbuin(listi, nu = Date.now()) {
+  const nyr = (v) => v.tegund === 'tolvupostur' && v.post_at && (nu - Date.parse(v.post_at)) <= NYR_POSTUR_DAGAR * 864e5;
+  const t = (s) => Date.parse(s || '') || 0;
+  const ser = listi.filter((v) => v.flokkur), venj = listi.filter((v) => !v.flokkur);
+  venj.sort((a, b) => (nyr(b) - nyr(a)) ||
+    (nyr(a) ? t(b.post_at) - t(a.post_at) : 0) ||
+    ((a.forgangur == null ? 50 : a.forgangur) - (b.forgangur == null ? 50 : b.forgangur)) ||
+    (t(b.created_at) - t(a.created_at)));
+  return venj.concat(ser);
+}
+
 async function synilegt(row, visir, V) {
   const ath = await athuga(row);
   const g = row.gogn || {};
@@ -371,6 +386,9 @@ async function synilegt(row, visir, V) {
       // 18.11.2026 (Agnar: „sýnt þarna í svarinu skjalið svo ég geti alltaf opnað það og staðfest“): sama skjal og
       // sendingin sækir, sem tengill. `vidhengi` (nöfnin ein) stendur áfram fyrir eldri sýnir.
       vidhengi_opna: (g.vidhengi || []).filter(Boolean).map(vidhengiSyn) };
+    // 27.11.2026 (Agnar: „svarað nýjum póstum samdægurs … hættið að þvinga gömlu bulli fremst"): hvenær pósturinn kom —
+    // röðunin (hér og í 515) setur nýjan póst efst.
+    o.post_at = (g.svar_vid && g.svar_vid.received_at) || (g.nytt ? row.created_at : null) || null;
     o.svar_vid = g.svar_vid ? { fra: g.svar_vid.fra || '', dags: String(g.svar_vid.received_at || '').slice(0, 16).replace('T', ' '), efni: g.svar_vid.efni || '', texti: String(g.svar_vid.texti || '').slice(0, 1500),
       slod: (g.svar_vid.digest_id && leysa({ tegund: 'post', id: g.svar_vid.digest_id })) || (gmailSlod(g.account, g.svar_vid.thread_id) ? { url: gmailSlod(g.account, g.svar_vid.thread_id), texti: 'Pósturinn í Gmail' } : null) } : null;
   } else if (row.tegund === 'simtal') {
@@ -808,7 +826,9 @@ exports.handler = async (event) => {
     }
     try {
       const [onnur, serRadir, saga] = await Promise.all([
-        lesa('afgreidsla?select=*&stada=eq.tilbuid&or=(gogn->>flokkur.is.null,gogn->>flokkur.not.in.(' + SERFLOKKAR.join(',') + '))&order=forgangur.asc,created_at.asc&limit=50'),
+        // 27.11.2026: NÝJUSTU fyrst og 80 í stað 50 — með `created_at.asc&limit=50` komust nýjustu verkin aldrei á skjáinn
+        // þegar fleiri en 50 biðu (72 mæld 27.11). Endanleg röð: raðaTilbuin() hér að neðan.
+        lesa('afgreidsla?select=*&stada=eq.tilbuid&or=(gogn->>flokkur.is.null,gogn->>flokkur.not.in.(' + SERFLOKKAR.join(',') + '))&order=created_at.desc&limit=80'),
         // Hver sérflokkur hefur SITT þak (rýni 19.11.2026): deildu þeir einu þaki gátu bókanir ýtt nýjum dagsverkum út þegjandi.
         Promise.all(SERFLOKKAR.map((f) => lesa('afgreidsla?select=*&stada=eq.tilbuid&gogn->>flokkur=eq.' + f + '&order=forgangur.asc,created_at.asc&limit=' + SER_THAK))),
         lesa('afgreidsla?select=*&stada=neq.tilbuid&order=updated_at.desc&limit=40'),
@@ -827,7 +847,7 @@ exports.handler = async (event) => {
         if (s.urelt) { await breyta(`afgreidsla?id=eq.${r.id}&stada=eq.tilbuid`, { stada: 'urelt', astaeda: s.urelt }).catch(() => {}); continue; }
         tilbuin.push(s);
       }
-      const svar = { tilbuin, saga: saga.map(synilegtSaga), throskuldur: THROSKULDUR_KR };
+      const svar = { tilbuin: radaTilbuin(tilbuin), saga: saga.map(synilegtSaga), throskuldur: THROSKULDUR_KR };
       // Aðalmál-borðið (492) biður líka um svör og ákvarðanir á atriðum opnu málanna sinna.
       const qs = (event.queryStringParameters || {});
       if (qs.adalmal != null) {
@@ -939,3 +959,4 @@ module.exports._leysaTilvisanir = leysaTilvisanir;
 module.exports._merkja = merkja;   // 17.11.2026: prófin (kreditfærður reikningur merktur)
 module.exports._vidhengiSlod = vidhengiSlod;   // 18.11.2026: viðhengi sem tengill í svarinu
 module.exports._vidhengiSyn = vidhengiSyn;
+module.exports._radaTilbuin = radaTilbuin;   // 27.11.2026: nýr póstur efst

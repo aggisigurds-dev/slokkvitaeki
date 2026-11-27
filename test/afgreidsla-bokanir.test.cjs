@@ -94,7 +94,7 @@ test('sama skilgreining á öllum þremur stöðum: borðið, símasíðan og /a
 test('þjónninn: sérflokkar sóttir sér með eigið þak; aðeins þekkt gildi fara í gegn sem flokkur', () => {
   const t = lesa('netlify/functions/afgreidsla.cjs');
   assert.match(t, /const SERFLOKKAR = \['dagsverk', 'bokun'\];/);
-  assert.match(t, /stada=eq\.tilbuid&or=\(gogn->>flokkur\.is\.null,gogn->>flokkur\.not\.in\.\(' \+ SERFLOKKAR\.join\(','\) \+ '\)\)&order=forgangur\.asc,created_at\.asc&limit=50'/, 'önnur verk: sama 50-þak og áður, án sérflokka');
+  assert.match(t, /stada=eq\.tilbuid&or=\(gogn->>flokkur\.is\.null,gogn->>flokkur\.not\.in\.\(' \+ SERFLOKKAR\.join\(','\) \+ '\)\)&order=created_at\.desc&limit=80'/, 'önnur verk: NÝJUSTU 80 (27.11.2026 — áður 50 elstu, svo nýtt komst ekki á skjáinn), án sérflokka');
   // Hver sérflokkur fær SITT þak — annars gátu bókanir ýtt nýjum dagsverkum út þegjandi (rýni 19.11.2026).
   assert.match(t, /SERFLOKKAR\.map\(\(f\) => lesa\('afgreidsla\?select=\*&stada=eq\.tilbuid&gogn->>flokkur=eq\.' \+ f \+ '&order=forgangur\.asc,created_at\.asc&limit=' \+ SER_THAK\)\)/, 'ein fyrirspurn á hvern sérflokk');
   assert.match(t, /const SER_THAK = 60;/);

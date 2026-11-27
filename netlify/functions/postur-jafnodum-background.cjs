@@ -30,7 +30,7 @@ const HUB = require('./hub-adgangar.cjs');          // innriHausar() → { 'x-sl
 const POSTHOLF = /^(eldklar|bokhald)@eldklar\.is$/i;
 const DAGAR = 14;              // hversu langt aftur er leitað að ósvöruðum spurningum
 const NY_I_KEYRSLU = 5;        // mest ný spjöld á hverja keyrslu (þak á AI-köllum líka)
-const THAK_OPIN = 12;          // aldrei fleiri en þetta opin jafnóðum-spjöld í einu
+const THAK_OPIN = 20;          // aldrei fleiri en þetta opin jafnóðum-spjöld í einu (12 → 20, 27.11.2026: fleiri raunpóstar fá drög)
 const CREATED_BY = 'claude-jafnodum';
 
 const p2 = (n) => String(n).padStart(2, '0');
@@ -50,16 +50,25 @@ async function skanna(budget = NY_I_KEYRSLU) {
   const opin = opnir.length;
   const budgetRaun = Math.max(0, Math.min(Number(budget) || 0, THAK_OPIN - opin));
 
-  // Nýjustu innkomnu spurningarnar í pósthólfum félagsins, með þráð og message_id.
+  // Nýjustu innkomnu póstarnir í pósthólfum félagsins, með þráð og message_id.
+  // 27.11.2026 (Agnar: „Ég vil geta svarað nýjum póstum samdægurs og fengið hjálp við það. Hættið að fela það"): is_question
+  // er EKKI lengur skilyrði. Mælt 27.11: Guðmundur (Völuteigur 29), gjaldkeri Eignaumsjónar og „RE: Reikningur" frá Hrauni
+  // voru allir is_question=false og fengu engin drög. Nú ræður SENDANDINN: þekktur kúnni/tengiliður (kunnugur) EÐA
+  // samtal sem við eigum. is_question gildir aðeins um samtal við óþekktan sendanda.
   const raw = await lesa(
-    `email_digest?select=id,message_id,account,folder,sender_name,sender_email,subject,snippet,body_preview,received_at,thread_id` +
+    `email_digest?select=id,message_id,account,folder,sender_name,sender_email,subject,snippet,body_preview,received_at,thread_id,is_question` +
     `&account=ilike.*@eldklar.is&folder=not.ilike.*sent*&thread_id=not.is.null&message_id=not.is.null` +
-    `&is_question=is.true&received_at=gt.${q(new Date(Date.now() - DAGAR * 864e5).toISOString())}` +
-    `&order=received_at.desc&limit=40`);
+    `&received_at=gt.${q(new Date(Date.now() - DAGAR * 864e5).toISOString())}` +
+    `&order=received_at.desc&limit=80`);
   const postar = raw.filter((e) => POSTHOLF.test(String(e.account || '')));
 
-  const sleppt = { sjalfvirkt: 0, svarad: 0, ekki_i_samtali: 0, spjald: 0 };
-  const virkir = postar.filter((e) => { const s = CL.erSjalfvirkt(e.sender_email); if (s) sleppt.sjalfvirkt++; return !s; });
+  const sleppt = { sjalfvirkt: 0, svarad: 0, ekki_i_samtali: 0, spjald: 0, innanhuss: 0, reikningur_til_okkar: 0 };
+  const virkir = postar.filter((e) => {
+    const s = CL.erSjalfvirkt(e.sender_email); if (s) { sleppt.sjalfvirkt++; return false; }
+    if (EIGIN_LEN.test(String(e.sender_email || ''))) { sleppt.innanhuss++; return false; }
+    if (REIKNINGUR_TIL_OKKAR.test(String(e.subject || ''))) { sleppt.reikningur_til_okkar++; return false; }
+    return true;
+  });
   if (!virkir.length) return { budget: budgetRaun, opin, candidates: [], sleppt };
 
   // Öll SENT-skeyti okkar í þessum þráðum (frá okkur EÐA öðrum starfsmanni). Ein fyrirspurn fyrir alla þræði.
@@ -78,15 +87,38 @@ async function skanna(budget = NY_I_KEYRSLU) {
   const erSpjald = new Set(til.map((x) => x.lykill));
 
   const candidates = [];
+  const kunnCache = {};
   for (const e of virkir) {
     if (candidates.length >= budgetRaun) break;
     const ts = sentEftirThraedi[e.thread_id] || [];
     if (ts.some((x) => x > e.received_at)) { sleppt.svarad++; continue; }        // einhver svaraði þegar nýrra en þessum — ekkert spjald
-    if (!ts.some((x) => x <= e.received_at)) { sleppt.ekki_i_samtali++; continue; }  // við eigum ekki þetta samtal (nýtt/markaðspóstur) — handvirkt
     if (erSpjald.has('svar:' + e.message_id)) { sleppt.spjald++; continue; }
+    const samtal = ts.some((x) => x <= e.received_at);
+    const nf = String(e.sender_email || '').toLowerCase();
+    if (!(nf in kunnCache)) kunnCache[nf] = await kunnugur(nf);
+    // Þekktur sendandi → alltaf drög. Óþekktur → aðeins í samtali sem við eigum og sé það spurning (fyrri regla).
+    if (!kunnCache[nf] && !(samtal && e.is_question === true)) { sleppt.ekki_i_samtali++; continue; }
     candidates.push(e);
   }
   return { budget: budgetRaun, opin, candidates, sleppt };
+}
+
+const EIGIN_LEN = /@(eldklar\.is|brunaholf\.is)$/i;                       // innanhússpóstur (áframsendingar starfsmanna)
+const REIKNINGUR_TIL_OKKAR = /^(reikningur frá|.*sölureikningur\s+s-\d)/i;     // reikningar birgja TIL okkar — ekki svarað
+
+// 27.11.2026: er sendandinn þekktur? Netfangið í fyrirtækjaskrá, samþykktur tengiliður, eða við höfum SENT á það áður.
+// Aðeins nákvæmt netfang (aldrei lén — gmail.com o.fl. myndu hleypa öllum inn). Les aðeins.
+async function kunnugur(netfang) {
+  if (!/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(netfang)) return false;
+  const k = q(netfang);
+  try {
+    const [f, t, s] = await Promise.all([
+      lesa(`fyrirtaeki?select=id&deleted_at=is.null&netfang=ilike.*${k}*&limit=1`),
+      lesa(`charlize_contacts?select=id&netfang=ilike.${k}&status=eq.approved&limit=1`),   // pending = sjálfvirk lén-pörun (markaðspóstur, birgjar)
+      lesa(`email_digest?select=id&folder=ilike.*sent*&to_addresses=ilike.*${k}*&limit=1`),
+    ]);
+    return !!(f.length || t.length || s.length);
+  } catch (_) { return false; }
 }
 
 // Léttur kúnna-uppfletting: fyrirtæki með þetta netfang skráð. Aðeins nafn + kt (postur-reply notar það, finnur ekki upp neitt).
