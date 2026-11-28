@@ -71,6 +71,39 @@
     ];
   }
 
+  // Samanbrotin félagsröð (28.11.2026, mockup): appelsínugul ljómandi rönd t.v., útlínubygging án flísar, nafn + kt · netfang, og til hægri
+  // flatir hlutir með lóðréttum skilum — bygging (blátt), bjalla (rautt), viðvörun (rautt), bíll, ör. Emoji í 175 eru vafin í .rf-e og
+  // skipt út fyrir línutákn hér (mask) — Boss sýnir emoji áfram.
+  const SVGI = d => 'url("data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + d + '</svg>') + '")';
+  const IC_BYGG = SVGI('<path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4M10 10h4M10 14h4M10 18h4"/>');
+  const IC_BJALLA = SVGI('<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>');
+  const IC_VIDV = SVGI('<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>');
+  const IC_BILL = SVGI('<path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/>');
+  const IC_NIDUR = SVGI('<path d="m6 9 6 6 6-6"/>');
+  const maski = (ic, lit, st) => 'content:"";display:inline-block;width:' + (st || 20) + 'px;height:' + (st || 20) + 'px;background:' + lit + ';-webkit-mask:' + ic + ' center/contain no-repeat;mask:' + ic + ' center/contain no-repeat';
+  function rod(X) {
+    return [
+      X + '.rfa__head{position:relative;padding-left:36px!important}',
+      X + '.rfa__head::before{content:"";position:absolute;left:14px;top:50%;width:4px;height:30px;margin-top:-15px;border-radius:3px;background:linear-gradient(180deg,#ffb066,#ff6702);box-shadow:0 0 12px rgba(255,103,2,.9)}',
+      X + '.rfa__logo{width:auto!important;height:46px!important;padding:0 16px 0 4px;background:none!important;border:0!important;box-shadow:none!important;border-radius:0!important;border-right:1px solid rgba(255,255,255,.16)!important}',
+      X + '.rfa__logo svg{width:38px!important;height:38px!important;stroke:#cfe0f5!important;stroke-width:1.1!important;filter:drop-shadow(0 0 5px rgba(120,180,255,.45))}',
+      X + '.rfa__name{font-size:21px!important;font-weight:600!important}',
+      X + '.rfa__sub{font-size:14px!important}',
+      X + '.rfa__pills{gap:0!important}',
+      X + '.rfa__pills>*{background:none!important;background-image:none!important;border:0!important;box-shadow:none!important;border-radius:0!important;padding:0 18px!important;height:34px;display:inline-flex!important;align-items:center;gap:9px;color:#fff!important;font-size:14px!important;font-weight:500!important;text-shadow:none!important}',
+      X + '.rfa__pills>*+*{border-left:1px solid rgba(255,255,255,.16)!important}',
+      X + '.rfa__pills .rf-e{font-size:0;display:inline-flex;align-items:center}',
+      X + '.rf-pill--ghost .rf-e::before{' + maski(IC_BYGG, '#6cb4ff') + '}',
+      X + '.rf-pill--bru .rf-e::before{' + maski(IC_BJALLA, '#f87171') + '}',
+      X + '.rf-pill--overdue .rf-e::before{' + maski(IC_VIDV, '#f87171') + '}',
+      X + '._rf_akstur{font-size:0!important;min-width:0!important;width:auto!important;opacity:1!important}',
+      X + '._rf_akstur::before{' + maski(IC_BILL, '#fff', 22) + '}',
+      X + '._rf_akstur:not([data-ak="0"])::after{content:attr(data-ak);font-size:14px;font-weight:600;color:#fff;margin-left:7px}',
+      X + '.rfa__chev{font-size:0!important;width:auto!important;height:34px!important;padding:0 6px 0 18px!important;border-radius:0!important;display:inline-flex!important;align-items:center}',
+      X + '.rfa__chev::before{' + maski(IC_NIDUR, '#dbe6f6', 22) + '}',
+    ];
+  }
+
   function css() {
     return [
       // ════════════════════════════════ V2 (ljóst: navy + appelsínugult) ════════════════════════════════
@@ -211,6 +244,8 @@
       ...flipi(D, GLER, 'rgba(150,185,235,.16)', '#fff', '#a9b8d0', 'rgba(0,8,22,.35)'),
       ...ljomi(R),
       ...ljomi(D),
+      ...rod(R),
+      ...rod(D),
       D + '._rf_addb{background:' + APP4 + '!important;color:#fff!important;box-shadow:' + GLOD4 + '!important}',
     ].join('\n');
   }

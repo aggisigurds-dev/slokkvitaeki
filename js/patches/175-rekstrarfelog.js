@@ -1906,9 +1906,9 @@
             '<span class="rfa__sub">'+esc(subBits.join(' · ')||'—')+'</span>'+
           '</span>'+
           '<span class="rfa__pills">'+
-            '<span class="rf-pill rf-pill--ghost">🏢 '+blds.length+' byggingar</span>'+
-            (nb>0?'<span class="rf-pill rf-pill--bru" title="Staðir félagsins í brunakerfisþjónustu">🚨 '+nb+'</span>':'')+
-            (ov>0?'<span class="rf-pill rf-pill--overdue">⚠ '+ov+'</span>':'')+
+            '<span class="rf-pill rf-pill--ghost"><span class="rf-e">🏢</span> '+blds.length+' byggingar</span>'+
+            (nb>0?'<span class="rf-pill rf-pill--bru" title="Staðir félagsins í brunakerfisþjónustu"><span class="rf-e">🚨</span> '+nb+'</span>':'')+
+            (ov>0?'<span class="rf-pill rf-pill--overdue"><span class="rf-e">⚠</span> '+ov+'</span>':'')+
             '<span class="rfa__chev">⌄</span>'+
           '</span>'+
         '</button>'+
