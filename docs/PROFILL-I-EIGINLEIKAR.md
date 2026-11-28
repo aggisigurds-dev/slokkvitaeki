@@ -140,3 +140,16 @@ Agnar sagði 19.11.2026: „keyra þessa breytingu á allt“ … „allir sem e
 - Brunakerfi (147) og Ársskoðun (153) opna `_openCompanySafe` og fá því nýja prófílinn sjálfkrafa.
 - Allir viðskiptavinir, gagnagæðaborðinn og leiðsögnin (157/159/161) kölluðu á `VidskDetail.show` (viðskiptavinasíðuna, 158). Patch 500 beinir því falli á `_openCompanySafe`. Upprunalega fallið er geymt og opnast úr ⋯ → „Viðskiptavinasíða (eldri)“, því þar eru áskriftartakkarnir (Fyrirtækjaþjónusta/Brunakerfi). Engu var eytt.
 - Prófað staðbundið á 11 handahófskenndum félögum, þar af 2 utan þjónustu: engar JS-villur, allir 7 flipar og lárétt skrun 0. Líka prófað: Allir viðskiptavinir → röð → „Opna kúnna-síðu“ → nýi prófíllinn → ⋯ → eldri síða.
+
+## 8. Skrá í þjónustu (28.11.2026, ósk Agnars: „skráð í þjónustu inn á company profile brunakerfis og síðan rest undir aðrar þjónustur")
+
+Allt í `js/patches/450-kerfi-thjonusta.js`; skiptingin eftir flipa er CSS á `#companies-main[data-p2tab]` (500) — enginn hnútur fluttur, ræman áfram ÓSÍUÐ í DOM því 500 les hana til að telja „Aðrar þjónustur". Gamli prófíllinn (`?prof=1`, enginn `data-p2tab`) er óbreyttur.
+
+| Flipi | Hvað sést | Skráning |
+|---|---|---|
+| Brunakerfisþjónusta | aðeins röðin „Brunaviðvörunarkerfi" (sést alltaf, líka án kröfu), spjaldið opið sjálfgefið, samtala aðeins fyrir hana | haus: **+ Skrá í brunakerfisþjónustu** → `AppSettings.brunakerfi_customers[fid] = { unit_count: 0, inspect_month: 0, co_id }` (sama snið og „+ Bæta við fyrirtæki" í 147, EITT félag í vistun, lesið til baka) og `stadur_kerfi` Brunaviðvörunarkerfi = já + okkar |
+| Aðrar þjónustur | öll kerfi nema Brunaviðvörunarkerfi (Slökkvitæki neðst — enginn reitur týnist), opið sjálfgefið | á hverri röð **+ Skrá í þjónustu hjá okkur** (`til_stadar=ja`, `thjonustuadili=okkar`) / **Taka úr þjónustu** (aðeins þjónustuaðili núllaður) |
+
+- **Taka úr** í hausnum birtist aðeins á ósnertri nýskráningu (engar einingar, mánuður né athugasemdir) — færsla með gögnum er fjarlægð á Brunakerfi-yfirlitinu (147), svo ekkert tapast.
+- **Gildra (153:562–564):** virk brunakerfisáskrift trompar afskráningu úr slökkvitækjaþjónustu. Skrái maður félag sem var tekið úr þjónustu setur það það aftur á Ársskoðunarlistann — hausinn spyr (confirm) áður.
+- Prófað staðbundið (`profun-thjonn.cjs`: skrár úr greininni + `/api/*` áframsent) gegn lifandi gögnum á Downtown Reykjavík Apartments (#490) með HLERUÐUM skrifum (`AppSettings.save`, `Flokkun.vistaKerfi`, öll önnur POST á supabase blokkuð): sendar hleðslur eins og 147 býr til, haus/röð/samtala uppfærast, Taka úr snýr við, `?prof=1` óbreytt, 375 px án láréttrar skrunar. Raunskrif í framleiðslugrunn voru EKKI prófuð.

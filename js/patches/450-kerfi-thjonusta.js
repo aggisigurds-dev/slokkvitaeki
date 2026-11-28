@@ -47,6 +47,18 @@
   const _rodStada = new Map();   // `${fid}|${kerfi}` → { texti, villa, reyna }
   let _ritill = null;            // { fid, stada, villa, vistar } — Leiðrétta tegund
   const _saekir = new Map();     // fid → promise
+  const BVK = 'brunavidvorunarkerfi', SLT = 'slokkvitaeki';
+
+  // Flipinn sem prófíll I (500) sýnir: 'bk' (Brunakerfisþjónusta) · 'adrar' (Aðrar þjónustur) · null (gamli prófíllinn / aðrir flipar).
+  const flipi = () => { const m = document.getElementById('companies-main'); const t = m && m.getAttribute('data-p2tab'); return t === 'bk' || t === 'adrar' ? t : null; };
+  // Opið/lokað: val notandans gildir; annars opið í þessum tveimur flipum (þar er spjaldið aðalefnið), lokað annars staðar.
+  const erOpid = (fid) => (_opid.has(fid) ? !!_opid.get(fid) : !!flipi());
+  // Hvaða kerfi teljast í samtölunni í hausnum eftir flipa — sama skipting og CSS-ið hér að ofan.
+  const iFlipa = (kerfi) => { const f = flipi(); return f === 'bk' ? kerfi === BVK : f === 'adrar' ? kerfi !== BVK : true; };
+  // Brunakerfisáskrift = félagið er á áskriftarlistanum (147; sama regla og 153 hasBru: !!brunakerfi_customers[fid]).
+  const bkListi = () => (window.AppSettings && AppSettings.path && AppSettings.path('brunakerfi_customers')) || {};
+  const erBkAskrift = (fid) => !!bkListi()[String(fid)];
+  const toast = (t) => { try { if (window.Toast && Toast.show) { Toast.show(t); return; } } catch (_) {} console.log('[450]', t); };
 
   /* ── CSS (eigið gildissvið #_kt450 ofan á .ssp úr 442) ──────────────────────────────────────────────────── */
   function css() {
@@ -110,6 +122,26 @@
       R + ' .kt-fleiri{display:flex;justify-content:center;margin-top:10px}',
       R + ' .kt-tomt{font:500 13px ' + SANS + ';color:#3a4250}',
       R + ' button.ssp-btn.kt-lit{height:30px!important;padding:0 10px!important;font-size:12px!important}',
+      // SKRÁ Í ÞJÓNUSTU (28.11.2026, Agnar: „mig vantar að geta skráð í þjónustu inn á company profile brunakerfis og síðan
+      // rest undir aðrar þjónustur"). Skiptingin er CSS á #companies-main[data-p2tab] (500) — enginn hnútur fluttur eða fjarlægður
+      // (500 les ræmuna ÓSÍAÐA til að telja „Aðrar þjónustur"), svo ekkert hverfur og gamli prófíllinn (án data-p2tab) er óbreyttur.
+      //   Brunakerfisþjónusta → aðeins Brunaviðvörunarkerfi · Aðrar þjónustur → allt nema það (Slökkvitæki neðst, enginn reitur týnist).
+      R + ' .kt-skra{flex:none;display:flex;align-items:center;gap:6px}',
+      R + ' .kt-skra[hidden]{display:none!important}',
+      R + ' .kt-skra .kt-skra-pill{white-space:nowrap}',
+      R + ' .kt-okkar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px}',
+      R + ' .kt-okkar:empty{display:none}',
+      '#companies-main[data-p2tab="bk"] ' + R + ' .kt-raema .kt-k:not([data-kerfi="brunavidvorunarkerfi"]){display:none!important}',
+      '#companies-main[data-p2tab="bk"] ' + R + ' .kt-rod:not([data-kerfi="brunavidvorunarkerfi"]){display:none!important}',
+      '#companies-main[data-p2tab="bk"] ' + R + ' .kt-fleiri{display:none!important}',
+      '#companies-main[data-p2tab="adrar"] ' + R + ' .kt-raema .kt-k[data-kerfi="brunavidvorunarkerfi"]{display:none!important}',
+      '#companies-main[data-p2tab="adrar"] ' + R + ' .kt-rod[data-kerfi="brunavidvorunarkerfi"]{display:none!important}',
+      '#companies-main[data-p2tab="adrar"] ' + R + ' .kt-rod[data-kerfi="slokkvitaeki"]{order:99}',
+      '@container (max-width: 560px){' +
+        R + ' .kt-haus{flex-wrap:wrap!important;height:auto!important;padding-top:8px!important;padding-bottom:8px!important;overflow:visible!important}' +
+        R + ' .kt-skra{order:5;flex:1 1 100%}' +
+        R + ' .kt-skra button.ssp-btn{height:44px!important}' +
+      '}',
       // Þröngt (sími 375 og S26 980 px með hliðarstiku): reitir í dálk, samtala falin í haus — ekkert lárétt skrun
       '@container (max-width: 1100px){' + R + ' .kt-reitir{grid-template-columns:minmax(200px,1fr) minmax(0,1fr) minmax(0,1fr)}' + R + ' .kt-reitir .kt-ath{grid-column:span 2}' + '}',
       '@container (max-width: 760px){' +
@@ -178,7 +210,7 @@
   function taekPlata(t) { if (!t) return ''; const x = F().TAEKIFAERI[t]; return '<span class="ssp-plata kt-taek" title="Tækifæri (' + t + ')">' + ledHtml(t) + esc(x.heiti) + '</span>'; }
   function samtala(listi) {
     const n = { a: 0, b: 0, c: 0, d: 0 };
-    listi.forEach((x) => { if (x.synt && x.taek) n[x.taek]++; });
+    listi.forEach((x) => { if (x.synt && x.taek && iFlipa(x.k.k)) n[x.taek]++; });
     return ['a', 'b', 'c', 'd'].filter((t) => n[t]).map((t) => '<span class="ssp-plata" title="' + esc(F().TAEKIFAERI[t].heiti) + '">' + ledHtml(t) + n[t] + ' ' + esc(F().TAEKIFAERI[t].stutt.toLowerCase()) + '</span>').join('');
   }
   function raemaHtml(g, listi) {
@@ -190,7 +222,7 @@
       plotur.push('<span class="kt-bil"></span>');
     }
     listi.filter((x) => x.synt && x.taek).forEach((x) => {
-      plotur.push('<span class="ssp-plata kt-k" title="' + esc(x.k.heiti + ' · ' + (Fk.SKYLT[x.skylt] || 'krafa óþekkt') + ' · ' + Fk.TAEKIFAERI[x.taek].heiti) + '">' + ledHtml(x.taek) + esc(x.k.stutt) + '</span>');
+      plotur.push('<span class="ssp-plata kt-k" data-kerfi="' + x.k.k + '" title="' + esc(x.k.heiti + ' · ' + (Fk.SKYLT[x.skylt] || 'krafa óþekkt') + ' · ' + Fk.TAEKIFAERI[x.taek].heiti) + '">' + ledHtml(x.taek) + esc(x.k.stutt) + '</span>');
     });
     return plotur.join('');
   }
@@ -264,6 +296,14 @@
     const d = x.r.uppfaert ? F().birtaDags(String(x.r.uppfaert).slice(0, 10)) : '';
     return (x.r.uppruni === 'handvirkt' ? 'handskráð' : 'sjálfvirkt') + (d ? ' · ' + d : '') + (x.r.heimild ? ' · ' + x.r.heimild : '');
   }
+  // „Skrá í þjónustu hjá okkur" á hverja röð Aðrar þjónustur: til_stadar=já + þjónustuaðili=okkar (sömu reitir og handvirka færslan, ein smellileið).
+  // „Taka úr" fjarlægir aðeins þjónustuaðilann — „til staðar" stendur, því kerfið er enn í húsinu.
+  const erOkkarRod = (x) => !!(x.r && x.r.til_stadar === 'ja' && F().erOkkar(x.r.thjonustuadili));
+  function okkarHtml(x) {
+    return erOkkarRod(x)
+      ? '<span class="ssp-plata kt-dokk" title="Þjónustuaðili: okkar">✓ Í þjónustu hjá okkur</span><button type="button" class="ssp-btn kt-lit" data-kt="ekki-okkar">Taka úr þjónustu</button>'
+      : '<button type="button" class="ssp-btn malm kt-lit" data-kt="okkar">+ Skrá í þjónustu hjá okkur</button>';
+  }
   function rodHtml(fid, x) {
     const Fk = F(), r = x.r || {}, kr = x.kr || {};
     const skilyrdi = r.skilyrdi || kr.skilyrdi || '';
@@ -287,6 +327,7 @@
         '<label class="kt-reitur"><span class="ssp-merki">Samningur til</span><input type="text" inputmode="numeric" class="ssp-reitur" data-kt-reitur="samningur_til" value="' + esc(Fk.birtaDags(r.samningur_til)) + '" placeholder="DD/MM/YYYY" autocomplete="off"></label>' +
         '<label class="kt-reitur kt-ath"><span class="ssp-merki">Athugasemd</span><input type="text" class="ssp-reitur" data-kt-reitur="athugasemd" value="' + esc(r.athugasemd || '') + '" autocomplete="off"></label>' +
       '</div>' +
+      (x.k.k === BVK ? '' : '<div class="kt-okkar" data-kt-okkar>' + okkarHtml(x) + '</div>') +
       '<div class="kt-rod-fot" data-kt-fot>' + rodStadaHtml(fid, x.k.k) + '</div>' +
       (x.k.k === 'brunavidvorunarkerfi' && r.smaatridi ? smaHtml(r.smaatridi) : '') +
     '</div>';
@@ -313,8 +354,10 @@
   }
   function bukHtml(fid, g, listi) {
     const Fk = F(), f = g.flokkun;
-    const synd = _ollKerfi.get(fid) ? listi : listi.filter((x) => x.synt);
-    const falin = listi.length - listi.filter((x) => x.synt).length;
+    // Brunaviðvörunarkerfi er alltaf með: undir Brunakerfisþjónustu er það eina röðin, og hún má ekki vanta hjá félagi sem er nýtt í þjónustu.
+    const ber = (x) => x.synt || x.k.k === BVK;
+    const synd = _ollKerfi.get(fid) ? listi : listi.filter(ber);
+    const falin = listi.length - listi.filter(ber).length;
     const heimild = Array.isArray(f.heimild) && f.heimild.length ? ' · heimild: ' + f.heimild.join(', ') : '';
     const staerd = [f.m2 ? Number(f.m2).toLocaleString('de-DE') + ' m²' : '', f.haedir ? f.haedir + ' hæðir' : ''].filter(Boolean).join(' · ');
     return '<div class="kt-tegund">' +
@@ -344,6 +387,68 @@
     }
     if (sam._kt !== html) { sam._kt = html; sam.innerHTML = html; }
   }
+  /* ── SKRÁ Í BRUNAKERFISÞJÓNUSTU (haus, aðeins í flipanum Brunakerfisþjónusta) ────────────────────────────────── */
+  // Áskrift = færsla í AppSettings.brunakerfi_customers[fid] (147, sama snið og „+ Bæta við fyrirtæki" býr til: { unit_count: 0,
+  // inspect_month: 0, co_id }). Aðeins ÞETTA félag fer í vistun (aldrei allur blobbinn) og lesið er til baka.
+  // „Taka úr" er aðeins í boði á ósnertri nýskráningu (engar einingar, mánuður eða athugasemdir) — færsla með gögnum er fjarlægð
+  // á Brunakerfi-yfirlitinu (147), svo ekkert tapast hér við misstig.
+  const _skra = new Map();       // fid → true meðan vistun stendur
+  const erOsnert = (f) => !!f && typeof f === 'object' && Object.keys(f).every((k) => ['co_id', 'unit_count', 'inspect_month'].indexOf(k) >= 0) && !(+f.unit_count > 0) && !(+f.inspect_month > 0);
+  function skraHtml(fid) {
+    if (_skra.get(fid)) return '<button type="button" class="ssp-btn malm kt-skra-btn" disabled>Vistar…</button>';
+    if (erBkAskrift(fid)) {
+      return '<span class="ssp-plata kt-dokk kt-skra-pill" title="Félagið er á áskriftarlista brunakerfa (Brunakerfi → yfirlit)">✓ Í brunakerfisþjónustu</span>' +
+        (erOsnert(bkListi()[String(fid)]) ? '<button type="button" class="ssp-btn kt-lit" data-kt="bk-af" title="Afturkalla nýskráninguna — ekkert var skráð á hana enn">Taka úr</button>' : '');
+    }
+    return '<button type="button" class="ssp-btn malm kt-skra-btn" data-kt="bk-skra" title="Setur félagið á áskriftarlista brunakerfa">+ Skrá í brunakerfisþjónustu</button>';
+  }
+  function setjaSkra(kort, fid) {
+    const el = kort.querySelector('[data-kt-skra]'); if (!el) return;
+    const sja = flipi() === 'bk';
+    if (el.hidden !== !sja) el.hidden = !sja;
+    if (!sja) return;
+    const h = skraHtml(fid);
+    if (el._kt !== h) { el._kt = h; el.innerHTML = h; }
+  }
+  function uppfaeraSkra(fid) { const k = document.getElementById(ID); if (k && +k.dataset.fid === fid) setjaSkra(k, fid); }
+  async function vistaBvk(fid, breyting) {
+    const k = document.getElementById(ID); const m = _minni.get(fid);
+    if (!k || +k.dataset.fid !== fid || !m || !m.gogn) return null;   // röðin er ekki á skjánum — ekkert að uppfæra hér
+    F().bidVistun(fid, BVK, breyting);
+    return vista(k, fid, BVK, breyting);
+  }
+  async function skraBrunakerfi(fid) {
+    const AS = window.AppSettings;
+    if (!AS || !AS.save || !AS.path) { toast('⚠ Vistun er ekki tilbúin — endurhlaðið síðuna'); return; }
+    if (_skra.get(fid) || erBkAskrift(fid)) return;
+    const arsk = (AS.path('arsskodun_customers') || {})[String(fid)] || {};
+    // 153: virk brunakerfisáskrift trompar afskráningu úr slökkvitækjaþjónustu — félagið kemur aftur á Ársskoðunarlistann.
+    if (arsk.removed_from_service_at && !window.confirm('Félagið var tekið úr slökkvitækjaþjónustu. Brunakerfisáskrift setur það aftur á Ársskoðunarlistann.\n\nSkrá í brunakerfisþjónustu samt?')) return;
+    _skra.set(fid, true); uppfaeraSkra(fid);
+    let ok = false;
+    try {
+      const svar = await AS.save({ brunakerfi_customers: { [String(fid)]: { unit_count: 0, inspect_month: 0, co_id: fid } } });
+      ok = svar !== false && erBkAskrift(fid);
+    } catch (e) { ok = false; try { if (typeof window.logProblem === 'function') window.logProblem('bk_skra_450', String(e && e.message || e).slice(0, 160)); } catch (_) {} }
+    _skra.delete(fid); uppfaeraSkra(fid);
+    if (!ok) { toast('⚠ Vistaðist ekki — félagið er EKKI skráð í brunakerfisþjónustu. Reyndu aftur.'); return; }
+    const kerfiOk = await vistaBvk(fid, { til_stadar: 'ja', thjonustuadili: 'okkar' });
+    toast(kerfiOk === false ? '✓ Skráð í brunakerfisþjónustu — en „Brunaviðvörunarkerfi" vistaðist ekki, sjá röðina' : '✓ Skráð í brunakerfisþjónustu');
+  }
+  async function afskraBrunakerfi(fid) {
+    const AS = window.AppSettings;
+    if (!AS || !AS.save || !AS.path || _skra.get(fid)) return;
+    if (!erOsnert(bkListi()[String(fid)])) { toast('Færslan hefur gögn — fjarlægðu hana á Brunakerfi-yfirlitinu'); return; }
+    _skra.set(fid, true); uppfaeraSkra(fid);
+    let ok = false;
+    try { const svar = await AS.save({ brunakerfi_customers: { [String(fid)]: null } }); ok = svar !== false && !erBkAskrift(fid); } catch (e) { ok = false; }
+    _skra.delete(fid); uppfaeraSkra(fid);
+    if (!ok) { toast('⚠ Vistaðist ekki — félagið er enn á áskriftarlistanum'); return; }
+    const m = _minni.get(fid); const r = m && m.gogn && m.gogn.kerfi.find((y) => y.kerfi === BVK);
+    if (r && F().erOkkar(r.thjonustuadili)) await vistaBvk(fid, { thjonustuadili: null });
+    toast('Tekið af áskriftarlista brunakerfa');
+  }
+
   // Fyllir spjaldið. Hnúturinn sjálfur er aldrei skipt út — aðeins innihald hans (Stodugt.vernda heldur skruni/fókus).
   function fylla(kort, fid) {
     const m = _minni.get(fid);
@@ -352,8 +457,9 @@
     const raema = kort.querySelector('[data-kt-raema]');
     const buk = kort.querySelector('[data-kt-buk]');
     const opna = kort.querySelector('[data-kt="opna"]');
-    const opid = !!_opid.get(fid);
+    const opid = erOpid(fid);
     const setja = (el, html) => { if (el && el._kt !== html) { el._kt = html; el.innerHTML = html; } };
+    setjaSkra(kort, fid);   // óháð flokkun og hleðslu: brunakerfisáskrift er skráð á félagið, ekki á staðinn
     if (!g) {
       setja(undir, m && m.villa ? 'Náðist ekki' : 'Hleður…');
       setja(raema, '<span class="kt-texti">' + esc(m && m.villa ? 'Kerfin náðust ekki: ' + m.villa : 'Sæki kerfi og kröfur staðarins…') + '</span>');
@@ -421,6 +527,9 @@
       const up = rod.querySelector('[data-kt-uppruni]'); const ut = upprunaTexti(x); if (up && up.textContent !== ut) up.textContent = ut;
       rod.querySelectorAll('[data-kt="til"]').forEach((b) => { const a = String(b.dataset.v === x.til); if (b.getAttribute('aria-pressed') !== a) b.setAttribute('aria-pressed', a); });
       const fot = rod.querySelector('[data-kt-fot]'); const fh = rodStadaHtml(fid, kerfi); if (fot && fot._kt !== fh) { fot._kt = fh; fot.innerHTML = fh; }
+      const ok = rod.querySelector('[data-kt-okkar]'); const oh = ok ? okkarHtml(x) : ''; if (ok && ok._kt !== oh) { ok._kt = oh; ok.innerHTML = oh; }
+      const ti = rod.querySelector('[data-kt-reitur="thjonustuadili"]'); const tn = (x.r && x.r.thjonustuadili) || '';
+      if (ti && document.activeElement !== ti && ti.value !== tn) ti.value = tn;   // „Skrá í þjónustu" breytir reitnum — hann á ekki að sýna gamla gildið
     }
     if (m.gogn.flokkun) {   // óflokkaður: raeman er skýringarnóta, ekki flokkunarsamantekt — ekki yfirskrifa hana
       const raema = kort.querySelector('[data-kt-raema]'); const rh = raemaHtml(m.gogn, listi); if (raema && raema._kt !== rh) { raema._kt = rh; raema.innerHTML = rh; }
@@ -493,7 +602,9 @@
       if (!b || !kort.contains(b) || b.tagName === 'SPAN') return;
       const fid = +kort.dataset.fid;
       const a = b.dataset.kt;
-      if (a === 'opna') { _opid.set(fid, !_opid.get(fid)); fylla(kort, fid); return; }
+      if (a === 'opna') { _opid.set(fid, !erOpid(fid)); fylla(kort, fid); return; }
+      if (a === 'bk-skra') { skraBrunakerfi(fid); return; }
+      if (a === 'bk-af') { afskraBrunakerfi(fid); return; }
       if (a === 'oll') { _ollKerfi.set(fid, !_ollKerfi.get(fid)); fylla(kort, fid); return; }
       if (a === 'leidretta') { _ritill = (_ritill && _ritill.fid === fid) ? null : { fid }; fylla(kort, fid); if (_ritill) { const s = kort.querySelector('[data-kt-teg-val]'); if (s) s.focus({ preventScroll: true }); } return; }
       if (a === 'loka-teg') { _ritill = null; fylla(kort, fid); return; }
@@ -506,6 +617,14 @@
         rod.querySelectorAll('[data-kt="til"]').forEach((x) => { const p = String(x === b); if (x.getAttribute('aria-pressed') !== p) x.setAttribute('aria-pressed', p); });
         F().bidVistun(fid, kerfi, { til_stadar: v });
         vista(kort, fid, kerfi, { til_stadar: v });
+        return;
+      }
+      if (a === 'okkar' || a === 'ekki-okkar') {
+        // Aðrar þjónustur: ein smellileið á sömu reiti og handvirka færslan (til staðar + þjónustuaðili). „Taka úr" lætur „til staðar" standa.
+        const breyting = a === 'okkar' ? { til_stadar: 'ja', thjonustuadili: 'okkar' } : { thjonustuadili: null };
+        const ti = rod.querySelector('[data-kt-reitur="thjonustuadili"]'); if (ti) ti.value = a === 'okkar' ? 'okkar' : '';
+        F().bidVistun(fid, kerfi, breyting);
+        vista(kort, fid, kerfi, breyting);
         return;
       }
       if (a === 'reyna') {
@@ -556,6 +675,7 @@
     kort.setAttribute('aria-labelledby', ID + '-t');
     kort.innerHTML =
       '<header class="ssp-haus kt-haus"><span class="ssp-titill" id="' + ID + '-t">Kerfi og þjónusta</span><span class="ssp-undir kt-undir" data-kt-undir></span>' +
+        '<span class="kt-skra" data-kt-skra hidden></span>' +
         '<button type="button" class="ssp-btn kt-opna" data-kt="opna" aria-expanded="false" aria-controls="' + ID + '-buk">Opna</button></header>' +
       '<div class="kt-raema" data-kt-raema></div>' +
       '<div class="ssp-buk kt-buk" id="' + ID + '-buk" data-kt-buk hidden></div>';
@@ -629,6 +749,9 @@
         if (breytt) { try { festa(); } catch (err) { console.warn('[450]', err); } return; }
       }
     }).observe(main, { childList: true });
+    // Flipaskipti í prófíl I (500 setur data-p2tab): haus (Skrá í brunakerfisþjónustu), samtala og sjálfgefið opið fylgja flipanum.
+    new MO(() => { const k = document.getElementById(ID); if (k) { try { fylla(k, +k.dataset.fid); } catch (err) { console.warn('[450]', err); } } })
+      .observe(main, { attributes: true, attributeFilter: ['data-p2tab'] });
     try { festa(); } catch (_) {}
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', vakta);
