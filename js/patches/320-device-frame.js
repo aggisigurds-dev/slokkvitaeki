@@ -112,7 +112,9 @@
   // Á alvöru síma er ritillinn UNDIR forskoðuninni: telja hæð hans frá, ekki breidd.
   function fitScale(d) {
     const phone = isNativePhoneViewport();
-    const bh = phone ? 52 : 46;
+    // 28.11.2026: stikan brotnar í línur á tölvu (sjá open()), svo hæð hennar er MÆLD en ekki föst 46 px.
+    let bh = phone ? 52 : 46;
+    try { const st = overlay && overlay.firstElementChild; if (st && !phone && st.offsetHeight > bh) bh = st.offsetHeight + 8; } catch (_) {}
     const editorH = phone ? Math.round(Math.min(window.innerHeight * 0.42, 380)) : 0;
     const availH = Math.max(phone ? 140 : 280, window.innerHeight - bh - 26 - editorH);
     const chrome = phone ? 24 : EDITOR_W + 48;
@@ -189,7 +191,10 @@
   function frameUrl(devKey, target) {
     try {
       const u = new URL(target || location.href, location.origin);
-      if (!target) u.searchParams.set('devframe', devKey);
+      // 28.11.2026: slóð frá kallanda sem BER devframe= (app eða allt kerfið úr Öpp-síðunni) fylgir tækinu sem er valið.
+      // Áður stóð gamla gildið eftir þegar skipt var um tæki í stikunni: S26-slóð í spjaldtölvuramma þvingaði símaham.
+      // Slóð án devframe (Brunahólfs-flipi, sjálfstæð HTML-síða) er áfram römmuð óbreytt.
+      if (!target || u.searchParams.has('devframe')) u.searchParams.set('devframe', devKey);
       const dv = DEVICES[devKey];
       if (dv && dv.krom) u.searchParams.set('simikrom', String(dv.krom));
       else u.searchParams.delete('simikrom');
@@ -263,8 +268,13 @@
     const bar = document.createElement('div');
     // Fjögur snið + heiti + ↗ ↻ ✕ komast ekki fyrir í mjóum glugga — barinn
     // skrunast frekar en að klippast (sama regla og annars staðar í appinu).
-    bar.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:8px;flex:none;'
-      + 'max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;padding-bottom:2px';
+    // 28.11.2026: á tölvu BROTNAR stikan í línur í stað þess að skrunast. Með „Benda Claude á" (539) komst hún ekki
+    // fyrir á 1440 px skjá og takkar hurfu hægra megin án þess að neitt sýndi að þeir væru til. Á alvöru síma skrunast
+    // hún áfram (fimm línur af tökkum ætu skjáinn). fitScale mælir hæðina.
+    bar.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:8px;flex:none;max-width:100%;'
+      + (isNativePhoneViewport()
+        ? 'overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;padding-bottom:2px'
+        : 'flex-wrap:wrap;row-gap:6px');
     bar.innerHTML =
       Object.keys(DEVICES).map(k =>
         '<button data-dev="' + k + '" style="all:unset;cursor:pointer;font:700 12.5px \'IBM Plex Sans\',-apple-system,\'Segoe UI\',sans-serif;color:' + (k === devKey ? '#0f1117' : '#e5e9f0') + ';background:' + (k === devKey ? '#fff' : 'rgba(255,255,255,.12)') + ';padding:8px 14px;border-radius:9px;flex:0 0 auto;white-space:nowrap">' + DEVICES[k].label + ' · ' + DEVICES[k].w + '×' + DEVICES[k].h + '</button>').join('') +

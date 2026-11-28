@@ -197,6 +197,10 @@ slokkvitæki theme"): **dramatískt, dökkt, iðnaðarlegt — eldur + stál.**
 Þú átt heilt spil af sérhæfðum hönnunar-skillum. Kallaðu á þau með `Skill`-tólinu
 þegar við á — ekki endurfinna það sem þau kunna:
 
+- **Ábendingar Agnars úr herminum (28.11.2026)** — hann bendir sjálfur á það sem á að laga: Öpp → Hermir → „Benda Claude á"
+  í tækjarammanum (320/354/539). Lestu þær með `node tools/hermir-abendingar.cjs` ÁÐUR en þú giskar á hvað hann á við, og
+  lokaðu hverri með `--lokid <id> "<hvað var gert og hvernig prófað>"` þegar lagfæringin er birt og mæld. Vinnulagið er í
+  skill `simahermir`, kaflinn „Ábendingar Agnars úr herminum".
 - **`simahermir`** — SJÁ símaútlitið: skot í 360/390/412 px á eina samanburðarmynd í síma
   Agnars, eða smellanlegur símagluggi á tölvunni. Fyrir og eftir HVERJA símabreytingu, og
   mockup fer gegnum hann áður en það er sýnt. Segðu „prófað í hermi", ekki „virkar í símanum".

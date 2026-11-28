@@ -30,6 +30,12 @@ tengir hana í PAGES/APPS og staðfestir stærðina.
 3. **Skölun, þrjú lög** — viewport `width=980` (index.html:50, `__HUB_VP`) → krómzoom C = innerWidth/screen.width (353, haus/stika) → síðuzoom = C × stærð síðu (333, `.view.active` og `#_app-frame`). Hubbinn bætir við `#view{zoom:1.32}` í embed (brunaholf/index.html:1446).
 4. **Hlutföll króms** — haus 48/50/52 px, stika 52–104 px eftir appi; fyllingar `.view` stimplaðar inline af 353.
 5. **Stýriborð 354** — tæki/útgáfa, AppKrom/AppPageZoom, „Athuga öpp" (manifest id/start_url/scope = /app/<key>/).
+6. **Hermirinn í appinu (28.11.2026)** — kaflinn „Hermir" efst í Stýriborðinu (354) opnar allt kerfið eða eitt app í tækjarammanum
+   (320: Sími, Sími á hlið, Spjaldtölva, Spjaldtölva á hlið, S26). Slóð sem ber `devframe=` fylgir nú tækinu þegar skipt er í
+   stikunni, og stikan brotnar í línur á tölvu (hæðin mæld í `fitScale`). „Benda Claude á" (539) vistar ábendingar Agnars í
+   `app_settings.settings.hermir_abendingar`; þú lest þær með `node tools/hermir-abendingar.cjs` (skill `simahermir`).
+   App í ramma keyrir í appham og fær því símaham (`data-viewmode="mobile"`) líka í spjaldtölvuramma (mælt 28.11.2026); „Allt kerfið"
+   fær `table`.
 
 ## Hvar hlutirnir liggja
 

@@ -80,6 +80,33 @@ eða vafraspjaldið með `resize_window preset: mobile`.
   því símafyrst án breiddarbrota.
 - Keyrðu skrána gegnum `skot` áður en þú sýnir hana.
 
+## Ábendingar Agnars úr herminum (28.11.2026)
+
+Agnar á sinn eigin hermi INNI í appinu og getur bent á það sem á að laga. Þegar hann segir „lagaðu ábendingarnar",
+„ég benti á þetta í herminum" eða „sjáðu það sem ég merkti": lestu ábendingarnar FYRST, giskaðu ekki á hvað hann á við.
+
+- **Hvar hann opnar hann:** Öpp-síðan (`#opp`) → kaflinn **Hermir** efst í Stýriborðinu (354): „Hvað" (Allt kerfið eða eitt app)
+  og tæki (Sími · Sími á hlið · Spjaldtölva · Spjaldtölva á hlið · S26). Síðan opnast í tækjarammanum (320) og hann notar
+  hana eins og í tækinu. Ramminn er hugsaður fyrir tölvuna, ekki símann.
+- **„Benda Claude á"** (539), fremst í stiku rammans: smellur á hlut í rammanum velur hann í stað þess að virkja hann, Agnar
+  skrifar hvað er að og vistar. „Nota síðuna" í spjaldinu slekkur á bendlinum svo hann geti flakkað á aðra síðu og bent þar.
+- **Hvar þær eru:** `app_settings.settings.hermir_abendingar.<id>` (AppSettings, eins á öllum vélum). Hver ábending ber
+  athugasemdina, heiti hlutarins, DOM-slóð, textann í hlutnum, stærð, síðu, sýn, app, tæki og síðustærð.
+
+```bash
+export HERMIR_KAKA='<kaka úr: select kaka from innri.lotu_koku(10, 1);>'     # aldrei í skrá, aldrei uid 1
+node tools/hermir-abendingar.cjs                                             # opnar ábendingar
+node tools/hermir-abendingar.cjs --lokid <id> "<hvað var gert og hvernig það var prófað>"
+```
+
+Án kökunnar (anon-lykillinn les ekki `app_settings`): `select m.value from app_settings, jsonb_each(settings->'hermir_abendingar') m where id = 1 and coalesce(m.value->>'stada','opin') = 'opin';`
+
+**Vinnulagið per ábendingu:** (1) grep-aðu klasann eða id-ið úr DOM-slóðinni í `js/patches` til að finna eigandann,
+(2) endurgerðu í `simahermir.cjs skot` í SAMA tæki og hann benti í (síðustærðin stendur í ábendingunni), (3) lagaðu, birtu og
+mældu aftur, (4) lokaðu með `--lokid`. Textinn sem þú skrifar þar birtist Agnari í spjaldinu undir „Lagað", svo hann á
+að segja hvað breyttist og hvernig það var prófað. Lokaðu ALDREI ábendingu sem er ólöguð eða óprófuð. Ábending sem er
+spurning eða ákvörðun hans (verð, texti út á við, borð annars starfsmanns) er ekki löguð: spurðu hann.
+
 ## Það sem hermirinn sannar ekki
 
 - **Hermir er ekki síminn hans.** 13.11.2026 teiknaði sími Agnars Kjarna-síðu í tölvuútgáfu (~1.230 px) þótt hún

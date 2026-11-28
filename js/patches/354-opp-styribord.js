@@ -39,6 +39,7 @@
     } catch (_) {}
     return !(key && key.charAt(0) === 'x');
   }
+  const HERMIR = [['simi', 'Sími'], ['simiL', 'Sími á hlið'], ['tafla', 'Spjaldtölva'], ['taflaL', 'Spjaldtölva á hlið'], ['s26', 'S26']];
   const KROM = [['auto', 'Sjálfvirkt'], ['1', '1,0'], ['1.5', '1,5'], ['2', '2,0'], ['2.5', '2,5'], ['3', '3,0']];
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const state = { checks: {}, related: null, relatedErr: null, busy: false, msg: '' };
@@ -246,6 +247,8 @@
     '#view-opp #' + ID + ' .st-mini[data-open]{color:#b3261e !important}',
     /* B48 sími: titill fær heila línu, takkarnir deila næstu; Króm-röðin kemst í eina línu á 375 */
     '@media (max-width:600px){#view-opp #' + ID + ' .st-t{flex:1 1 100%}#view-opp #' + ID + ' .st-h .op-btn{flex:1 1 0;justify-content:center;min-width:0}#view-opp #' + ID + ' .st-seg button{min-width:38px;padding:0 8px}}',
+    '#view-opp #' + ID + ' .st-hv{display:inline-flex;align-items:center;gap:8px;font-family:' + MONO + ';font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#4a515c}',
+    '#view-opp #' + ID + ' .st-hv select{min-height:44px;max-width:240px;padding:0 10px;border:1px solid rgba(20,24,34,.35);border-radius:8px;background:#fff;color:#141822;font-family:' + SANS + ';font-size:14px;font-weight:600;letter-spacing:0;text-transform:none}',
     '#view-opp #' + ID + ' .st-msg{font-size:12.5px;color:#2a2f37;margin-top:10px;white-space:pre-wrap;word-break:break-word}',
     '#view-opp #' + ID + ' .op-btn{min-height:40px;padding:0 13px;font-size:13px}'
   ].join('\n');
@@ -292,12 +295,24 @@
         '<div class="stat"><span class="st-' + cls + '">' + esc(txt) + '</span>' + (c ? '<br><span class="' + (c.ok ? 'st-ok' : 'st-bad') + '">' + esc(c.text) + '</span>' : '') + '</div>' +
         '</div>';
     }).join('');
+    // 28.11.2026 (Agnar: „opna bara alla síðuna í emulator … og get bent claude á hvar þarf að laga"): hermirinn fremst.
+    // Ramminn er 320, „Benda Claude á" er 539. Slóðin ber devframe= svo 320 skipti um ham þegar skipt er um tæki.
+    const hv = state.hermirHvad || '';
+    let abOpnar = 0;
+    try { const o = (window.AppSettings && AppSettings.get('hermir_abendingar')) || {}; abOpnar = Object.keys(o).filter(k => o[k] && (o[k].stada || 'opin') === 'opin').length; } catch (_) {}
+    const hermir = '<div class="st-sec">Hermir · síðan eins og hún birtist í síma og spjaldtölvu</div>' +
+      '<div class="st-row"><label class="st-hv"><span>Hvað</span><select data-hermir-hvad aria-label="Hvað á að opna í herminum">' +
+      '<option value="">Allt kerfið</option>' + apps().map(a => '<option value="' + esc(a.key) + '"' + (hv === a.key ? ' selected' : '') + '>App: ' + esc(a.name) + '</option>').join('') +
+      '</select></label><div class="st-seg">' + HERMIR.map(([k, l]) => '<button type="button" data-hermir="' + k + '">' + l + '</button>').join('') + '</div></div>' +
+      '<div class="st-note">Veldu tæki. Síðan opnast í ramma í réttri stærð og þú notar hana eins og í tækinu. Takkinn <b>Benda Claude á</b> efst í rammanum: ' +
+      'smelltu á það sem á að laga og skrifaðu hvað er að. Ábendingarnar vistast á þjóninn og Claude-lota les þær þaðan. Opnar ábendingar núna: <b>' + abOpnar + '</b>.</div>';
     const relLine = state.related
       ? (state.related.length ? '' : '<div class="st-msg">Chrome skráir ekkert innbyggt app uppsett á þessu tæki (getInstalledRelatedApps).</div>')
       : (state.relatedErr ? '<div class="st-msg">Staðfesting uppsetninga: ' + esc(state.relatedErr) + '</div>' : '');
     return '<div class="st-h"><div class="st-t"><small>Öpp · tæki og útgáfa</small><strong>Stýriborð</strong></div>' +
       '<button type="button" class="op-btn" data-act="check"' + (state.busy ? ' disabled' : '') + '>' + IK.leita + 'Athuga öpp</button>' +
       '<button type="button" class="op-btn" data-act="copy">' + IK.afrita + 'Afrita greiningu</button></div>' +
+      hermir +
       '<div class="st-sec">Tæki og útgáfa</div><div class="st-chips">' + chips + '</div>' + note +
       '<div class="st-sec">Króm-stærð (haus · valmynd · botnstika · zoom-stika)</div>' + kromSeg +
       '<div class="st-sec">Síðustærð (hver síða)</div>' + zoomSeg +
@@ -314,6 +329,15 @@
       const b = e.target.closest('button'); if (!b || !p.contains(b)) return;
       e.preventDefault();
       if (b.dataset.krom != null) { try { window.AppKrom && AppKrom.set(b.dataset.krom === 'auto' ? 'auto' : +b.dataset.krom); } catch (_) {} render(); return; }
+      if (b.dataset.hermir) {
+        const dev = b.dataset.hermir, k = state.hermirHvad || '';
+        const nm = k ? ((apps().find(x => x.key === k) || {}).name || k) : 'Allt kerfið';
+        const u = new URL(location.origin + '/');
+        if (k) u.searchParams.set('app', k);
+        u.searchParams.set('devframe', dev);
+        try { if (window.SlokkDevFrame) SlokkDevFrame.open(dev, { url: u.toString(), title: nm }); else { state.msg = 'Hermirinn er ekki hlaðinn. Endurhlaðið síðuna.'; render(); } } catch (_) {}
+        return;
+      }
       if (b.dataset.s26) {
         const k = b.dataset.s26, nm = (apps().find(x => x.key === k) || {}).name || k;
         try { if (window.SlokkDevFrame) { SlokkDevFrame.open('s26', { url: location.origin + '/?app=' + encodeURIComponent(k) + '&devframe=s26', title: nm + ' · S26' }); return; } } catch (_) {}
@@ -329,6 +353,8 @@
       if (b.dataset.act === 'reload') { location.reload(); return; }
       if (b.dataset.act === 'clear') { hreinsa(); return; }
     });
+    // Valið „Hvað" í herminum lifir í breytu: spjaldið er endurteiknað með innerHTML.
+    p.addEventListener('change', e => { const s = e.target.closest && e.target.closest('[data-hermir-hvad]'); if (s) state.hermirHvad = s.value; });
   }
 
   function panel() { return document.getElementById(ID); }
