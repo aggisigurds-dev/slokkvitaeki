@@ -140,6 +140,8 @@ dark→grey page band, metallic 3D stat cards, filled pills, dark-header data ta
 
 ## Lærdómur
 
+- **28.11.2026** — SKINNUÐ SÍÐA ER SKOÐUÐ Í SÍMAHERMINUM ÁÐUR EN HÚN ER SÝND (skill `simahermir`): `node tools/simahermir.cjs skot "#sýn" --taeki 390,tafla-l,tolva` setur síma, spjaldtölvu á hlið og tölvu á EINA samanburðarmynd, og tekur líka mockup-skrá á diski (`skot mockup.html`). Þemað lítur öðruvísi út í símaham (`data-viewmode="mobile"`) en í mjóum tölvuglugga, og hermirinn þvingar réttan ham. Segðu „prófað í hermi".
+
 - **30.09.2026** — ÞEMAÐ MÁLAR ALLA <button> SEM MÁLMHNAPP, með !important og valgrein sem e.matches() ræður ekki við — ég leitaði að henni í öllum stílblöðum og fann hana ekki. Innlínustíll TAPAR fyrir henni: GÓ-punkturinn (418) hafði réttan background í style-attribute en birtist sem málmhnappur með svörtum ramma. Lausn: !important á hverja sjónræna yfirlýsingu í innlínunni, background-image:none þar með, annars stendur hallinn eftir ofan á litnum. Undantekning: sé málmurinn ÆSKILEGUR (ósett staða) skaltu einfaldlega sleppa öllum background-override og láta þemað ráða. (js/patches/418-go-merki.js)
 
 - **16.10.2026** — Uppgjör lota 16.10.2026: frosna .thm-þemað fékk aldrei júlí-contrast-lagfæringuna — 474 × #94a3b8 á ljósum grunni; lagað 23.08.2026 í lotu 1 með #5b6472 (5,98:1). Hönnunarkerfis-athugasemdir 23.09 (óleystar, ákvörðun Agnars): .btn ~35 px < 40–44 px snertireglu; contrast-göt dofin R-000-núll 2,2:1, núll í legend 3,8:1, Móttekin-titill 3,3:1, Léttvatn/Froða-rendur 2,0/2,3:1, 230 fókushringur ~2,8:1; smáletur <11 px í síma (Hreyfingarlisti 8,5 px, Ársskoðun-merki 8 px) skilið eftir — „klíp-zoom leysir lesturinn".

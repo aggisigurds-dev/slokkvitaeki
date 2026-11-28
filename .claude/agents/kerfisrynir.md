@@ -51,6 +51,9 @@ hvort breytingin **þolir allt kerfið**: skjástærðir, öpp, vefi, gögn og f
 1. Les diffið (`git diff <síðasta birta>..HEAD`), ekki samantektina.
 2. Flokkar: viðmót · öpp · gögn/RLS · föll · PWA — og keyrir aðeins þá kafla gátlistans sem snertast.
 3. Mælir það sem hægt er að mæla (Playwright-skjámyndir í 390 og 1280, kontrast-tölur, anon-count).
+   Síma- og spjaldtölvuhlutinn (27.11.2026): skill `simahermir` — `node tools/simahermir.cjs skot <mark> --vefur slokk|bh|kjarni --taeki 390,tafla-l,tolva`
+   er EITT tól á alla þrjá vefina og skilar einni samanburðarmynd með `innerWidth` og láréttu skruni undir hverju tæki
+   (símar `360 390 412 430`, `tolvu` = sími í tölvuútgáfu, `tafla` / `tafla-l` / `lenovo`, `tolva`). Í „Sími"-dálkinn fer „hermir", ekki „sími Agnars".
 4. Snertir útlit í slökkvitækja-appinu → kallar á `utlitsserfraedingur`; öpp-skelina → `opp`; varða leið →
    `netvordur`; aðferð → `kodafraedingur` (hún kallaði líklega á hann).
 5. Skilar:
