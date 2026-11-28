@@ -268,7 +268,7 @@
     const bar = document.createElement('div');
     // Fjögur snið + heiti + ↗ ↻ ✕ komast ekki fyrir í mjóum glugga — barinn
     // skrunast frekar en að klippast (sama regla og annars staðar í appinu).
-    // 28.11.2026: á tölvu BROTNAR stikan í línur í stað þess að skrunast. Með „Benda Claude á" (539) komst hún ekki
+    // 28.11.2026: á tölvu BROTNAR stikan í línur í stað þess að skrunast. Með „Benda Claude á" (540) komst hún ekki
     // fyrir á 1440 px skjá og takkar hurfu hægra megin án þess að neitt sýndi að þeir væru til. Á alvöru síma skrunast
     // hún áfram (fimm línur af tökkum ætu skjáinn). fitScale mælir hæðina.
     bar.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:8px;flex:none;max-width:100%;'

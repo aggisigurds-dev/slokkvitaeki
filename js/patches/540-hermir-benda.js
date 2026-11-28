@@ -1,4 +1,4 @@
-/* === HERMIR: BENDA CLAUDE Á (539) ============================================
+/* === HERMIR: BENDA CLAUDE Á (540) ============================================
  *
  * Agnar 28.11.2026: „geturðu gert manni kleift í t.d. Öpp page að opna bara alla síðuna í emulator, svo maður getur
  * skoðað síðuna eins og hún birtist þar, og þá séð frekar hvað má breyta og get bent claude á hvar þarf að laga".
@@ -20,12 +20,12 @@
  * Ramminn er aðeins á sama léni; Brunahólfs-flipar í ramma (annað lén) fá engan bendil og það er sagt í spjaldinu.
  * ========================================================================== */
 (() => {
-  if (window.__hermirBenda539) return;
-  window.__hermirBenda539 = true;
+  if (window.__hermirBenda540) return;
+  window.__hermirBenda540 = true;
   try { if (new URLSearchParams(location.search).get('devframe')) return; } catch (_) {}
 
   const LYK = 'hermir_abendingar';
-  const STILL = 'hermir-benda-539';
+  const STILL = 'hermir-benda-540';
   const SANS = '"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif';
   const MONO = '"JetBrains Mono",ui-monospace,monospace';
   const DISP = '"Playfair Display",Georgia,serif';
@@ -123,8 +123,8 @@
   const STODVA = ['pointerdown', 'pointerup', 'mousedown', 'mouseup', 'touchstart', 'touchend', 'dblclick', 'contextmenu', 'submit'];
   function tengjaBarn() {
     const b = barn(); if (!b) return false;
-    if (b.win.__hb539) { stillaBarn(); return true; }
-    b.win.__hb539 = true;
+    if (b.win.__hb540) { stillaBarn(); return true; }
+    b.win.__hb540 = true;
     const st = b.doc.createElement('style');
     st.id = '_hb-still';
     st.textContent =
@@ -382,8 +382,8 @@
     opnar: () => listi('opin'),
     texti: textiFyrirClaude,
     stada: () => ({ opid: opid, benda: benda, drog: !!drog }),
-    version: '539'
+    version: '540'
   };
-  console.log('[patch-539] hermir: benda Claude á');
+  console.log('[patch-540] hermir: benda Claude á');
 })();
 /* === END HERMIR: BENDA CLAUDE Á === */

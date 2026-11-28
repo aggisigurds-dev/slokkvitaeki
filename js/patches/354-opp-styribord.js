@@ -296,7 +296,7 @@
         '</div>';
     }).join('');
     // 28.11.2026 (Agnar: „opna bara alla síðuna í emulator … og get bent claude á hvar þarf að laga"): hermirinn fremst.
-    // Ramminn er 320, „Benda Claude á" er 539. Slóðin ber devframe= svo 320 skipti um ham þegar skipt er um tæki.
+    // Ramminn er 320, „Benda Claude á" er 540. Slóðin ber devframe= svo 320 skipti um ham þegar skipt er um tæki.
     const hv = state.hermirHvad || '';
     let abOpnar = 0;
     try { const o = (window.AppSettings && AppSettings.get('hermir_abendingar')) || {}; abOpnar = Object.keys(o).filter(k => o[k] && (o[k].stada || 'opin') === 'opin').length; } catch (_) {}

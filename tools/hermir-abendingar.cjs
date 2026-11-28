@@ -3,7 +3,7 @@
  *
  * Agnar 28.11.2026: „… og get bent claude á hvar þarf að laga". Í tækjarammanum (Öpp → Hermir, eða 📱 í Stílstjóra)
  * er takkinn „Benda Claude á": hann smellir á hlut, skrifar hvað er að og vistar. Ábendingarnar eru í
- * app_settings.settings.hermir_abendingar (pappi 539). Þetta tól les þær og lokar þeim.
+ * app_settings.settings.hermir_abendingar (pappi 540). Þetta tól les þær og lokar þeim.
  *
  *   export HERMIR_KAKA='<kaka úr: select kaka from innri.lotu_koku(10, 1);>'   # aldrei í skrá, aldrei uid 1
  *   node tools/hermir-abendingar.cjs                       opnar ábendingar

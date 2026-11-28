@@ -88,7 +88,7 @@ Agnar á sinn eigin hermi INNI í appinu og getur bent á það sem á að laga.
 - **Hvar hann opnar hann:** Öpp-síðan (`#opp`) → kaflinn **Hermir** efst í Stýriborðinu (354): „Hvað" (Allt kerfið eða eitt app)
   og tæki (Sími · Sími á hlið · Spjaldtölva · Spjaldtölva á hlið · S26). Síðan opnast í tækjarammanum (320) og hann notar
   hana eins og í tækinu. Ramminn er hugsaður fyrir tölvuna, ekki símann.
-- **„Benda Claude á"** (539), fremst í stiku rammans: smellur á hlut í rammanum velur hann í stað þess að virkja hann, Agnar
+- **„Benda Claude á"** (540), fremst í stiku rammans: smellur á hlut í rammanum velur hann í stað þess að virkja hann, Agnar
   skrifar hvað er að og vistar. „Nota síðuna" í spjaldinu slekkur á bendlinum svo hann geti flakkað á aðra síðu og bent þar.
 - **Hvar þær eru:** `app_settings.settings.hermir_abendingar.<id>` (AppSettings, eins á öllum vélum). Hver ábending ber
   athugasemdina, heiti hlutarins, DOM-slóð, textann í hlutnum, stærð, síðu, sýn, app, tæki og síðustærð.
