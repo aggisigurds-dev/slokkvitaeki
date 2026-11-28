@@ -28,7 +28,7 @@
   const APP = 'linear-gradient(180deg,#ff8a1f,#ff6702 55%,#ec5300)';
   const GLOD = '0 6px 16px rgba(255,103,2,.35)';
   const NAVY = 'linear-gradient(110deg,#02193c,#0b2d5f 62%,#12417f)';
-  const BANNER = 'url(/img/rekstrarfelog-hetja.webp) right center/cover no-repeat';   // dökka húsið (sama mynd og hero-kassarnir)
+  const BANNER = 'linear-gradient(rgba(1,16,44,.34),rgba(1,16,44,.34)),url(/img/rekstrarfelog-bakgrunnur.webp) center 38%/cover no-repeat';   // bláteikning af húsi á dökkum navy (banner frá Agnari 28.11.2026) + dýpri litur („aðeins dýpri litir“)
   const FONT = 'Poppins,system-ui,-apple-system,"Segoe UI",sans-serif';
   // ── V4 tókenar (535) ──────────────────────────────────────────────────────────────────────────────────────────
   const GLER = 'linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,0) 36%),linear-gradient(180deg,#0f2b52,#081a36)';
@@ -38,21 +38,20 @@
   const GLOD4 = 'inset 0 1px 0 rgba(255,240,220,.8),inset 0 -2px 3px rgba(120,30,0,.45),0 0 0 1px rgba(130,40,0,.85),0 10px 20px -8px rgba(255,103,2,.95)';
   const LINE4 = 'rgba(150,185,235,.16)';
 
-  // Uppröðun Byggingar-flipans eftir mockupinu: titill og „Bæta við" efst, ein tölulína, síustika, tafla. Aðeins CSS (order) — enginn
-  // hnútur færður í 175. card = flötur tölulínunnar, line = skil milli reita, head = litur titils.
-  function flipi(X, card, line, head) {
+  // Byggingar-flipinn (28.11.2026): markupið (titill + „Bæta við“, tölulína, síustika, tafla) kemur úr 175 (e1570621) í réttri röð eftir
+  // mockupinu — hér er aðeins útlitið: tölulínan verður EITT spjald með skilum milli reita. card = flötur hennar, line = skilin,
+  // head = litur titils, mut = daufur texti (skýringar og tómt ástand).
+  function flipi(X, card, line, head, mut, emptyBg) {
     return [
-      X + '._rf_tab_bygg{display:flex!important;flex-direction:column;position:relative;padding-top:6px}',
-      X + '._rf_tab_bygg>div:first-child{order:0;font-size:0!important;line-height:0!important;margin:0 0 14px!important;min-height:40px;padding-right:200px}',
-      X + '._rf_tab_bygg>div:first-child::before{content:"Byggingar og úttektir";display:block;font:700 22px/40px Poppins,system-ui,sans-serif;color:' + head + '}',
-      X + '.rf-stats{order:1;display:flex!important;gap:0!important;margin:0 0 14px!important;background:' + card + '!important;border-radius:12px!important;overflow:hidden}',
-      X + '.rf-stat{flex:1 1 0;background:transparent!important;background-image:none!important;box-shadow:none!important;border-top:0!important;border-radius:0!important;border-right:1px solid ' + line + '!important;margin:0!important}',
+      X + '.rf-build-head{margin:0 0 14px}',
+      X + '.rf-build-title{color:' + head + '!important;font-family:Poppins,system-ui,sans-serif!important;font-weight:700!important}',
+      X + '.rf-stats{display:flex!important;gap:0!important;margin:0 0 14px!important;background:' + card + '!important;border-radius:12px!important;overflow:hidden}',
+      X + '.rf-stat{flex:1 1 0;background:transparent!important;background-image:none!important;box-shadow:none!important;border:0!important;border-right:1px solid ' + line + '!important;border-radius:0!important;margin:0!important}',
       X + '.rf-stat:last-child{border-right:0!important}',
-      X + '.rf-chiprow{order:2}',
-      X + '.rf-svcbar{order:3}',
-      X + '.rf-tblwrap{order:4}',
-      X + '._rf_addb{order:0;position:absolute!important;top:6px;right:0;width:auto!important;margin:0!important;padding:0 18px!important;height:40px;white-space:nowrap}',
-      X + '._rf_tab_bygg>div:last-child{order:5}',
+      X + '.rf-build-empty{background:' + emptyBg + '!important;color:' + mut + '!important}',
+      X + '.rf-build-empty strong{color:' + head + '!important}',
+      X + '.rf-build-empty svg{stroke:' + mut + '!important}',
+      X + '.rf-build-key,' + X + '.rf-build-key summary{color:' + mut + '!important}',
     ];
   }
 
@@ -71,7 +70,7 @@
       R + '.rf-search input{color:#101e43!important}',
       // Haus félagsins (spjaldið sem opnast): navy flötur, hvítt letur.
       R + '.rfa{border-radius:14px!important;box-shadow:' + SH + '!important;overflow:hidden}',
-      R + '.rfa__head{background:linear-gradient(90deg,#02193c 22%,rgba(2,25,60,.78) 55%,rgba(2,25,60,.3) 100%),' + BANNER + ',#02193c!important;box-shadow:none!important}',
+      R + '.rfa__head{background:linear-gradient(90deg,rgba(2,25,60,.55) 0%,rgba(2,25,60,.12) 60%,rgba(2,25,60,0) 100%),' + BANNER + ',#02193c!important;box-shadow:none!important}',
       R + '.rfa__logo{background:rgba(255,255,255,.08)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)!important;color:#fff!important}',
       R + '.rfa__name{color:#fff!important;font-weight:700!important}',
       R + '.rfa__sub{color:#c9d3e3!important}',
@@ -80,7 +79,7 @@
       R + '.rf-pill--pending{background:#feecd2!important;background-image:none!important;color:#9a3412!important;box-shadow:none!important;text-shadow:none!important;border:0!important}',
       R + '.rf-pill--done{background:#ddfada!important;background-image:none!important;color:#166534!important;box-shadow:none!important;text-shadow:none!important;border:0!important}',
       R + '.rfa__chev{background:rgba(255,255,255,.1)!important;color:#fff!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.25)!important}',
-      R + '._rf_profilhaus{background:linear-gradient(90deg,#02193c 20%,rgba(2,25,60,.8) 55%,rgba(2,25,60,.35) 100%),' + BANNER + ',#02193c!important;box-shadow:inset 0 2px 0 #ff6702!important}',
+      R + '._rf_profilhaus{background:linear-gradient(90deg,rgba(2,25,60,.55) 0%,rgba(2,25,60,.12) 60%,rgba(2,25,60,0) 100%),' + BANNER + ',#02193c!important;box-shadow:inset 0 2px 0 #ff6702!important}',
       R + '._rf_tabs{background:#02193c!important;background-image:none!important;box-shadow:none!important}',
       R + '._rf_tabs button{color:#c9d3e3!important;background:transparent!important;box-shadow:none!important;border:0!important;border-radius:0!important;font-weight:600!important}',
       R + '._rf_tabs button.is-active{color:#fff!important;box-shadow:inset 0 -3px 0 #ff6702!important}',
@@ -133,7 +132,7 @@
       D + '.rf-search{background:rgba(0,8,22,.45)!important;border-radius:10px!important;box-shadow:' + WELL4 + '!important;border:0!important}',
       D + '.rf-search input,' + D + '.rf-bsearch input{color:#fff!important}',
       D + '.rfa{border-radius:14px!important;box-shadow:' + SH4 + '!important;overflow:hidden;background:#081a36!important}',
-      D + '.rfa__head{background:linear-gradient(90deg,#06122a 22%,rgba(6,18,42,.8) 55%,rgba(6,18,42,.3) 100%),' + BANNER + ',#06122a!important;box-shadow:none!important}',
+      D + '.rfa__head{background:linear-gradient(90deg,rgba(6,18,42,.6) 0%,rgba(6,18,42,.15) 60%,rgba(6,18,42,0) 100%),' + BANNER + ',#06122a!important;box-shadow:none!important}',
       D + '.rfa__logo{background:linear-gradient(180deg,#1d4479,#10305c)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),inset 0 -1px 0 rgba(0,0,0,.65)!important;color:#fff!important}',
       D + '.rfa__name{color:#fff!important;font-weight:700!important}',
       D + '.rfa__sub{color:#a9b8d0!important}',
@@ -142,7 +141,7 @@
       D + '.rf-pill--pending{background:rgba(242,193,78,.16)!important;background-image:none!important;color:#f8d98d!important;box-shadow:inset 0 0 0 1px rgba(242,193,78,.55)!important;text-shadow:none!important;border:0!important}',
       D + '.rf-pill--done{background:rgba(22,163,74,.18)!important;background-image:none!important;color:#86efac!important;box-shadow:inset 0 0 0 1px rgba(74,222,128,.5)!important;text-shadow:none!important;border:0!important}',
       D + '.rfa__chev{background:rgba(255,255,255,.08)!important;color:#dbe6f6!important;box-shadow:inset 0 0 0 1px rgba(150,185,235,.3)!important}',
-      D + '._rf_profilhaus{background:linear-gradient(90deg,#06122a 20%,rgba(6,18,42,.82) 55%,rgba(6,18,42,.4) 100%),' + BANNER + ',#06122a!important;box-shadow:inset 0 2px 0 #ff6702!important}',
+      D + '._rf_profilhaus{background:linear-gradient(90deg,rgba(6,18,42,.6) 0%,rgba(6,18,42,.15) 60%,rgba(6,18,42,0) 100%),' + BANNER + ',#06122a!important;box-shadow:inset 0 2px 0 #ff6702!important}',
       D + '._rf_tabs{background:#06122a!important;background-image:none!important;box-shadow:inset 0 1px 0 rgba(0,0,0,.5)!important}',
       D + '._rf_tabs button{color:#a9b8d0!important;background:transparent!important;box-shadow:none!important;border:0!important;border-radius:0!important;font-weight:600!important}',
       D + '._rf_tabs button.is-active{color:#fff!important;box-shadow:inset 0 -3px 0 #ff6702!important}',
@@ -191,9 +190,9 @@
       D + '.rf-thema button{background:rgba(15,43,82,.9)!important;color:#dbe6f6!important}',
       D + '.rf-thema button[aria-pressed="true"]{background:#ff6702!important;color:#fff!important}',
       // Uppröðun Byggingar-flipans (eftir litina, svo hún vinni .rf-stat-reglurnar hér ofar).
-      ...flipi(R, '#fff', '#e7ecf3', '#101e43'),
+      ...flipi(R, '#fff', '#e7ecf3', '#101e43', '#5a6882', '#fff'),
       R + '._rf_addb{background:' + APP + '!important;color:#fff!important;box-shadow:' + GLOD + '!important}',
-      ...flipi(D, GLER, 'rgba(150,185,235,.16)', '#fff'),
+      ...flipi(D, GLER, 'rgba(150,185,235,.16)', '#fff', '#a9b8d0', 'rgba(0,8,22,.35)'),
       D + '._rf_addb{background:' + APP4 + '!important;color:#fff!important;box-shadow:' + GLOD4 + '!important}',
     ].join('\n');
   }
