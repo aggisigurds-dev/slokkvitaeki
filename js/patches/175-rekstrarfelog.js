@@ -18,6 +18,23 @@
   if (window.__rekstrarfelogInstalled) return;
   window.__rekstrarfelogInstalled = true;
 
+  // Lucide-stíl línutákn fyrir navy prófílhausinn (28.11.2026 — Agnar: útlitið of fátæklegt án tákna).
+  var RFI = {
+    user:'<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+    phone:'<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.18 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/>',
+    mail:'<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>',
+    file:'<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v6h6"/>',
+    tag:'<path d="M12.59 2.59A2 2 0 0 0 11.17 2H4a2 2 0 0 0-2 2v7.17a2 2 0 0 0 .59 1.41l8.7 8.7a2.43 2.43 0 0 0 3.42 0l6.58-6.58a2.43 2.43 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".6" fill="currentColor" stroke="none"/>',
+    cal:'<path d="M8 2v4M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>',
+    monitor:'<rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8M12 17v4"/>',
+    key:'<circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6M15.5 7.5l3 3L22 7l-3-3"/>',
+    chat:'<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/>',
+    gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+    grid:'<rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/>',
+    bldg:'<path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-3"/>'
+  };
+  function rfI(k){ return '<svg class="_rfh_i" viewBox="0 0 24 24" aria-hidden="true">'+(RFI[k]||'')+'</svg>'; }
+
   var SEED = {"Eignaumsjón": {"domain": "eignaumsjon.is", "emails": ["gjaldkeri@eignaumsjon.is", "reikningar@eignaumsjon.is", "solrun@eignaumsjon.is"], "buildings": [{"kt": "5007070110", "nafn": "17.júní Torg 1-7, húsfélag"}, {"kt": "6407891239", "nafn": "Aflagrandi 40,húsfélag"}, {"kt": "5010891769", "nafn": "Bílskýli Dalseli 6-22"}, {"kt": "4410872769", "nafn": "Bólstaðarhlíð 40,húsfélag"}, {"kt": "4309901019", "nafn": "Dofraberg 11, húsfélag"}, {"kt": "4902120190", "nafn": "Flétturimi 10-16,húsfélag"}, {"kt": "6104932389", "nafn": "Flétturimi 16,húsfélag"}, {"kt": "6611191520", "nafn": "Hverfisgata 40, húsfélag"}, {"kt": "4702891989", "nafn": "Húsfélagið Skipholti 50b"}, {"kt": "6105140300", "nafn": "Kirkjulundur 12-14, húsfélag"}, {"kt": "4404023480", "nafn": "Kórsalir 3,húsfélag"}, {"kt": "5612090570", "nafn": "Maltakur 3,húsfélag"}, {"kt": "5009760129", "nafn": "Seljabraut 42, húsfélag"}, {"kt": "6811780159", "nafn": "Skaftahlíð 4-10,húsfélag"}, {"kt": "4406992869", "nafn": "Stigahlíð 26, húsfélag"}, {"kt": "5203240700", "nafn": "Suðurhraun 10, rekstrarfélag"}, {"kt": "4802962579", "nafn": "Sóleyjarhlíð 1, húsfélag"}, {"kt": "5204190120", "nafn": "Tangabryggja 13-15, húsfélag"}, {"kt": "6009740179", "nafn": "Tjarnarból 2, húsfélag"}, {"kt": "5710872199", "nafn": "Tjarnarból 6,húsfélag"}, {"kt": "4810741349", "nafn": "Torfufell 50, húsfélag"}, {"kt": "5606171190", "nafn": "Tungusel 1-7, húsfélag"}, {"kt": "4210081240", "nafn": "Álfaskeið 78-80, húsfélag"}, {"kt": "4409003210", "nafn": "Álfholt 2a,b,c,húsfélag"}, {"kt": "6201850439", "nafn": "Álftamýri 24-30, húsfélag"}, {"kt": "5303911089", "nafn": "Ásholt 2,húsfélag"}], "drive": "https://drive.google.com/drive/folders/15XSiBnb18k8DBFO60uGl2F6RrHWyV6B7"}, "Rekstrarumsjón": {"domain": "rekstrarumsjon.is", "emails": ["reikningar@rekstrarumsjon.is", "umsjon@rekstrarumsjon.is"], "buildings": [{"kt": "5903043440", "nafn": "Burknavellir 5, húsfélag"}, {"kt": "4309901019", "nafn": "Dofraberg 11, húsfélag"}, {"kt": "6706061980", "nafn": "Eskivellir 1, húsfélag"}, {"kt": "5312050490", "nafn": "Eskivellir 5,húsfélag"}, {"kt": "4802962579", "nafn": "Sóleyjarhlíð 1, húsfélag"}, {"kt": "4710023050", "nafn": "Álfaskeið 82-84,húsfélag"}, {"kt": "5311750859", "nafn": "Álfaskeið 98-100, húsfélag"}, {"kt": "4704868139", "nafn": "Álftahólar 4, húsfélag"}], "drive": "https://drive.google.com/drive/folders/1jswqJR8d7Veq2OBvGTmjkowlItoEgnoi"}, "Eignarekstur": {"domain": "eignarekstur.is", "emails": ["eignarekstur@eignarekstur.is", "reikningar@eignarekstur.is"], "buildings": [{"kt": "4804867309", "nafn": "Furugrund 73,húsfélag"}, {"kt": "6301032310", "nafn": "Húsfélagið Bæjarlind 12"}, {"kt": "5208190290", "nafn": "Árskógar 1-3, húsfélag"}, {"kt": "5102932079", "nafn": "Árskógar 6-8,húsfélag"}, {"kt": "6009911169", "nafn": "Þverholt 24,húsfélag"}], "drive": "https://drive.google.com/drive/folders/1OAbAZIc_ImXUp9Dlq7Y2qZkz3Mr9UML-"}, "Heimaleiga": {"domain": "heimaleiga.is", "emails": ["dimka@heimaleiga.is", "erna@heimaleiga.is"], "buildings": [{"kt": "6810130830", "nafn": "Aegina ehf."}, {"kt": "6502220400", "nafn": "EA Law Practice ehf."}, {"kt": "6110962599", "nafn": "Húsfélagið Laugavegi 42"}, {"kt": "6411150100", "nafn": "S&H Invest ehf."}], "drive": "https://drive.google.com/drive/folders/1CZehyhNFnIcO5KaXgKqE5BJRh8Q-FjVx"}, "Fjöleignir": {"domain": "fjoleignir.is", "emails": ["fjoleignir@fjoleignir.is"], "buildings": [{"kt": "5605952559", "nafn": "Gullsmári 11,húsfélag"}, {"kt": "4511901569", "nafn": "Háaleitisbraut 54,húsfélag"}, {"kt": "4701912019", "nafn": "Þúfubarð 19,húsfélag"}], "drive": "https://drive.google.com/drive/folders/1vvOogg-JhQG6BgbMf6vBW8zdkZMe2UAi"}, "Leiguval": {"domain": "leiguval.is", "emails": ["stefan@leiguval.is"], "buildings": [], "drive": "https://drive.google.com/drive/folders/12sTb775IuxDYSkZD76Yz4tDeXVP0ha9T"}};
 
   function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
@@ -465,31 +482,39 @@
       // ── NAVY PRÓFÍLHAUS (28.11.2026, Agnar: „brunaholf v4 þema" · mockup-markmið) ──────────────────────────────────
       //    Þrír klasar í navy-rönd: auðkenni+samband · Þjónustusamningur · Þjónustugátt. Flipaborðið undir á navy.
       //    V4-tókenar (535): navy #14325c→#0b2144, blek #fff/#dbe6f6, dauft #a9b8d0, aðgerð appelsínugul #ff6702, rautt merki #d62828.
-      P+'._rf_profilhaus{display:flex;flex-wrap:wrap;align-items:stretch;gap:0;margin:0;padding:0;background:linear-gradient(180deg,#14325c,#0b2144);color:#fff;border-radius:10px 10px 0 0;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),inset 0 -1px 0 rgba(0,0,0,.5)}',
-      P+'._rfh_col{flex:1 1 220px;min-width:200px;padding:11px 16px;display:flex;flex-direction:column;gap:4px;justify-content:center}',
-      P+'._rfh_col+._rfh_col{box-shadow:inset 1px 0 0 rgba(160,190,235,.18)}',
-      P+'._rfh_id{flex:1.5 1 300px;flex-direction:row;align-items:center;gap:13px}',
-      P+'._rfh_logo{flex:none;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:rgba(5,15,36,.5);box-shadow:inset 0 0 0 1px rgba(160,190,235,.28)}',
-      P+'._rfh_logo svg{width:22px;height:22px;stroke:#c8d4e8;fill:none;stroke-width:1.6}',
-      P+'._rfh_name{font:800 20px/1.1 inherit;color:#fff;letter-spacing:.01em}',
-      P+'._rfh_contact{display:flex;flex-wrap:wrap;gap:3px 14px;font:500 12.5px/1.3 inherit;color:#c8d4e8;margin-top:4px}',
-      P+'._rfh_c{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}',
-      P+'._rfh_ctitle{font:700 11px/1 inherit;letter-spacing:.09em;text-transform:uppercase;color:#a9b8d0;margin-bottom:3px}',
-      P+'._rfh_crow{font:500 13px/1.4 inherit;color:#dbe6f6;display:flex;align-items:center;gap:7px;flex-wrap:wrap}',
+      P+'._rf_profilhaus{display:flex;flex-wrap:wrap;align-items:stretch;gap:0;margin:0;padding:0;background:radial-gradient(130% 150% at 12% -10%,rgba(91,143,240,.22),transparent 58%),radial-gradient(90% 120% at 100% 0%,rgba(47,111,228,.14),transparent 60%),linear-gradient(180deg,#163463 0%,#0e2750 52%,#0a1f3e 100%);color:#fff;border-radius:11px 11px 0 0;box-shadow:inset 0 1px 0 rgba(255,255,255,.16),inset 0 0 0 1px rgba(150,185,235,.1),inset 0 -2px 0 rgba(0,0,0,.55),0 10px 22px -12px rgba(0,0,0,.6)}',
+      P+'._rfh_col{flex:1 1 220px;min-width:210px;padding:14px 18px;display:flex;flex-direction:column;gap:5px;justify-content:center}',
+      P+'._rfh_col+._rfh_col{box-shadow:inset 1px 0 0 rgba(0,0,0,.4),inset 2px 0 0 rgba(160,190,235,.14)}',
+      P+'._rfh_id{flex:1.5 1 320px;flex-direction:row;align-items:center;gap:14px}',
+      P+'._rfh_logo{flex:none;width:46px;height:46px;display:flex;align-items:center;justify-content:center;border-radius:11px;background:linear-gradient(180deg,rgba(255,255,255,.1),rgba(5,15,36,.5));box-shadow:inset 0 1px 0 rgba(255,255,255,.2),inset 0 0 0 1px rgba(160,190,235,.3),0 2px 6px rgba(0,0,0,.4)}',
+      P+'._rfh_logo svg{width:23px;height:23px;stroke:#dbe6f6;fill:none;stroke-width:1.6}',
+      P+'._rfh_name{font:800 21px/1.12 inherit;color:#fff;letter-spacing:.01em;text-shadow:0 1px 0 rgba(0,0,0,.4),0 0 18px rgba(140,180,255,.25)}',
+      P+'._rfh_contact{display:flex;flex-wrap:wrap;gap:4px 16px;font:500 12.5px/1.35 inherit;color:#c8d4e8;margin-top:5px}',
+      P+'._rfh_c{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}',
+      P+'._rfh_ctitle{display:inline-flex;align-items:center;gap:7px;font:700 11px/1 inherit;letter-spacing:.09em;text-transform:uppercase;color:#aebdd6;margin-bottom:5px}',
+      P+'._rfh_crow{font:500 13px/1.45 inherit;color:#dbe6f6;display:flex;align-items:center;gap:8px;flex-wrap:wrap}',
       P+'._rfh_crow b{color:#fff;font-weight:700}',
-      P+'._rfh_dim{color:#8da0c0}',
+      P+'._rfh_dim{color:#92a3bd}',
+      // Línutáknin: dauf, taka lit af textanum í kring.
+      P+'._rfh_i{width:14px;height:14px;flex:none;stroke:currentColor;fill:none;stroke-width:1.85;stroke-linecap:round;stroke-linejoin:round;opacity:.66}',
+      P+'._rfh_ctitle ._rfh_i{width:14px;height:14px;opacity:.9;color:#ff9f5e}',
+      P+'._rfh_crow ._rfh_i,'+P+'._rfh_c ._rfh_i{color:#9fb2d0;opacity:.8}',
       P+'._rfh_gatt{flex:1.2 1 270px}',
       P+'._rfh_pill{display:inline-flex;align-items:center;height:20px;padding:0 9px;border-radius:999px;font:700 11px/1 inherit;letter-spacing:.02em}',
       P+'._rfh_pill.vara{background:#d62828;color:#fff}',
       P+'._rfh_pill.gott{background:rgba(34,197,94,.2);color:#86efac;box-shadow:inset 0 0 0 1px rgba(74,222,128,.5)}',
       P+'._rfh_pill.ovirk{background:rgba(160,190,235,.16);color:#c8d4e8;box-shadow:inset 0 0 0 1px rgba(160,190,235,.3)}',
-      P+'._rfh_gbtn{align-self:flex-start;margin-top:5px;height:30px;padding:0 13px;border:0;border-radius:8px;background:rgba(5,15,36,.55);color:#e6edf8;font:600 12.5px/1 inherit;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 0 0 1px rgba(160,190,235,.28),0 1px 2px rgba(0,0,0,.5)}',
-      P+'._rfh_gbtn:hover{background:rgba(20,51,95,.75);color:#fff}',
+      P+'._rfh_gbtn{display:inline-flex;align-items:center;gap:7px;align-self:flex-start;margin-top:7px;height:31px;padding:0 14px;border:0;border-radius:8px;background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(5,15,36,.5));color:#e6edf8;font:600 12.5px/1 inherit;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.16),inset 0 0 0 1px rgba(160,190,235,.3),0 1px 3px rgba(0,0,0,.5)}',
+      P+'._rfh_gbtn:hover{background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(20,51,95,.6));color:#fff}',
+      P+'._rfh_gbtn ._rfh_i{width:14px;height:14px;opacity:.85}',
       // Flipaborðið á navy þegar kortið er opið (yfirskrifar ljósu regluna að ofan — sama sértækni, kemur á eftir).
       P+'._rf_card.is-open ._rf_tabs{background:linear-gradient(180deg,#0c2347,#0a1f3e);border-bottom:1px solid rgba(0,0,0,.55);box-shadow:inset 0 1px 0 rgba(160,190,235,.1)}',
       P+'._rf_card.is-open ._rf_tabs button{color:#a9b8d0}',
       P+'._rf_card.is-open ._rf_tabs button:hover{color:#dbe6f6}',
       P+'._rf_card.is-open ._rf_tabs button.is-active{color:#fff;border-bottom-color:#ff6702}',
+      P+'._rf_tabs button{display:inline-flex;align-items:center;gap:7px}',
+      P+'._rf_tabs button ._rfh_i{width:15px;height:15px;opacity:.8}',
+      P+'._rf_card.is-open ._rf_tabs button.is-active ._rfh_i{color:#ff9f5e;opacity:1}',
       // ── BRUNAKERFI Í SAMA YFIRLITI (2026-07-27, Claude Design „Brunayfirlit-v2") ──
       // Þjónusturofi (Bæði / 🧯 Slökkvitæki / 🚨 Brunakerfi), tölfluspjöld og
       // tvískiptar frumur — efri lína = slökkvitæki, neðri = brunakerfi.
@@ -1803,17 +1828,19 @@
       var ov=overdueByFirm[name]||0, nb=bruByFirm[name]||0;
       // Navy prófílhaus (28.11.2026): sync-gögn úr `info`/byggingum fyrir vinstri+miðju klasana (gáttin fyllist þegar kortið opnast).
       var _rfhContact=(function(){
-        var cp=[];
-        if(info.tengilidur) cp.push('<span class="_rfh_c">'+esc(info.tengilidur)+'</span>');
-        if(info.simi) cp.push('<span class="_rfh_c">s. '+esc(info.simi)+'</span>');
+        var cp=[], tg=info.tengilidur||'';
+        if(tg) cp.push('<span class="_rfh_c">'+rfI('user')+'<span>'+esc(tg)+'</span></span>');
+        // Sér-síminn aðeins ef hann er EKKI þegar inni í tengiliða-reitnum (gögnin geyma stundum síma í nafninu).
+        var sd=String(info.simi||'').replace(/\D/g,'');
+        if(sd && tg.replace(/\D/g,'').indexOf(sd)<0) cp.push('<span class="_rfh_c">'+rfI('phone')+'<span>s. '+esc(info.simi)+'</span></span>');
         var em0=(info.emails&&info.emails[0])||info.domain||'';
-        if(em0) cp.push('<span class="_rfh_c">'+esc(em0)+'</span>');
+        if(em0) cp.push('<span class="_rfh_c">'+rfI('mail')+'<span>'+esc(em0)+'</span></span>');
         return cp.length? cp.join('') : '<span class="_rfh_dim">Tengiliður og sími vantar</span>';
       })();
       var _rfhDisc=0; blds.forEach(function(b){ try{ var c=companyForBld(b); if(c) _rfhDisc=Math.max(_rfhDisc, +c.afslattur_pct||0); }catch(e){} });
       var _rfhSamn = _rfhDisc>0
-        ? '<div class="_rfh_crow"><b>'+_rfhDisc+'%</b> afsláttur af búnaði</div>'
-        : '<div class="_rfh_crow _rfh_dim">Fast verð — enginn samningsafsláttur</div>';
+        ? '<div class="_rfh_crow">'+rfI('tag')+'<span><b>'+_rfhDisc+'%</b> afsláttur af búnaði</span></div>'
+        : '<div class="_rfh_crow _rfh_dim">'+rfI('tag')+'<span>Fast verð — enginn samningsafsláttur</span></div>';
       card.innerHTML=
         '<button class="_rf_head rfa__head" type="button">'+
           '<span class="rfa__logo"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-3"/></svg></span>'+
@@ -1840,24 +1867,24 @@
               '</div>'+
             '</div>'+
             '<div class="_rfh_col _rfh_samningur">'+
-              '<div class="_rfh_ctitle">Þjónustusamningur</div>'+
+              '<div class="_rfh_ctitle">'+rfI('file')+'Þjónustusamningur</div>'+
               _rfhSamn+
             '</div>'+
             '<div class="_rfh_col _rfh_gatt">'+
-              '<div class="_rfh_ctitle">Þjónustugátt</div>'+
+              '<div class="_rfh_ctitle">'+rfI('monitor')+'Þjónustugátt</div>'+
               '<div class="_rfh_gatt_sum"><span class="_rfh_dim">Hleð…</span></div>'+
-              '<button type="button" class="_rfh_gbtn">Opna gátt</button>'+
+              '<button type="button" class="_rfh_gbtn">'+rfI('gear')+'Opna gátt</button>'+
             '</div>'+
           '</div>'+
           // 27.11.2026 (Agnar: „flipar eins og í hausnum"): flipaborði efst — Yfirlit/Byggingar/Þjónustugátt/
           // Samskipti/Skjöl. Byggingar sjálfgefið. Situr í rfa__pad (lifir endurteikningu _rf_body); sýnd keyrð
           // af [data-rftab] á ._rf_card gegnum pure-CSS — engin vakt, óháð því hvenær 286/288/537 mounta.
           '<div class="_rf_tabs" role="tablist">'+
-            '<button type="button" data-rft="yfirlit">Yfirlit</button>'+
-            '<button type="button" data-rft="bygg">Byggingar</button>'+
-            '<button type="button" data-rft="gatt">Þjónustugátt</button>'+
-            '<button type="button" data-rft="samskipti">Samskipti</button>'+
-            '<button type="button" data-rft="skjol">Skjöl</button>'+
+            '<button type="button" data-rft="yfirlit">'+rfI('grid')+'Yfirlit</button>'+
+            '<button type="button" data-rft="bygg">'+rfI('bldg')+'Byggingar</button>'+
+            '<button type="button" data-rft="gatt">'+rfI('monitor')+'Þjónustugátt</button>'+
+            '<button type="button" data-rft="samskipti">'+rfI('chat')+'Samskipti</button>'+
+            '<button type="button" data-rft="skjol">'+rfI('file')+'Skjöl</button>'+
           '</div>'+
           // 2026-06-12 (Todoist): athugasemd beint á borðanum — vistast sjálfkrafa
           // 04.10.2026: fjöllína svo löng athugasemd sjáist öll (field-sizing:content í 442) — áður klipptist hún í einni línu
@@ -1899,15 +1926,15 @@
         if(!pill && !mm) return false;
         var cls=pill&&pill.classList.contains('vara')?'vara':(pill&&pill.classList.contains('gott')?'gott':'ovirk');
         var html='';
-        if(pill) html+='<div class="_rfh_crow">Aðgangur: <span class="_rfh_pill '+cls+'">'+esc(pill.textContent||'')+'</span></div>';
-        if(mm) html+='<div class="_rfh_crow"><b>'+mm[1]+'</b> opin erindi</div>';
-        sum.innerHTML=html||'<span class="_rfh_dim">Engin gátt skráð</span>';
+        if(pill) html+='<div class="_rfh_crow">'+rfI('key')+'<span>Aðgangur: <span class="_rfh_pill '+cls+'">'+esc(pill.textContent||'')+'</span></span></div>';
+        if(mm) html+='<div class="_rfh_crow">'+rfI('chat')+'<span><b>'+mm[1]+'</b> opin erindi</span></div>';
+        sum.innerHTML=html||'<div class="_rfh_crow _rfh_dim">'+rfI('key')+'<span>Engin opin gátt skráð</span></div>';
         return true;
       }catch(e){ return false; } }
       function openGattMirror(){ rfGattFylla(); var n=0; var t=setInterval(function(){ n++;
         if(!card.classList.contains('is-open')){ clearInterval(t); return; }
         if(rfHausGatt()){ clearInterval(t); return; }
-        if(n>12){ clearInterval(t); var s=card.querySelector('._rfh_gatt_sum'); if(s && /Hleð/.test(s.textContent||'')) s.innerHTML='<span class="_rfh_dim">Engin opin gátt skráð</span>'; }
+        if(n>12){ clearInterval(t); var s=card.querySelector('._rfh_gatt_sum'); if(s && /Hleð/.test(s.textContent||'')) s.innerHTML='<div class="_rfh_crow _rfh_dim">'+rfI('key')+'<span>Engin opin gátt skráð</span></div>'; }
       }, 350); }
       card.querySelector('._rf_head').addEventListener('click',flip);
       var noteInp=card.querySelector('._rf_note');
