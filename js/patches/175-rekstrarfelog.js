@@ -322,41 +322,29 @@
       P+'.rf-ycell--overdue{background:linear-gradient(145deg,#e2555f,#a01820 60%,#5a0c10);border:1px solid #5a0c10}',
       P+'.rf-ycell--overdue i{background:#ffb3b8}',
       P+'.rf-ycell--none{color:#cbd2dc;background:none;box-shadow:none;text-shadow:none;font-weight:400;border:0}',
-      // ── compact ártala-strimill (2026-08-21, ósk Agnars: „same as fyrirtæki í
-      // þjónustu") — í stað fjögurra breiðra árs-dálka: EINN dálkur með láréttum
-      // strimli af litlum ártölu-pillum (34×20). Litur pillunnar ber stöðuna:
-      // grænt=skýrsla á skrá · blátt=aðeins búnaðarsaga · gull=þetta ár á áætlun
-      // (ókomið) · rautt=liðið án skýrslu · grátt=ekkert. Ósk Agnars 2026-08-22:
-      // TVEIR örpunktar undir hverri pillu eins og í Ársskoðun (grænn=skýrsla á
-      // skrá, blár=reikningur paraður) — sjá .rf-dd og _yrDot neðar.
-      // FÖST súlu-jöfnun (ósk Agnars „straight line downward, not zic zac"): hver
-      // pilla situr í jafn-breiðri (38px) frumu og 🧯/🚨-táknið í fastri 15px súlu
-      // á HVERRI röð, svo árin 23/24/25/26 mynda beinar lóðréttar línur niður alla
-      // töfluna. 🧾-merkið er absolute í horninu svo það ýti EKKI pillunum til.
-      P+'.rf-yrs{display:flex;gap:4px;justify-content:center;align-items:center;flex-wrap:nowrap;white-space:nowrap}',
-      P+'.rf-yrs+.rf-yrs{margin-top:5px}',
-      // FASTAR breiddir með !important — patch 245 (Brunastál-skin) málar .view a
-      // með padding svo hlekk-pillur (ár með skýrslu) urðu breiðari en span-pillur
-      // og súlurnar ráku í sundur. Föst 34px pilla + 38px fruma + 15px tákn á
-      // öllum → nákvæmlega jafnar súlur.
-      P+'.rf-yrs__ic{width:15px!important;flex:none!important;text-align:center;font-size:11px;line-height:20px;margin:0!important;padding:0!important}',
-      // .rf-dd = föst 38px súlu-fruma; pillan efst og TVEIR örpunktar undir (eins
-      // og ._dd í Ársskoðun/153). Punktarnir 5px miðjaðir → breidd frumunnar
-      // breytist ekki og árin standa áfram í beinum lóðréttum súlum.
-      P+'.rf-dd{position:relative;width:38px!important;flex:none!important;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;margin:0!important;padding:0!important}',
-      P+'.rf-dd>u{display:flex;gap:3px;text-decoration:none;line-height:0}',
-      P+'.rf-dd>u>i{width:5px;height:5px;border-radius:50%;background:#dfe3ea;flex:none}',
-      P+'.rf-dd>u>i.rep{background:#1f9d57}',
-      P+'.rf-dd>u>i.inv{background:#2f5fe0}',
-      P+'.rf-dd .rf-bundle-tag{position:absolute;top:-5px;right:-1px;margin:0;font-size:8px;line-height:1;pointer-events:none}',
-      P+'.rf-yr{display:inline-flex!important;align-items:center;justify-content:center;width:34px!important;min-width:34px!important;max-width:34px!important;height:20px!important;padding:0!important;margin:0!important;border-radius:6px;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;font-weight:700;color:#aab3c0;background:#f4f6f9;border:1px solid #e7eaf0;text-decoration:none;cursor:default;box-sizing:border-box}',
-      P+'a.rf-yr{cursor:pointer}',
-      P+'.rf-yr--none{color:#c3c9d3!important;background:#f7f8fa!important;border-color:#eef0f4!important}',
-      P+'.rf-yr--hist{color:#fff!important;background:linear-gradient(145deg,#5a86e0,#2f5fe0 42%,#1a3a8c 72%,#2d55c4)!important;border-color:#12296b!important;text-shadow:0 1px 1px rgba(0,0,0,.3)}',
-      P+'.rf-yr--done{color:#fff!important;background:linear-gradient(145deg,#1c7a45,#0f4f2b 42%,#062815 72%,#0c3f22)!important;border-color:#041c0e!important;text-shadow:0 1px 1px rgba(0,0,0,.35)}',
-      P+'.rf-yr--due{color:#fff8e6!important;background:linear-gradient(150deg,#8a6410,#c99a1e 44%,#5a3f08)!important;border-color:rgba(255,220,130,.45)!important;text-shadow:0 1px 1px rgba(0,0,0,.35)}',
-      P+'.rf-yr--overdue{color:#fff!important;background:linear-gradient(145deg,#d84f4a,#b0201b 42%,#6e100d 72%,#9c1d18)!important;border-color:#4d0a08!important;text-shadow:0 1px 1px rgba(0,0,0,.26)}',
-      P+'.rf-yrs a.rf-yr{text-decoration:none!important;box-shadow:none!important}',
+      // ── ÁRSKASSAR (28.11.2026, Agnar: „breyta kössunum inn á Rekstrarfélög … sama þema og í þjónustugáttinni — Brunahólf V2
+      // premium"): EINN kassi á ár (’23–’26) með tveimur línum, Tæki og Kerfi, alveg eins og í Þjónustugáttinni (gatt/portal.js
+      // inspectionYears). Hér sjást líka tveir skjalapunktar við hvert merki (grænn = úttektarskýrsla á skrá, blár = reikningur
+      // ÞESSA árs paraður) — þeir eru fyrir starfsfólk og sjást EKKI í gáttinni. Litir merkjanna: ✓ grænt = skýrsla á skrá,
+      // ✓ blátt = aðeins búnaðarsaga/í vinnslu, ! appelsínugult = á áætlun, ! rautt = skoðun liðin, — grátt = ekkert.
+      // FASTAR breiddir (!important): patch 245 (Brunastál-skin) málar .view a með padding og ýtti áður árunum úr súlum.
+      P+'.rf-ybs{display:flex;gap:3px;align-items:stretch;justify-content:center;flex-wrap:nowrap;white-space:nowrap}',
+      P+'.rf-ybs__lab{display:grid;grid-auto-rows:16px;align-content:start;padding-top:20px;margin:0 2px 0 0;color:#64748b;font:400 10px/16px "IBM Plex Sans",Inter,system-ui,sans-serif;text-align:right}',
+      P+'.rf-yb{flex:0 0 auto;width:33px!important;min-width:33px!important;padding:4px 0!important;margin:0!important;box-sizing:border-box;text-align:center;border:1px solid #cdd9e7;border-radius:4px;background:linear-gradient(#f1f5fa,#fff);box-shadow:inset 0 2px 4px rgba(28,48,82,.1),inset 0 0 0 1px rgba(255,255,255,.7),0 1px 0 #fff}',
+      P+'.rf-yb__y{height:15px;line-height:15px;font:500 10.5px/15px Inter,system-ui,sans-serif;letter-spacing:.4px;color:#64748b}',
+      P+'.rf-yb__mk{display:grid;grid-auto-rows:16px}',
+      P+'.rf-ym{display:flex!important;align-items:center;justify-content:center;gap:3px;height:16px;padding:0!important;margin:0!important;background:none!important;border:0!important;box-shadow:none!important;text-decoration:none!important;cursor:default;white-space:nowrap;font:600 12px/16px Inter,system-ui,sans-serif;color:#19805b}',
+      P+'a.rf-ym{cursor:pointer}',
+      P+'.rf-ym>b{font-weight:600;color:inherit}',
+      P+'.rf-ym>u{display:inline-flex;align-items:center;gap:2px;text-decoration:none;line-height:0}',
+      P+'.rf-ym>u>i{display:inline-block;width:4px;height:4px;border-radius:50%;background:#cdd9e7}',
+      P+'.rf-ym>u>i.rep{background:#1f8e59}',
+      P+'.rf-ym>u>i.inv{background:#2563eb}',
+      P+'.rf-ym--hist{color:#2563eb}',
+      P+'.rf-ym--due{color:#ed5b21}',
+      P+'.rf-ym--overdue{color:#c62828}',
+      P+'.rf-ym--none{color:#cdd9e7;font-weight:400}',
+      P+'a.rf-ym:hover>b{text-decoration:underline}',
       // 🧾 örlítið merki: reikningur ÞESSA árs/þjónustu er þegar paraður við skýrsluna.
       P+'.rf-bundle-tag{font-size:8.5px;margin-left:1px;line-height:1;filter:drop-shadow(0 1px 0 rgba(0,0,0,.4))}',
       // næsta skoðun — aðeins mánuður (Ágú/Sep). Rautt box = liðið. EKKI rf-yr/_yr.
@@ -2071,55 +2059,43 @@
       var tip = overdue ? 'Skoðun liðin — engin skýrsla enn' : (hasNext ? 'Á áætlun — skoðun ókomin' : 'Skýrsla ekki komin enn');
       return '<span class="rf-ycell rf-ycell--'+kind+'" title="'+esc(tip)+'"><i></i>'+(overdue?'⚠':'…')+'</span>';
     }
-    // ── compact ártölu-pillur fyrir „Skoðanir · Skjöl" strimilinn (eins og 153/187) ──
-    // ártalan sjálf er merkið; skjala-örpunktur (grænn) undir segir að skýrsla sé
-    // á skrá. Pillan er hlekkur þegar skýrsla er til (Drive-url eða upphlaðið skjal
-    // gegnum patch 187's _yr-att-höndlara), annars stakur reitur.
-    function _yrPill(cls, tip, yy, url, file){
+    // ── ársreitir fyrir „Skoðanir · Skjöl" (sjá CSS hér ofar): hvert ár er ein lína með merki + tveimur skjalapunktum.
+    // Merkið er hlekkur þegar skýrsla er til (Drive-url eða upphlaðið skjal gegnum patch 187's _yr-att-höndlara), annars stakur reitur.
+    var YM_GLYPH = { done:'✓', hist:'✓', due:'!', overdue:'!', none:'—' };
+    function _ymEl(state, tip, year, url, file, rep, inv){
       var t = esc(tip);
-      if(url) return '<a href="'+esc(url)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="'+cls+'" title="'+t+'">'+yy+'</a>';
+      var inner = '<b>'+YM_GLYPH[state]+'</b><u><i class="'+(rep?'rep':'')+'"></i><i class="'+(inv?'inv':'')+'"></i></u>';
+      var at = ' data-year="'+esc(year)+'" title="'+t+'"';
+      var cls = 'rf-ym rf-ym--'+state;
+      if(url) return '<a href="'+esc(url)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="'+cls+'"'+at+'>'+inner+'</a>';
       if(file){
         var fu = file.drive_url||file.url;
-        if(fu) return '<a href="'+esc(fu)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="'+cls+'" title="'+t+'">'+yy+'</a>';
-        return '<a href="#" class="'+cls+' _yr-att" data-path="'+esc(file.path||'')+'" onclick="event.stopPropagation()" title="'+t+'">'+yy+'</a>';
+        if(fu) return '<a href="'+esc(fu)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="'+cls+'"'+at+'>'+inner+'</a>';
+        return '<a href="#" class="'+cls+' _yr-att" data-path="'+esc(file.path||'')+'" onclick="event.stopPropagation()"'+at+'>'+inner+'</a>';
       }
-      return '<span class="'+cls+'" title="'+t+'">'+yy+'</span>';
+      return '<span class="'+cls+'"'+at+'>'+inner+'</span>';
     }
-    function _yrDot(pillHtml, hasRep, bundled){
-      // 2026-08-22 (ósk Agnars „bæta punktunum við"): TVEIR örpunktar undir hverri
-      // pillu eins og í Ársskoðun — grænn = úttektarskýrsla á skrá, blár =
-      // reikningur ÞESSA árs paraður. Pillan helst föst 34px og punktarnir 5px
-      // miðjaðir í 38px frumunni svo árin standi áfram í beinum lóðréttum súlum
-      // (uppfærir „engir punktar"-ákvörðunina frá 21.08). Staðan sést líka í titli.
-      return '<span class="rf-dd">'+pillHtml+
-        '<u><i class="'+(hasRep?'rep':'')+'"></i><i class="'+(bundled?'inv':'')+'"></i></u>'+
-        '</span>';
-    }
-    // slökkvitæki ártölu-pilla fyrir eitt ár
+    // slökkvitæki: merki fyrir eitt ár
     function yrMiniSl(y, done, rep, url, file, units, bundled, isCur, hasData, over, hasNext){
-      var yy=y.slice(-2), state, tip;
+      var state, tip;
       if(isCur && !done && hasData){ state = over?'overdue':'due';
         tip = over?('Skoðun liðin — engin skýrsla enn · '+y):(hasNext?('Á áætlun — skoðun ókomin · '+y):('Skýrsla ekki komin enn · '+y)); }
       else if(!done){ state='none'; tip='Engin skýrsla · slökkvitæki · '+y; }
       else { var greenish=rep||url||file; state=greenish?'done':'hist';
         tip=(greenish?'Úttektarskýrsla á skrá':'Aðeins skráð í búnaðarsögu')+' · slökkvitæki · '+y+(units>0?(' · '+units+' tæki'):'')+(bundled?' · 🧾 reikningur paraður':''); }
-      var pill = (state==='none'||state==='due'||state==='overdue')
-        ? '<span class="rf-yr rf-yr--'+state+'" title="'+esc(tip)+'">'+yy+'</span>'
-        : _yrPill('rf-yr rf-yr--'+state, tip, yy, url, file);
-      return _yrDot(pill, state==='done', bundled && state==='done');
+      var linked = state==='done'||state==='hist';
+      return _ymEl(state, tip, y, linked?url:'', linked?file:null, state==='done', bundled && state==='done');
     }
-    // brunakerfi ártölu-pilla fyrir eitt ár
+    // brunakerfi: merki fyrir eitt ár
     function yrMiniBr(y, cell, units, bundled, isCur, hasData, over, hasNext){
-      var yy=y.slice(-2), state, tip, url=cell?cell.url:'';
+      var state, tip, url=cell?cell.url:'';
       if(isCur && !cell && hasData){ state=over?'overdue':'due';
         tip=over?('Brunakerfisskoðun liðin — engin skýrsla enn · '+y):(hasNext?('Á áætlun — brunakerfisskoðun ókomin · '+y):('Brunakerfisskýrsla ekki komin enn · '+y)); }
       else if(!cell){ state='none'; tip='Engin brunakerfisskýrsla · '+y; }
       else { state=cell.kind==='rep'?'done':'hist';
         tip=(state==='done'?'Brunakerfisskýrsla á skrá':'Brunakerfisskýrsla í vinnslu')+' · '+y+(units>0?(' · '+units+' búnaður'):'')+(bundled?' · 🧾 reikningur paraður':''); }
-      var pill = (state==='none'||state==='due'||state==='overdue')
-        ? '<span class="rf-yr rf-yr--'+state+'" title="'+esc(tip)+'">'+yy+'</span>'
-        : _yrPill('rf-yr rf-yr--'+state, tip, yy, url, null);
-      return _yrDot(pill, state==='done', bundled && state==='done');
+      var linked = state==='done'||state==='hist';
+      return _ymEl(state, tip, y, linked?url:'', null, state==='done', bundled && state==='done');
     }
     // Staflar slökkvitækja-/brunakerfis-frumu eftir völdum þjónusturofa.
     // brOn=false → sleppa brunakerfis-línunni fyrir byggingu sem er EKKI í
@@ -2395,22 +2371,27 @@
       // sömu liðin-reikninginn og "næsta skoðun"-fruman fyrir neðan.
       var isOver=false;
       if(st && st.next){ isOver = st.next < today; }
-      var slPills='', brPills='';
+      var slMarks=[], brMarks=[];
       ['2023','2024','2025','2026'].forEach(function(y,i){
         var done=[d23,d24,d25,d26][i], rep=[false,!!att[0],!!att[1],!!att[2]][i], file=[f23,f24,f25,f26][i];
         var slBundled = !!(bldPairs && bldPairs[y+'|uttekt']);
         var brBundled = !!(bldPairs && bldPairs[y+'|brunakerfi']);
-        slPills += yrMiniSl(y, done, rep, lks[y], file, units, slBundled, y===CURY, slInSvc && slHasData, isOver, !!(st&&st.next));
-        brPills += yrMiniBr(y, bY[y], bUnits, brBundled, y===CURY, bHasData, bOver, !!(bx&&bx.next));
+        slMarks.push(yrMiniSl(y, done, rep, lks[y], file, units, slBundled, y===CURY, slInSvc && slHasData, isOver, !!(st&&st.next)));
+        brMarks.push(yrMiniBr(y, bY[y], bUnits, brBundled, y===CURY, bHasData, bOver, !!(bx&&bx.next)));
       });
-      // EINN „Skoðanir · Skjöl" dálkur með láréttum ártölu-strimli — eins og
-      // „Fyrirtæki í þjónustu". Í „Bæði"-sýn: efri strimill = 🧯 slökkvitæki,
-      // neðri = 🚨 brunakerfi (aðeins fyrir byggingar í brunakerfisþjónustu).
-      // 🧯/🚨-táknið er ALLTAF með (líka á byggingum með aðeins eina þjónustu) svo
-      // 15px táknsúlan sé frátekin á hverri röð → pillurnar standa í beinum súlum.
+      // EINN „Skoðanir · Skjöl" dálkur með ársreitum eins og í Þjónustugáttinni: einn kassi á ár, lína 1 = Tæki (slökkvitæki),
+      // lína 2 = Kerfi (brunakerfi, aðeins fyrir byggingar í brunakerfisþjónustu). Skýringin „Tæki/Kerfi" stendur vinstra megin.
+      var _showBrRow = showBr && bruInSvc;
       var _yStrips='';
-      if(showSl) _yStrips += '<div class="rf-yrs" title="🧯 Slökkvitæki'+(bgrSl?esc(bgrTxt):'')+'"><b class="rf-yrs__ic'+(bgrSl?' rf-bgr':'')+'">🧯</b>'+slPills+'</div>';
-      if(showBr && bruInSvc) _yStrips += '<div class="rf-yrs" title="🚨 Brunakerfi'+(bgrBr?esc(bgrTxt):'')+'"><b class="rf-yrs__ic'+(bgrBr?' rf-bgr':'')+'">🚨</b>'+brPills+'</div>';
+      if(showSl || _showBrRow){
+        var _lab = (showSl ? '<span title="🧯 Slökkvitæki'+(bgrSl?esc(bgrTxt):'')+'">Tæki</span>' : '') +
+                   (_showBrRow ? '<span title="🚨 Brunakerfi'+(bgrBr?esc(bgrTxt):'')+'">Kerfi</span>' : '');
+        var _boxes = ['2023','2024','2025','2026'].map(function(y,i){
+          return '<div class="rf-yb"><div class="rf-yb__y">’'+y.slice(-2)+'</div><div class="rf-yb__mk">'+
+            (showSl ? slMarks[i] : '')+(_showBrRow ? brMarks[i] : '')+'</div></div>';
+        }).join('');
+        _yStrips = '<div class="rf-ybs"><div class="rf-ybs__lab" aria-hidden="true">'+_lab+'</div>'+_boxes+'</div>';
+      }
       var yTds = '<td class="c rf-yh-cell rf-yrs-cell">'+_yStrips+'</td>';
       if((showSl&&isOver&&slHasData)||(showBr&&bOver)) nOverdue++;
       var nextCell = stackTd(
@@ -2651,7 +2632,7 @@
           '<th>Heimilisfang</th>'+
           '<th>Nóta</th>'+
           '<th class="c">Tæki'+svcKey()+'</th>'+
-          '<th class="c rf-yh rf-yrs-th" title="Skoðunarár 2023–2026 · smelltu á ár til að opna skýrsluna">Skoðanir · Skjöl</th>'+
+          '<th class="c rf-yh rf-yrs-th" title="Skoðunarár 2023–2026 · smelltu á merkið til að opna skýrsluna · grænn punktur = skýrsla á skrá, blár = reikningur paraður">Skoðanir · Skjöl</th>'+
           '<th class="c" title="Akstursleið — smelltu til að setja stað á leið 1/2/3">🚗</th>'+
           '<th>Næsta skoðun'+svcKey()+'</th>'+
           '<th></th></tr></thead><tbody>'+rows+

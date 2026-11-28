@@ -77,7 +77,7 @@
       { k: 'Brunakerfi', v: '9', s: 'hús' }, { k: 'Skoðun á tíma', v: '1', s: 'hús', dark: true },
     ],
     buildings: [
-      { nafn: 'Arnarhvoll', heimilisfang: 'Ingólfsstræti 1, 101 Reykjavík', sl: 13, slo: 8, br: true, reikningsar: { uttekt: [2025], brunakerfi: [2026] }, y: [['no', 'no'], ['ok', 'ok'], ['ok', 'ok'], ['no', 'ok']], nt: 'Tæki: janúar 2026|Kerfi: maí 2027' },
+      { nafn: 'Arnarhvoll', heimilisfang: 'Ingólfsstræti 1, 101 Reykjavík', sl: 13, slo: 8, br: true, y: [['no', 'no'], ['ok', 'ok'], ['ok', 'ok'], ['no', 'ok']], nt: 'Tæki: janúar 2026|Kerfi: maí 2027' },
       { nafn: 'Grandi', heimilisfang: 'Seljavegur 2, 101 Reykjavík', sl: 14, slo: 11, br: true, y: [['ok', 'ok'], ['ok', 'ok'], ['ok', 'ok'], ['ok', 'ok']], nt: 'Tæki: janúar 2027|Kerfi: mars 2027' },
       { nafn: 'Hlaðvarpinn', heimilisfang: 'Aðalstræti 4, 101 Reykjavík', sl: null, slo: null, br: false, y: [['no', 'no'], ['no', 'no'], ['no', 'no'], ['no', 'no']], nt: 'Tæki: —' },
       { nafn: 'Klöpp', heimilisfang: 'Klapparstígur 26, 101 Reykjavík', sl: 18, slo: 10, br: true, y: [['no', 'ok'], ['ok', 'ok'], ['ok', 'ok'], ['ok', 'no']], nt: 'Tæki: júlí 2027|Kerfi: nóvember 2026' },
@@ -283,7 +283,7 @@
       buildings: (d.buildings || []).map(function (b) {
         return { nafn: b.nafn, heimilisfang: b.heimilisfang, eigandi: b.eigandi || null, sl: b.taeki, slo: b.slo, br: !!b.bru_i_thjonustu,
           base_id: b.base_id != null ? Number(b.base_id) : null, greidandi: b.greidandi || '', greidandi_kt: b.greidandi_kt || '',   // 06.11.2026: reikningar eftir greiðanda
-          y: yearsFromStatus(b), reikningsar: b.reikningsar || {}, nt: nextInspText(b), docId: null, stada: b.stada,
+          y: yearsFromStatus(b), nt: nextInspText(b), docId: null, stada: b.stada,
           id: b.id, equipment: Array.isArray(b.equipment) ? b.equipment : null,
           teikning: Array.isArray(b.teikning) ? b.teikning : null, bgr: b.bgr && typeof b.bgr === 'object' ? b.bgr : null,
           eign: b.eign || null, beidni: !!b.beidni,
@@ -765,22 +765,20 @@
 
   function inspectionYears(b) {
     var solo = bareSlokkvitaeki(b);
-    var invoices = b.reikningsar || {};
-    function mark(value, year, service, label) {
+    // 28.11.2026 (Agnar: „í þjónustugáttinni þarf ekki að sýna græna og bláa punktinn"): kúnninn sér aðeins stöðumerkið;
+    // skjala- og reikningspunktarnir eru fyrir starfsfólk (Rekstrarfélög í appinu).
+    function mark(value, year, label) {
       var report = value === 'ok';
-      var invoice = report && (invoices[service] || []).includes(year);
       var status = report ? 'Skýrsla á skrá' : value === 'due' ? 'Skoðun á dagskrá' : 'Engin skýrsla skráð';
-      var title = label + ' ' + year + ': ' + status + (invoice ? ' · Reikningur paraður' : '');
+      var title = label + ' ' + year + ': ' + status;
       return '<span class="ymark" role="img" aria-label="' + esc(title) + '" title="' + esc(title) + '">' +
-        '<span aria-hidden="true" class="' + (report ? 'ok">✓' : value === 'due' ? 'due">!' : 'no">—') + '</span>' +
-        '<span class="ydots" aria-hidden="true"><i' + (report ? ' class="yreport"' : '') + '></i><i' +
-        (invoice ? ' class="yinvoice"' : '') + '></i></span></span>';
+        '<span aria-hidden="true" class="' + (report ? 'ok">✓' : value === 'due' ? 'due">!' : 'no">—') + '</span></span>';
     }
     var boxes = (b.y || []).map(function (pair, index) {
       var year = 2023 + index;
       return '<div class="yb"><div class="yy">’' + String(year).slice(-2) + '</div><div class="mk">' +
-        mark(pair[0], year, 'uttekt', 'Slökkvitæki') +
-        (solo ? '' : mark(pair[1], year, 'brunakerfi', 'Brunakerfi')) + '</div></div>';
+        mark(pair[0], year, 'Slökkvitæki') +
+        (solo ? '' : mark(pair[1], year, 'Brunakerfi')) + '</div></div>';
     }).join('');
     if (!boxes) return '';
     return '<div class="yrs yrs-stacked"><div class="yr-labels" aria-hidden="true"><span>Tæki</span>' +

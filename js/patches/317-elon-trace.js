@@ -169,7 +169,7 @@
 
   function rfYrState(el) {
     const c = el.className || '';
-    const m = c.match(/rf-yr--(\w+)/);
+    const m = c.match(/rf-y[rm]--(\w+)/);
     return m ? m[1] : '';
   }
 
@@ -231,11 +231,11 @@
 
     /* Rekstrarfélög. */
     scope.querySelectorAll('.rf-bundle-tag').forEach(el => {
-      const pill = el.closest('.rf-dd, .rf-ycell, .rf-yrs');
-      const yrEl = pill && pill.querySelector('.rf-yr');
+      const pill = el.closest('.rf-dd, .rf-ycell, .rf-yrs, .rf-yb');
+      const yrEl = pill && pill.querySelector('.rf-yr, .rf-ym');
       stamp(el, fidOf(el), yearOf(yrEl || el), 'bundle', 'pairs', 'BUNDLE');
     });
-    scope.querySelectorAll('.rf-yr').forEach(el => {
+    scope.querySelectorAll('.rf-yr, .rf-ym').forEach(el => {
       const k = rfYrState(el);
       const src = (k === 'done') ? 'docs' : (k === 'due' || k === 'overdue' ? 'month' : 'docs');
       stamp(el, fidOf(el), yearOf(el), k, src, 'YEAR CELL');
