@@ -392,19 +392,6 @@
     return '<section class="dsec"><h4>Skoðanasaga <span class="cnt">' + tala(Ls.length, 'skoðun', 'skoðanir') + '</span></h4><div class="dpanel">' + rows + '</div>' +
       '<p class="dim" style="font-size:12px;margin:8px 2px 0">Mánuðirnir eru þeir sem koma fram í skýrslunum sjálfum.</p></section>';
   }
-  // Dálkurinn „Síðasta skoðun“ í yfirlitinu: nýjasta skoðun hvorrar þjónustu + þær þrjár næstu á undan (skoðanasaga).
-  function sidastaSkodunHtml(b) {
-    var sg = b.saga || [];
-    var linur = sidastaSkodunLinur(b);
-    // 26.10.2026 (Agnar: „burt með Tæki þegar bara tæki og ekki slökkvikerfi"): merkið aðeins þegar línurnar eru tvær
-    return linur.map(function (x) {
-      var tp = x[0] === 'Kerfi' ? 'bru' : 'slokk';
-      var eldri = sg.filter(function (e) { return e.t === tp; }).slice(1, 4).map(function (e) { return sagaMerki(e.m); });
-      // Skýrslutextinn og „Nánar“ eru undir Skýrslum og á eignasíðunni, ekki hér (22.10.2026: of fyrirferðarmikið í töflunni).
-      return '<div>' + (linur.length > 1 ? '<span class="lbl">' + esc(x[0]) + ':</span> ' : '') + '<span class="num">' + esc(x[1]) + '</span></div>' +
-        (eldri.length ? '<div class="dim" style="font-size:11px;line-height:1.3;margin:-2px 0 4px">áður ' + esc(eldri.join(' · ')) + '</div>' : '');
-    }).join('');
-  }
   function sidastaSkodunLinur(b) {
     var out = [];
     function add(lbl, month, yr) {
@@ -820,27 +807,26 @@
         '<td class="num">' + (b.slo != null ? b.slo : '—') + '</td>' +
         // 27.10.2026 (Agnar): Kerfi-dálkurinn tekinn úr eignasafninu til að þjappa listanum — kerfin sjást áfram á eignasíðunni
         '<td>' + inspectionYears(b) + '</td>' +
-        '<td><div class="next">' + (sidastaSkodunHtml(b) || '<span class="dim">—</span>') + '</div></td>' +
         '<td><div class="next">' + (next || '<span class="dim">—</span>') + '</div></td>' +
         // 09.10.2026: byggingin á engin eitt skjal (docId alltaf null) — „Skjöl" opnar Skýrslur síaðar á bygginguna.
         '<td class="r"><div class="ract"><a class="pdf" href="#" data-skjol="' + esc(b.nafn) + '">' + svgIc('mappa') + 'Skjöl</a>' +
         // 26.10.2026 (Agnar: „maður á að geta ýtt á hverja eign í forsíðunni og séð erindin þar"): talan er öll erindi eignarinnar,
         // smellur opnar eignasíðuna á erindakaflanum (sendingarglugginn aðeins þegar engin erindi eru til).
         '<button type="button" class="pdf" data-erindi-b="' + bi + '" title="' + esc(erindiEignar(b).length ? erindiEignar(b).length + ' erindi · ' + opinErindi(b) + ' opin — opna eignasíðuna' : opinErindiTitill(b)) + '">' + svgIc('erindi') + 'Erindi' + (erindiEignar(b).length ? '<i class="nb' + (opinErindi(b) ? '' : ' nb-lokid') + '">' + erindiEignar(b).length + '</i>' : '') + '</button></div></td></tr>';
-    }).join('') || '<tr><td colspan="7" class="empty">Engar byggingar skráðar</td></tr>';
+    }).join('') || '<tr><td colspan="6" class="empty">Engar byggingar skráðar</td></tr>';
     // 28.11.2026 (Agnar: „þau þurfa samt að sjást svo þau geti sett í þjónustu"): eignir félagsins UTAN þjónustu standa í
     // SÖMU töflu, neðan við þær sem eru í þjónustu, með takkanum „Skrá í þjónustu". Þær voru áður aðeins sem spjöld neðar
     // á síðunni og sáust ekki nema skrunað væri fram hjá erindunum. Engin data-i: síurnar og eignasíðan snerta þær ekki.
     var utanT = (state.data && state.data.eignir_utan) || [];
     if ((bldgs || []).length && utanT.length) {
-      $('#yf-body').innerHTML += '<tr class="yf-utan-h"><td colspan="7">Ekki í þjónustu enn — ' + utanT.length + (utanT.length === 1 ? ' eign' : ' eignir') + '</td></tr>' +
+      $('#yf-body').innerHTML += '<tr class="yf-utan-h"><td colspan="6">Ekki í þjónustu enn — ' + utanT.length + (utanT.length === 1 ? ' eign' : ' eignir') + '</td></tr>' +
         utanT.map(function (b, j) {
           return '<tr class="yf-utan"><td><div class="bcell" data-utan="' + j + '" style="cursor:pointer" title="Skoða eign">' + (b.eign && b.eign.mynd ? '<span class="bic ph" style="background-image:url(\'' + esc(imgW(b.eign.mynd, 360)) + '\')"></span>' : '<span class="bic">' + svgIc('Byggingar') + '</span>') +
             '<div><div class="bname">' + esc(b.nafn) + '</div><div class="baddr">' + esc(b.heimilisfang || '') + '</div>' +
               // takkinn stendur undir heitinu svo hann sjáist í síma án þess að skruna töfluna til hliðar
               (b.beidni ? '<span class="eok">' + svgIc('hak', 2) + 'Beiðni móttekin</span>' : '<button type="button" class="kbtn xs yf-utan-b" data-skra="' + j + '">Skrá í þjónustu</button>') + '</div></div></td>' +
             '<td class="num">—</td><td class="num">—</td>' +
-            '<td colspan="3"><span class="dim">' + esc((b.eign && b.eign.tegund) || 'Ekki í þjónustu') + '</span></td>' +
+            '<td colspan="2"><span class="dim">' + esc((b.eign && b.eign.tegund) || 'Ekki í þjónustu') + '</span></td>' +
             '<td class="r"></td></tr>';
         }).join('');
     }
