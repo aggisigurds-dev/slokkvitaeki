@@ -2252,7 +2252,7 @@
             // 🧾 á rangri strimlu. Óþekkt tegund = fail-open.
             if (x.invoice_doc_id && tegByInv[x.invoice_doc_id]) {
               var t = tegByInv[x.invoice_doc_id];
-              if (t === 'bud') return;
+              if (t === 'bud' || t === 'vatnsudakerfi') return;   // 28.11.2026: úðaslökkvikerfisreikningur kveikir hvoruga strimluna
               if (t === 'brunakerfi' && x.service_type !== 'brunakerfi') return;
               if (t === 'uttekt' && x.service_type !== 'uttekt') return;
             }

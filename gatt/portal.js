@@ -21,6 +21,7 @@
     'Slökkvitæki': '<rect x="8" y="8.5" width="8" height="13" rx="3"/><path d="M10 8.5V6h4v2.5"/><path d="M14 6h2.6l2.9 2.3"/><path d="M9 3.5h6"/><path d="M8 14h8"/>',
     'Brunaslöngur': '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.8"/><circle cx="12" cy="12" r="1.5"/><path d="M20.5 12H23"/>',
     'Brunakerfi': '<path d="M6.5 16v-4.5a5.5 5.5 0 0 1 11 0V16l1.5 2h-14z"/><path d="M10 20.5a2 2 0 0 0 4 0"/><path d="M3.5 9.5a9 9 0 0 1 2.3-4.6M20.5 9.5a9 9 0 0 0-2.3-4.6"/>',
+    'Úðakerfi': '<path d="M12 2.5v3.5"/><path d="M8 6h8"/><path d="M12 6v2.5"/><path d="M12 8.5c-2.6 3.2-4.6 5.7-4.6 8.3a4.6 4.6 0 0 0 9.2 0c0-2.6-2-5.1-4.6-8.3z"/>',
     'Skoðun á tíma': '<path d="M12 2.8 4.8 5.6v5.6c0 4.7 3.1 8.5 7.2 9.9 4.1-1.4 7.2-5.2 7.2-9.9V5.6z"/><path d="m8.8 12.1 2.3 2.3 4.3-4.6"/>',
     'pdf': '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 11v6M9.5 14.5 12 17l2.5-2.5"/>',
     'mappa': '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
@@ -63,11 +64,13 @@
   function tegundPilla(t) {
     var s = String(t || '');
     if (!s || s === '—') return '<span class="dim">—</span>';
+    // 28.11.2026 (Agnar): Úðaslökkvikerfi (vatnsúðakerfi) er eigin flokkur, ljósblár — brunakerfi óbreytt.
+    if (/^úðaslökkvikerfi|^vatnsúðakerfi/i.test(s)) return '<span class="tb ud">' + svgIc('Úðakerfi', 1.9) + esc(s) + '</span>';
     if (/^brunakerfi/i.test(s)) return '<span class="tb br">' + svgIc('Brunakerfi', 1.9) + esc(s) + '</span>';
     if (/sl[öo]kkvit|uttekt|úttekt/i.test(s)) return '<span class="tb sl">' + svgIc('Slökkvitæki', 1.9) + esc(s) + '</span>';
     return '<span class="tb plain">' + esc(s) + '</span>';
   }
-  var INV_TEG = { uttekt: 'Slökkvitæki', brunakerfi: 'Brunakerfi', bud: 'Verslun', ovisst: 'Óvíst' };
+  var INV_TEG = { uttekt: 'Slökkvitæki', brunakerfi: 'Brunakerfi', vatnsudakerfi: 'Úðaslökkvikerfi', bud: 'Verslun', ovisst: 'Óvíst' };   // 28.11.2026 (Agnar): nýr flokkur vatnsudakerfi = Úðaslökkvikerfi
 
   /* ── SÝNISHORN (úr v3 Steel hönnun) ── */
   var DEMO = {

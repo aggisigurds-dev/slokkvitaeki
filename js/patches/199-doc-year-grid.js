@@ -603,7 +603,7 @@
     // Reikninga-tegund (2026-08-22, Agnar): táknið á reikninga-chippi fylgir
     // vidskiptategund — 🧯 slökkvitæki (uttekt) · 🔥 brunakerfi · 🏪 almennt/búð (bud).
     var _teg=(d&&d.vidskiptategund)||(function(){ var k=numKey(d&&d.invoice_number); var e=k?srcByNum[k]:null; return (e&&typeof e==='object')?e.teg:null; })();
-    var _ico=_teg==='brunakerfi'?'🔥':_teg==='slokkvikerfi'?'🍳':_teg==='bud'?'🏪':_teg==='uttekt'?'🧯':'🧾';
+    var _ico=_teg==='brunakerfi'?'🔥':_teg==='slokkvikerfi'?'🍳':_teg==='vatnsudakerfi'?'💦':_teg==='bud'?'🏪':_teg==='uttekt'?'🧯':'🧾';
     var chip;
     var nk = d.invoice_number ? numKey(d.invoice_number) : '';
     var inSolur = nk && srcByNum && srcByNum[nk];
@@ -769,12 +769,12 @@
     var pk = d && d.id != null ? _parKind[String(d.id)] : null;
     if (pk === 'brunakerfi' || pk === 'slokkvikerfi') return pk;
     var t=String(d && d.vidskiptategund || '').toLowerCase();
-    if(t==='brunakerfi'||t==='bud'||t==='uttekt'||t==='slokkvikerfi') return t;
+    if(t==='brunakerfi'||t==='bud'||t==='uttekt'||t==='slokkvikerfi'||t==='vatnsudakerfi') return t;
     var k=numKey(d && (d.invoice_number || chipInvNum(d)));
     var e=k && srcByNum && srcByNum[k];
     if(e && typeof e==='object'){
       var et=String(e.teg||'').toLowerCase();
-      if(et==='brunakerfi'||et==='bud'||et==='uttekt'||et==='slokkvikerfi') return et;
+      if(et==='brunakerfi'||et==='bud'||et==='uttekt'||et==='slokkvikerfi'||et==='vatnsudakerfi') return et;
     }
     var nm=String((d && d._att && d._att.name) || (d && d.file_name) || (d && d.name) || '');
     if(/brunakerfi/i.test(nm)) return 'brunakerfi';
@@ -1207,7 +1207,8 @@
     if(paydaySiteSafe) payday.forEach(function(p){ var y=pdYear(p); if(y>=2000&&y<=NOW+1) (pdByY[y]=pdByY[y]||[]).push(p); });
     function pushInvByService(d, y){
       var knd=invoiceServiceKind(d, srcByNum);
-      if(knd==='bud') return;
+      // 28.11.2026: úðaslökkvikerfisreikningur (vatnsudakerfi) á hvorki heima á 🧯 né 🔥 — sést í Hreyfingum (byggðar úr docs beint)
+      if(knd==='bud'||knd==='vatnsudakerfi') return;
       if(knd==='brunakerfi') (invBrByY[y]=invBrByY[y]||[]).push(d);
       else if(knd==='slokkvikerfi') (invSlkByY[y]=invSlkByY[y]||[]).push(d);   // aldrei í 🧯 — annars liti árið grænt
       else (invUtByY[y]=invUtByY[y]||[]).push(d);
@@ -1802,7 +1803,8 @@
     }).sort(function(x,y){ return String(y.dags).localeCompare(String(x.dags)); });
 
     var HR_TEG = { uttekt:{i:'🧯',t:'Slökkvitæki'}, bud:{i:'🏪',t:'Verslun'},   // 25.11.2026 (Agnar): flokkarnir heita Slökkvitæki · Brunakerfi · Verslun (allt keypt eða afgreitt á staðnum)
-                   brunakerfi:{i:'🔥',t:'Brunakerfi'}, slokkvikerfi:{i:'🍳',t:'Slökkvikerfi'} };
+                   brunakerfi:{i:'🔥',t:'Brunakerfi'}, slokkvikerfi:{i:'🍳',t:'Slökkvikerfi'},
+                   vatnsudakerfi:{i:'💦',t:'Úðaslökkvikerfi'} };   // 28.11.2026 (Agnar, R-001236): úðaslökkvikerfi er eigin flokkur
     var hreyfHtml='';
     if(hreyf.length){
       // 17.11.2026 (517): kreditfærður reikningur er sýndur (yfirstrikaður) en ekki talinn með — kreditnótan á sér enga skjalaröð.

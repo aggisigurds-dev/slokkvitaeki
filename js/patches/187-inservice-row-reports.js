@@ -236,7 +236,8 @@
         sales.forEach(s => {
           const teg = String(s.vidskiptategund || '').toLowerCase();
           const n = String(s.num || '').trim().toUpperCase();
-          if (teg === 'bud' || teg === 'brunakerfi' || teg === 'slokkvikerfi') { if (n) skipNums.add(n); return; }
+          // 28.11.2026: + úðaslökkvikerfi (vatnsudakerfi) — fremst svo vörðurinn audit-slokkvikerfi-reikningur þekki enn setninguna
+          if (teg === 'vatnsudakerfi' || teg === 'bud' || teg === 'brunakerfi' || teg === 'slokkvikerfi') { if (n) skipNums.add(n); return; }
           const st = String(s.status || '').toLowerCase();
           if (st === 'cancelled' || st === 'canceled' || st === 'credit' || st === 'void') return;
           if (s.customer_id == null) return;

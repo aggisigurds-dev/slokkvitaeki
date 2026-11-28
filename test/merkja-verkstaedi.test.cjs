@@ -341,5 +341,5 @@ test('erUttektTeg: sama regla og verkstæðið (190) — brunakerfi, búð og sl
   const SRC = fs.readFileSync(path.join(__dirname, '..', 'js', 'patches', '190-thjonustu-verkstaedi.js'), 'utf8');
   const f = SRC.match(/\n  function isUttektInvoiceTeg\(teg\) \{[\s\S]*?\n  \}/);
   const is190 = new Function(f[0] + '\nreturn isUttektInvoiceTeg;')();
-  for (const t of ['brunakerfi', 'Brunakerfi', 'bud', 'slokkvikerfi', 'uttekt', '', null, undefined, 'ovisst', 'annad']) assert.strictEqual(CL.erUttektTeg(t), is190(t), String(t));
+  for (const t of ['brunakerfi', 'Brunakerfi', 'bud', 'slokkvikerfi', 'vatnsudakerfi', 'uttekt', '', null, undefined, 'ovisst', 'annad']) assert.strictEqual(CL.erUttektTeg(t), is190(t), String(t));
 });

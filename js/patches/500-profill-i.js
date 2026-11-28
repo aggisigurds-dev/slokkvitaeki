@@ -80,6 +80,7 @@
     ['skjol', 'Skjöl og reikningar'],
     ['slt', 'Slökkvitækjaþjónusta'],
     ['bk', 'Brunakerfisþjónusta'],
+    ['ud', 'Vatnsúðakerfi'],   /* 28.11.2026 (Agnar): eigin þjónustuflipi, ljósblár — sést aðeins þegar kerfið er í þjónustu hjá okkur (stadur_kerfi) */
     ['teikn', 'Teikningar'],
     ['bygg', 'Byggingarupplýsingar'],
     ['kjor', 'Sérkjör'],
@@ -95,6 +96,7 @@
     ['#_sks-host', 'bk'],
     ['#_sks-bru', 'bk'],
     ['#_kt450', 'bk adrar'],
+    ['#_ud539', 'ud'],          /* vinnuform vatnsúðakerfis (539) */
     ['#_bs468', 'bygg'],
     ['#co-fp-section', 'teikn'],
     ['#_bgm477', 'bygg teikn'],
@@ -128,6 +130,7 @@
     G + '[data-p2tab="skjol"] > [data-p2t]:not([data-p2t~="skjol"]),' +
     G + '[data-p2tab="slt"] > [data-p2t]:not([data-p2t~="slt"]),' +
     G + '[data-p2tab="bk"] > [data-p2t]:not([data-p2t~="bk"]),' +
+    G + '[data-p2tab="ud"] > [data-p2t]:not([data-p2t~="ud"]),' +
     G + '[data-p2tab="teikn"] > [data-p2t]:not([data-p2t~="teikn"]),' +
     G + '[data-p2tab="bygg"] > [data-p2t]:not([data-p2t~="bygg"]),' +
     G + '[data-p2tab="kjor"] > [data-p2t]:not([data-p2t~="kjor"]),' +
@@ -270,7 +273,7 @@
     G + ' .p2-kp .khd{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;min-width:0}' +
     G + ' .p2-kp .khd .lb{white-space:normal!important;line-height:1.35}' +
     G + ' .p2-kp .man{position:static!important;flex:none;margin-top:-3px;margin-right:16px}' +
-    G + ' .p2-kpi.tvaer > .p2-kp-taeki,' + G + ' .p2-kpi.tvaer > .p2-kp-bk{grid-row:span 2}' +
+    G + ' .p2-kpi.tvaer > .p2-kp-taeki,' + G + ' .p2-kpi.tvaer > .p2-kp-bk,' + G + ' .p2-kpi.tvaer > .p2-kp-ud{grid-row:span 2}' +
     G + ' .p2-kpi.tvaer.s3 > .p2-kp:last-child{grid-column:span 2}' +
     G + ' .p2-kp .big.ord{font-size:24px!important;letter-spacing:-.01em}' +
     G + ' .p2-kp .big.gul{color:#f3d98a!important}' +
@@ -310,6 +313,7 @@
     '#companies-main .p2-kp .cap.y{background:linear-gradient(90deg,#9a6a14,#f2c35a,#9a6a14)}' +
     '#companies-main .p2-kp .cap.r{background:linear-gradient(90deg,#6b0b0b,#f0584c,#6b0b0b)}' +
     '#companies-main .p2-kp .cap.s{background:linear-gradient(90deg,#26262c,#8a93a3,#26262c)}' +
+    '#companies-main .p2-kp .cap.b{background:linear-gradient(90deg,#0b3350,#7cc6f5,#0b3350)}' +   /* vatnsúðakerfi */
     '#companies-main .p2-kp .in{padding:11px 13px 12px;display:flex;flex-direction:column;gap:7px;flex:1}' +
     '#companies-main .p2-kp .lb{font:700 10.5px ' + MONO + ';letter-spacing:.14em;text-transform:uppercase;color:#3a4250}' +
     '#companies-main .p2-kp .big{font:800 30px/1 ' + SERIF + ';white-space:nowrap}' +
@@ -332,6 +336,7 @@
     '#companies-main .p2-kp .p2-pl.am{background:linear-gradient(150deg,#e0a93e,#9a6a14)}' +
     '#companies-main .p2-kp .p2-pl.rd{background:linear-gradient(150deg,#e25555,#a01818)}' +
     '#companies-main .p2-merkid{display:flex;align-items:center;gap:10px;border-radius:10px;padding:6px 12px;color:#fff;background:' + GRAENN + '}' +
+    '#companies-main .p2-merkid.ud:not(.rd):not(.am){background:linear-gradient(145deg,#04101c 0%,#0b3350 20%,#176a9e 43%,#2d8ac6 53%,#0b3350 74%,#04101c 100%)}' +   /* ljósblár kassi vatnsúðakerfis (28.11.2026) */
     '#companies-main .p2-merkid.rd{background:linear-gradient(145deg,#0d0102 0%,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102 100%)}' +
     '#companies-main .p2-merkid .t{font:700 10px ' + MONO + ';letter-spacing:.14em;color:#d9dee6}' +
     '#companies-main .p2-merkid b{font:800 16px/1.1 ' + SERIF + ';display:block}' +
@@ -376,6 +381,11 @@
     M + ' .p2-flipar button[data-t="slt"]:not([aria-selected="true"]):hover,' + M + ' .p2-flipar button[data-t="bk"]:not([aria-selected="true"]):hover{filter:brightness(1.18)}' +
     M + ' .p2-flipar button[data-t="slt"][aria-selected="true"]{box-shadow:inset 0 3px 0 #2f7fd4}' +
     M + ' .p2-flipar button[data-t="bk"][aria-selected="true"]{box-shadow:inset 0 3px 0 #c92a2a}' +
+    /* 28.11.2026 (Agnar: „gera vatnsúðakerfið, td ljósblátt"): þriðji þjónustuflipinn, ljósblár málmur */
+    M + ' .p2-flipar button[data-t="ud"]:not([aria-selected="true"]){background:linear-gradient(180deg,#2d8ac6,#135a8a);color:#eaf6ff;box-shadow:inset 0 2px 0 #8fd3ff}' +
+    M + ' .p2-flipar button[data-t="ud"]:not([aria-selected="true"]):hover{filter:brightness(1.12)}' +
+    M + ' .p2-flipar button[data-t="ud"][aria-selected="true"]{box-shadow:inset 0 3px 0 #2d8ac6}' +
+    M + ' .p2-flipar button[data-t="ud"][hidden]{display:none!important}' +
     M + '[data-p2tab] > .p2-flipar ~ [data-p2t]{border-radius:0 0 14px 14px}' +
     /* Teikningar-flipinn */
     '#companies-main .p2-teikn{background:#fff;border-radius:0 0 14px 14px;padding:16px 18px;color:#11141c;box-shadow:inset 0 1px 0 rgba(20,24,34,.08)}' +
@@ -691,7 +701,7 @@
       d.tenglar.map(function (a) { return '<a class="p2-merki" href="' + esc(a.href) + '" target="_blank" rel="noopener" title="' + esc(a.title) + '">' + esc(a.t) + '</a>'; }).join('') +
       (d.gatt && d.gatt.href ? '<a class="p2-merki" href="' + esc(d.gatt.href) + '" target="_blank" rel="noopener" title="Opna gáttina á þessa eign">' + esc(d.gatt.t) + '</a>' : '') +
       (d.plata ? '<span class="p2-plata" data-st="' + esc(d.plata.st) + '">' + esc(d.plata.t) + '</span>' : '') + '</div></div>' +
-      skod + bkMerki(d) + '<button type="button" class="p2-til" data-p2="breyta">Breyta</button><button type="button" class="p2-til" data-p2="meira" aria-label="Fleiri aðgerðir" aria-haspopup="menu">⋯</button>';
+      skod + bkMerki(d) + udMerki(d) + '<button type="button" class="p2-til" data-p2="breyta">Breyta</button><button type="button" class="p2-til" data-p2="meira" aria-label="Fleiri aðgerðir" aria-haspopup="menu">⋯</button>';
     return lh;
   }
 
@@ -707,8 +717,21 @@
     _bkSk[fid] = null;
     try {
       var sb = window.DB && DB.sb; if (!sb) return null;
-      sb.from('brunakerfi_skyrslur').select('year,status,uttekt_nr,updated_at').eq('fyrirtaeki_id', +fid).order('year', { ascending: false }).limit(1)
-        .then(function (r) { var x = r && r.data && r.data[0]; _bkSk[fid] = x ? { ar: x.year, status: x.status, nr: x.uttekt_nr || '' } : { ar: 0 }; }, function () {});
+      // 28.11.2026 (Agnar, Fiskislóð 41: hausinn sagði „2026 óskoðað" þótt skýrsla 26-0003 væri LOKIÐ 29/07/2026): lokin skýrsla ársins
+      // gengur fyrir drögum — sama regla og 274 (repNow). Áður réð „nýjasta röð eftir ári" ein, svo drög 26-0006 földu loknu skýrsluna.
+      // Skoðunardagur = data.meta.dags, einingar = bunadur[].iLagi + ekki (274:1143) — sömu tölur og Brunakerfis skoðun sýnir (74).
+      sb.from('brunakerfi_skyrslur').select('year,status,uttekt_nr,updated_at,data').eq('fyrirtaeki_id', +fid).order('year', { ascending: false }).limit(8)
+        .then(function (r) {
+          var rows = (r && r.data) || [];
+          if (!rows.length) { _bkSk[fid] = { ar: 0 }; return; }
+          var Y = +rows[0].year, arsins = rows.filter(function (q) { return +q.year === Y; });
+          var x = arsins.filter(function (q) { return q.status === 'final'; })[0] || arsins[0];
+          var drog = arsins.filter(function (q) { return q !== x && q.status !== 'final'; })[0] || null;
+          var dt = (x && x.data) || {}, meta = dt.meta || {};
+          var ein = (Array.isArray(dt.bunadur) ? dt.bunadur : []).reduce(function (t, b) { return t + (+((b || {}).iLagi) || 0) + (+((b || {}).ekki) || 0); }, 0);
+          _bkSk[fid] = { ar: Y, status: x.status, nr: x.uttekt_nr || meta.nr || '', dags: /^\d{4}-\d{2}-\d{2}/.test(String(meta.dags || '')) ? String(meta.dags).slice(0, 10) : '',
+            ein: ein, madur: meta.madur || '', drog: !!drog, drogNr: drog ? (drog.uttekt_nr || ((drog.data || {}).meta || {}).nr || '') : '' };
+        }, function () {});
     } catch (e) {}
     return null;
   }
@@ -728,12 +751,15 @@
     var Y = new Date().getFullYear(), cm = new Date().getMonth() + 1;
     var kerfi = d.bk ? (d.bk.undir || '').split(' · ')[0] : '';
     if (!kerfi || /eining/.test(kerfi)) kerfi = 'Brunaviðvörunarkerfi';
+    var sk = d.bkSk;
     var last = null;
     if (c && c.last_inspected) { var q = /^(\d{4})-(\d{2})-(\d{2})/.exec(c.last_inspected); if (q) last = new Date(+q[1], +q[2] - 1, +q[3]); }
     if (!last && d.bk) { var x = /(\d{2})\/(\d{2})\/(\d{4})/.exec(d.bk.undir || ''); if (x) last = new Date(+x[3], +x[2] - 1, +x[1]); }
+    // 28.11.2026: lokin skýrsla ársins ber skoðunardaginn (meta.dags) — áskriftarkortið er oft tómt (Fiskislóð sýndi „Síðast —")
+    if (!last && sk && sk.status === 'final' && sk.dags) { var z = /^(\d{4})-(\d{2})-(\d{2})/.exec(sk.dags); if (z) last = new Date(+z[1], +z[2] - 1, +z[3]); }
     var M = (c && +c.inspect_month) || (last ? last.getMonth() + 1 : 0);
-    var ein = (c && +c.unit_count) || (d.bk && +d.bk.ein) || 0;
-    var sk = d.bkSk;
+    // einingar: skýrslan gengur fyrir þegar hún er til (sama og 274 einSyn), svo áskriftarkortið, svo flísin í 274-flipanum
+    var ein = (sk && sk.status === 'final' && +sk.ein) || (c && +c.unit_count) || (d.bk && +d.bk.ein) || 0;
     var buid = !!(last && last.getFullYear() === Y) || !!(sk && sk.ar === Y && sk.status === 'final');
     var st = manStada(M, buid);
     if (!st) st = (last && (new Date() - new Date(last.getFullYear() + 1, last.getMonth(), last.getDate())) > 0) ? 'r' : 'g';
@@ -750,7 +776,26 @@
   function bkMerki(d) {
     var b = bkStada(d); if (!b) return '';
     var t = b.st === 'r' ? b.Y + ' óskoðað' : b.st === 'y' ? 'Á dagskrá núna' : b.buid ? 'Skoðað ' + b.Y : 'Í lagi';
-    return '<div class="p2-merkid' + (b.st === 'r' ? ' rd' : b.st === 'y' ? ' am' : '') + '"><div><div class="t">BRUNAKERFI</div><b>' + esc(t) + '</b>' + (b.last ? '<small>síðast ' + esc(b.last) + '</small>' : '') + '</div></div>';
+    // 28.11.2026 (Agnar: „setja inn einingar og skoðun gerð"): einingar og skýrslunúmer standa með síðustu skoðun í kassanum
+    var sm = [b.last ? 'síðast ' + b.last : '', b.ein ? b.ein + ' einingar' : '', (b.sk && b.sk.status === 'final' && b.sk.nr) ? 'skýrsla ' + b.sk.nr : ''].filter(Boolean);
+    return '<div class="p2-merkid' + (b.st === 'r' ? ' rd' : b.st === 'y' ? ' am' : '') + '"><div><div class="t">BRUNAKERFI</div><b>' + esc(t) + '</b>' + (sm.length ? '<small>' + sm.map(esc).join(' · ') + '</small>' : '') + '</div></div>';
+  }
+  /* ── VATNSÚÐAKERFI (Agnar 28.11.2026: „bæta við ljósbláum kassa fyrir vatnsúðakerfi … hafa í samræmi: í þjónustu, hvað, hvenær,
+     einingar og tæki"). Heimildir, lesnar: 450-ræman (Vatnsúðakerfi · Hver = Okkar, úr stadur_kerfi) og vinnuformið 539
+     (tíðni, síðasta/næsta skoðun, einingar, úr stadur_kerfi.smaatridi.vinnuform). Ekkert skrifað hér. */
+  function udStada(d) {
+    var fid = window._currentCompanyId;
+    var v = null; try { v = (window.UdaVinnuform && UdaVinnuform.stada && fid) ? UdaVinnuform.stada(fid) : null; } catch (_) { v = null; }
+    var k = (d.kerfi || []).filter(function (x) { return /vatnsúðakerfi/i.test(x.heiti || '') && /okkar/i.test(x.hver || ''); })[0];
+    if (!(v && v.okkar) && !k) return null;
+    return { okkar: true, tidni: (v && +v.tidni) || 4, sidast: (v && v.sidast) || '', naest: (v && v.naest) || '', ein: (v && +v.ein) || 0, n: (v && +v.n) || 0, st: (v && v.st) || 'g', ath: (k && k.stada) || '' };
+  }
+  function udMerki(d) {
+    var u = udStada(d); if (!u) return '';
+    var Y = new Date().getFullYear();
+    var t = u.st === 'r' ? 'Komið fram yfir' : u.st === 'y' ? 'Á dagskrá núna' : u.n ? 'Skoðað ' + u.n + '/' + u.tidni + ' · ' + Y : 'Í þjónustu';
+    var sm = [u.sidast ? 'síðast ' + u.sidast : 'engin skoðun skráð', u.tidni + '× á ári', u.ein ? u.ein + ' einingar' : ''].filter(Boolean);
+    return '<div class="p2-merkid ud' + (u.st === 'r' ? ' rd' : u.st === 'y' ? ' am' : '') + '"><div><div class="t">VATNSÚÐAKERFI</div><b>' + esc(t) + '</b><small>' + sm.map(esc).join(' · ') + '</small></div></div>';
   }
   function manPilla(M, st, titill) {
     if (!M) return '';
@@ -820,7 +865,8 @@
         : b.st === 'y' ? '<div><span class="big ord">Á dagskrá</span></div>'
         : b.buid ? '<div><span class="big ord">Skoðað ' + b.Y + '</span></div>'
         : '<div><span class="big ord">Í lagi</span></div>';
-      var skTxt = b.sk && b.sk.ar ? 'Skýrsla ' + b.sk.ar + ': ' + (b.sk.status === 'final' ? 'lokið' : 'drög') + (b.sk.nr ? ' · nr ' + b.sk.nr : '') : 'Engin skýrsla ' + b.Y + ' enn';
+      var skTxt = b.sk && b.sk.ar ? 'Skýrsla ' + b.sk.ar + ': ' + (b.sk.status === 'final' ? 'lokið' : 'drög') + (b.sk.nr ? ' · nr ' + b.sk.nr : '') +
+        (b.sk.drog ? ' · drög ' + (b.sk.drogNr || '') + ' í vinnslu' : '') : 'Engin skýrsla ' + b.Y + ' enn';   // 28.11.2026: lokið OG drög sama ár sjást bæði
       k.push('<div class="p2-kp p2-kp-bk"><div class="cap ' + (b.st === 'r' ? 'r' : b.st === 'y' ? 'y' : 'g') + '"></div><div class="in"><div class="khd"><span class="lb">Brunakerfi</span>' + manPilla(b.M, b.st, 'Skoðunarmánuður brunakerfis') + '</div>' +
         stor + manBordi(b.M, b.st) +
         '<div class="flis3"><span><small>Einingar</small><b class="p2-n">' + (b.ein || '—') + '</b></span><span><small>Síðast</small><b class="p2-n" title="' + esc(b.last) + '">' + esc(b.lastS || '—') + '</b></span><span><small>Næst</small><b class="p2-n">' + esc(b.naest || '—') + '</b></span></div>' +
@@ -829,13 +875,29 @@
         (b.notes ? '<span class="nota" title="' + esc(b.notes) + '">„' + esc(b.notes.length > 70 ? b.notes.slice(0, 68) + '…' : b.notes) + '“</span>' : '') +
         '</div></div>');
     }
+    /* 28.11.2026: þriðja hetjuspjaldið — vatnsúðakerfi í þjónustu hjá okkur, sömu flísar (einingar · síðast · næst) og hin tvö */
+    var u = udStada(d);
+    if (u) {
+      var Yu = new Date().getFullYear(), udr0 = 0;
+      d.hreyf.forEach(function (r) { if (r.kredit) return; var y = /(\d{4})\s*$/.exec(r.dags); if (y && +y[1] === Yu && /úðaslökkvikerfi|vatnsúðakerfi/i.test(r.teg)) udr0 += Math.max(0, (r.upph || 0) - (r.hluti || 0)); });
+      var storU = u.st === 'r' ? '<div><span class="big ord gul">Komið fram yfir</span></div>' : u.st === 'y' ? '<div><span class="big ord">Á dagskrá</span></div>'
+        : u.n ? '<div><span class="big">' + u.n + '</span> <span class="bigl">af ' + u.tidni + ' skoðunum ' + Yu + '</span></div>' : '<div><span class="big ord">Í þjónustu</span></div>';
+      k.push('<div class="p2-kp p2-kp-ud"><div class="cap ' + (u.st === 'r' ? 'r' : u.st === 'y' ? 'y' : 'b') + '"></div><div class="in"><div class="khd"><span class="lb">Vatnsúðakerfi</span></div>' +
+        storU +
+        '<div class="flis3"><span><small>Einingar</small><b class="p2-n">' + (u.ein || '—') + '</b></span><span><small>Síðast</small><b class="p2-n">' + esc(u.sidast || '—') + '</b></span><span><small>Næst</small><b class="p2-n">' + esc(u.naest || '—') + '</b></span></div>' +
+        '<span class="sm">' + fx('Úðaslökkvikerfi') + fx(u.tidni + '× á ári') + (u.ath ? fx(u.ath) : '') + '</span>' +
+        (udr0 ? '<span class="sm"><span class="fx">Velta ' + Yu + ' <b class="p2-n">' + tugir(udr0) + ' kr</b></span></span>' : '') +
+        '<span class="ft">Vinnuformið er í flipanum Vatnsúðakerfi</span></div></div>');
+    }
     /* Agnar 19.11.2026: „afhverju 2025, en ekki 2026“ → líðandi ár; fyrra ár stendur undir til samanburðar */
-    var ar = new Date().getFullYear(), slt = 0, bkr = 0, fyrra = 0;
+    var ar = new Date().getFullYear(), slt = 0, bkr = 0, udr = 0, fyrra = 0;
     /* 23.11.2026: kreditfærður reikningur (.kredit, yfirstrikaður í 403/199) er EKKI velta — spjald sýndi 78.680 kr þegar R-001340 var kreditfærður og R-001341 kominn í staðinn (rétt: 39.340). Sama regla og „alls“ í 403 og Ársskoðun. */
-    d.hreyf.forEach(function (r) { if (r.kredit) return; var u = Math.max(0, (r.upph || 0) - (r.hluti || 0)); var y = /(\d{4})\s*$/.exec(r.dags); if (!y) return; if (+y[1] === ar - 1) { fyrra += u; return; } if (+y[1] !== ar) return; if (/brunakerfi/i.test(r.teg)) bkr += u; else slt += u; });
-    if (slt + bkr || fyrra) k.push('<div class="p2-kp"><div class="cap s"></div><div class="in"><span class="lb">Viðskipti ' + ar + '</span><div><span class="big">' + tugir(slt + bkr) + '</span> <span class="bigl">kr</span></div>' +
-      (slt && bkr ? '<div class="bar" role="img" aria-label="Slökkvitæki og brunakerfi"><i style="width:' + (100 * slt / (slt + bkr)).toFixed(1) + '%;background:#16783f"></i><i style="width:' + (100 * bkr / (slt + bkr)).toFixed(1) + '%;background:#a01818"></i></div><span class="sm">' + fx('Slt ' + tugir(slt)) + fx('Bk ' + tugir(bkr)) + '</span>' : '') +
-      (fyrra ? '<span class="sm"><span class="fx">' + (ar - 1) + ' <b class="p2-n">' + tugir(fyrra) + ' kr</b></span>' + (slt + bkr ? fx((slt + bkr >= fyrra ? '▲ ' : '▼ ') + Math.round(100 * (slt + bkr) / fyrra) + '% af ' + (ar - 1)) : '') + '</span>' : '') +
+    /* 28.11.2026: Úðaslökkvikerfi (vatnsudakerfi) er eigin súla — áður taldist hann með slökkvitækjum */
+    d.hreyf.forEach(function (r) { if (r.kredit) return; var u = Math.max(0, (r.upph || 0) - (r.hluti || 0)); var y = /(\d{4})\s*$/.exec(r.dags); if (!y) return; if (+y[1] === ar - 1) { fyrra += u; return; } if (+y[1] !== ar) return; if (/brunakerfi/i.test(r.teg)) bkr += u; else if (/úðaslökkvikerfi|vatnsúðakerfi/i.test(r.teg)) udr += u; else slt += u; });
+    var alls = slt + bkr + udr;
+    if (alls || fyrra) k.push('<div class="p2-kp"><div class="cap s"></div><div class="in"><span class="lb">Viðskipti ' + ar + '</span><div><span class="big">' + tugir(alls) + '</span> <span class="bigl">kr</span></div>' +
+      ((slt && bkr) || udr ? '<div class="bar" role="img" aria-label="Slökkvitæki, brunakerfi og vatnsúðakerfi"><i style="width:' + (100 * slt / alls).toFixed(1) + '%;background:#16783f"></i><i style="width:' + (100 * bkr / alls).toFixed(1) + '%;background:#a01818"></i><i style="width:' + (100 * udr / alls).toFixed(1) + '%;background:#2d8ac6"></i></div><span class="sm">' + fx('Slt ' + tugir(slt)) + fx('Bk ' + tugir(bkr)) + (udr ? fx('Úði ' + tugir(udr)) : '') + '</span>' : '') +
+      (fyrra ? '<span class="sm"><span class="fx">' + (ar - 1) + ' <b class="p2-n">' + tugir(fyrra) + ' kr</b></span>' + (alls ? fx((alls >= fyrra ? '▲ ' : '▼ ') + Math.round(100 * alls / fyrra) + '% af ' + (ar - 1)) : '') + '</span>' : '') +
       (d.hreyfAlls ? '<span class="ft">alls ' + esc(d.hreyfAlls) + '</span>' : '') + '</div></div>');
     if (d.skjol && d.skjol.alls) { var S = d.skjol;
       k.push('<div class="p2-kp"><div class="cap ' + (S.vantar ? 'y' : 'g') + '"></div><div class="in"><span class="lb">Skjöl</span><div><span class="big">' + S.komin + '</span> <span class="bigl">af ' + S.alls + '</span></div>' +
@@ -1033,19 +1095,25 @@
     var ms = document.getElementById('p2-msimi'); var gm = ga && ga.querySelector('.p2-mynd'); if (ms && gm) ms.innerHTML = gm.outerHTML;
     var kp = document.getElementById('p2-kpi');
     if (kp) { var kk = kpi(d).map(function (x) { return x.replace(/^(<div class="p2-kp[^"]*">)/, '$1' + HNODIN); });
-      var _st = kk.filter(function (x) { return /p2-kp-(taeki|bk)/.test(x); }), _sm = kk.filter(function (x) { return !/p2-kp-(taeki|bk|kerfi)/.test(x); });
+      var _st = kk.filter(function (x) { return /p2-kp-(taeki|bk|ud)/.test(x); }), _sm = kk.filter(function (x) { return !/p2-kp-(taeki|bk|ud|kerfi)/.test(x); });
       var _tv = _st.length && _sm.length > 2;
       kp.classList.toggle('tvaer', !!_tv); kp.classList.toggle('s3', _sm.length === 3);
       if (_tv) kp.style.gridTemplateColumns = _st.map(function (x) { return 'minmax(0,1.6fr)'; }).concat(['minmax(0,1fr)', 'minmax(0,1fr)']).join(' ');
-      else kp.style.gridTemplateColumns = kk.filter(function (x) { return !/p2-kp-kerfi/.test(x); }).map(function (x, i) { return /p2-kp-taeki/.test(x) ? 'minmax(0,1.7fr)' : /p2-kp-bk/.test(x) ? 'minmax(0,1.75fr)' : 'minmax(0,1fr)'; }).join(' '); kp.innerHTML = kk.join(''); }
+      else kp.style.gridTemplateColumns = kk.filter(function (x) { return !/p2-kp-kerfi/.test(x); }).map(function (x, i) { return /p2-kp-taeki/.test(x) ? 'minmax(0,1.7fr)' : /p2-kp-(bk|ud)/.test(x) ? 'minmax(0,1.75fr)' : 'minmax(0,1fr)'; }).join(' '); kp.innerHTML = kk.join(''); }
     t.innerHTML = teikn(d);
     var ar = document.getElementById('p2-adrar'); if (ar) ar.innerHTML = adrar(d);
     var sb = document.getElementById('p2-samsk'); if (sb) sb.innerHTML = samskiptiMarkup(d);
     if (sb && m.classList.contains('p2-gam')) { var tt = sb.querySelectorAll('.flip button'); if (tt[1]) { tt[0].setAttribute('aria-selected', 'false'); tt[1].setAttribute('aria-selected', 'true'); } }
-    [['slt', d.sksU && d.sksU.slt], ['bk', d.sksU && d.sksU.bk]].forEach(function (p) {
+    /* 28.11.2026 (Agnar: „vantar inn einingarnar og skráninguna efst"): undirlína brunakerfisflipans ber einingar og skoðunardag
+       loknu skýrslunnar — sama snið og slökkvitækjaflipinn („19 tæki · ársskoðun 2026"); vatnsúðakerfisflipinn sína tíðni. */
+    var _bkS = bkStada(d), _udS = udStada(d);
+    var bkU = (_bkS && (_bkS.ein || _bkS.last)) ? [_bkS.ein ? _bkS.ein + ' einingar' : '', _bkS.last ? 'skoðað ' + _bkS.last : ''].filter(Boolean).join(' · ') : (d.sksU && d.sksU.bk);
+    [['slt', d.sksU && d.sksU.slt], ['bk', bkU], ['ud', _udS ? 'Úðaslökkvikerfi · ' + _udS.tidni + '× á ári' + (_udS.sidast ? ' · síðast ' + _udS.sidast : '') : '']].forEach(function (p) {
       var u = sel(m, '#p2-flipar button[data-t="' + p[0] + '"] .u'); if (!u) return;
       var s = p[1] || ''; if (u.textContent !== s) u.textContent = s; u.hidden = !s;
     });
+    var ub = sel(m, '#p2-flipar button[data-t="ud"]');
+    if (ub) { var uOk = !!_udS; if (ub.hidden !== !uOk) ub.hidden = !uOk; if (!uOk && m.getAttribute('data-p2tab') === 'ud') velja(m, 'skjol'); }
     var c = sel(m, '#p2-flipar button[data-t="slt"] .c');
     if (c) { c.textContent = d.nSlt ? d.nSlt : ''; c.hidden = !d.nSlt; }
     var ca = sel(m, '#p2-flipar button[data-t="adrar"] .c');
@@ -1199,4 +1267,6 @@
 
   setInterval(tikk, 600);
   window.Prof2.tikk = tikk;
+  // 28.11.2026: vinnuform vatnsúðakerfis (539) og þjónustutakkarnir (534) tilkynna breytta stöðu kerfisins → haus/KPI/flipi endurteiknast strax
+  document.addEventListener('ud539:uppfaert', function () { sig = ''; try { tikk(); } catch (_) {} });
 })();

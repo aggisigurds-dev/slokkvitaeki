@@ -912,7 +912,7 @@ exports.handler = async (event) => {
         eb: siteIds.length ? g(`eldvarnabok?fyrirtaeki_id=in.(${siteIds.join(',')})&manudur=gte.${fraQ}&select=fyrirtaeki_id,manudur,svor,stada,undirritad_af,undirritad_at,updated_at,erindi_id&order=manudur.desc`) : null,
         // 07.11.2026: `krafa_note` fylgir með svo gáttin geti virt ⏸ BÍÐA-merkinguna sem Agnar
         // notar þegar — sjá stadaAf() neðar. Hún var ekki sótt áður og því þagði biðmerkingin.
-        solur: g(`solur?${BF('customer_base_id')}&status=eq.final&greitt_med=eq.reikningur&select=num,samtals,created_at,paid_at,krafa_sent_at,krafa_note,customer_id,customer_nafn,is_credit,source&order=created_at.desc&limit=600`),
+        solur: g(`solur?${BF('customer_base_id')}&status=eq.final&greitt_med=eq.reikningur&select=num,samtals,created_at,paid_at,krafa_sent_at,krafa_note,customer_id,customer_nafn,is_credit,source,vidskiptategund&order=created_at.desc&limit=600`),
         stolpi: ktsQ.length ? g(`stolpi_reikningar?kt=in.(${ktsQ.map((k) => '"' + k + '"').join(',')})&tegund=eq.reikningur&dags=gte.${fra3Q}&select=reikn_nr,kt,dags,upphaed,stada,greitt_dags,vidskiptategund&order=dags.desc&limit=300`) : null,
         messages: g(`portal_messages?base_id=eq.${baseId}&select=sender,body,author_name,created_at&order=created_at.asc`),
         vorur: (syn.serkjor && acct && acct.stillingar && acct.stillingar.serkjor) ? g(`vorur?or=(virkt.is.true,virkt.is.null)&flokkur=in.(${['Þjónusta', 'Slökkvitæki', 'Vinna og akstur'].map((x) => '"' + encodeURIComponent(x) + '"').join(',')})&select=id,nafn,verd_an_vsk,vsk_prosenta,flokkur,rodun,forsida&order=flokkur.asc,rodun.asc.nullslast,nafn.asc`) : null,
@@ -1360,7 +1360,9 @@ exports.handler = async (event) => {
     // þjónustutegundin (vidskiptategund) væri þekkt. Lýsing = tegundin (Úttekt / Brunakerfi / Búð); vanti hana,
     // „Vegna"-línan úr reikningslestri. Eign úr reikningslestri þegar skjalið sjálft er ekki tengt byggingu.
     // 18.11.2026 (Agnar: „ekkert tómt að óþörfu"): „ovisst" er líka tegund — reitur sem segir „Óvíst" er sannari en auður reitur.
-    const TEG_L = { uttekt: 'Úttekt', brunakerfi: 'Brunakerfi', bud: 'Verslun', ovisst: 'Óvíst' };   // 25.11.2026 (Agnar): búðarkaup heita Verslun
+    // 28.11.2026 (Agnar, R-001236 „vegna Úðaslökkvikerfi"): NÝR flokkur `vatnsudakerfi` = Úðaslökkvikerfi — sami lykill og kerfið
+    // í stadur_kerfi. Brunakerfi stendur óbreytt (brunaviðvörunarkerfi er önnur þjónusta).
+    const TEG_L = { uttekt: 'Úttekt', brunakerfi: 'Brunakerfi', vatnsudakerfi: 'Úðaslökkvikerfi', bud: 'Verslun', ovisst: 'Óvíst' };   // 25.11.2026 (Agnar): búðarkaup heita Verslun   // 25.11.2026 (Agnar): búðarkaup heita Verslun
     invoices.forEach((i) => { if (!i.lysing && i.tegund && TEG_L[i.tegund]) i.lysing = TEG_L[i.tegund]; });
     // 26.10.2026 (hraði): solur-fyllingin hér að neðan fer af stað NÚNA, samhliða reikningslestrinum. Mengið er
     //    yfirmengi þess sem stæði eftir (lesturinn fyllir aðeins lýsingu/byggingu, fyllingin aðeins tóma reiti) → sama svar.
@@ -1458,9 +1460,12 @@ exports.handler = async (event) => {
           if (!n || til.has(n) || s.is_credit) return;
           if (leyfd && !(s.customer_id != null && leyfd.has(Number(s.customer_id)))) return;
           if (Date.parse(s.created_at) < fra) return;
+          // 28.11.2026: tegundin kemur af sölunni sjálfri (solur.vidskiptategund — t.d. vatnsudakerfi, sem enginn `source` ber),
+          // annars af upprunanum eins og áður. Lýsing fylgir sömu orðabók og skjalaraðirnar (TEG_L).
+          const vt = TEG_L[s.vidskiptategund] ? s.vidskiptategund : (({ uttekt: 'uttekt', brunakerfi: 'brunakerfi' })[s.source] || null);
           invoices.push({ docId: null, nr: s.num, dags: String(s.created_at).slice(0, 10), ar: null, fid: s.customer_id != null ? Number(s.customer_id) : null,
             bygging: nafnById[s.customer_id] || s.customer_nafn || '', upphaed: s.samtals != null && s.samtals !== '' ? Number(s.samtals) : null,
-            lysing: ({ uttekt: 'Úttekt', brunakerfi: 'Brunakerfi', pos: 'Sala' })[s.source] || '', tegund: ({ uttekt: 'uttekt', brunakerfi: 'brunakerfi' })[s.source] || null, stada: stadaAf(s) });
+            lysing: (vt && TEG_L[vt]) || ({ pos: 'Sala' })[s.source] || '', tegund: vt, stada: stadaAf(s) });
         });
         invoices.sort((a, b) => String(b.dags || b.ar || '').localeCompare(String(a.dags || a.ar || '')));
       }

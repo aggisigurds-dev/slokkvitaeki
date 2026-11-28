@@ -331,7 +331,7 @@
     // brunakerfisreikning í 🧯-hólfið — og þaðan í „Senda"-pakkann. Óþekkt tegund reiknings heldur gömlu hegðuninni.
     const passarHolfi = (key, d, erReikningur) => {
       if (!d) return false;
-      if (erReikningur) { const t = String(d.vidskiptategund || '').toLowerCase(); return key === 'brunakerfi' ? (!t || t === 'brunakerfi' || t === 'ovisst') : ['brunakerfi', 'slokkvikerfi', 'bud'].indexOf(t) < 0; }
+      if (erReikningur) { const t = String(d.vidskiptategund || '').toLowerCase(); return key === 'brunakerfi' ? (!t || t === 'brunakerfi' || t === 'ovisst') : ['brunakerfi', 'slokkvikerfi', 'vatnsudakerfi', 'bud'].indexOf(t) < 0; }
       return key === 'brunakerfi' ? d.doc_type === 'brunakerfi' : d.doc_type === 'uttektarskyrsla';
     };
     // 4) document_pairs (Brunahólf's durable bundle table). Fills gaps the

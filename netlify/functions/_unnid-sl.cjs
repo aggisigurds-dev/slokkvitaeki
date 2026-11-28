@@ -33,9 +33,11 @@
 const T = require('./_tekjur.cjs');
 
 const FLOKKAR = ['arsthjonusta', 'brunakerfi', 'slokkvikerfi', 'verkstaedi', 'verslun'];
-const SKODUN = { uttekt: 'arsthjonusta', brunakerfi: 'brunakerfi', slokkvikerfi: 'slokkvikerfi' };   // vidskiptategund → flokkur
-const SKYRSLA_TEGUND = { uttekt: 'uttektarskyrsla', brunakerfi: 'brunakerfi', slokkvikerfi: 'slokkvikerfi' };
-const GLUGGI = { uttekt: [45, 3], brunakerfi: [150, 3], slokkvikerfi: [150, 3] };   // daga fyrir / eftir söludag
+// 28.11.2026: `vatnsudakerfi` (Úðaslökkvikerfi, nýr reikningaflokkur) telst hér með brunakerfi — sömu tölur og áður (R-001236 var
+// flokkaður brunakerfi til 28.11), enginn eigin tekjuflokkur fyrr en Agnar biður um hann.
+const SKODUN = { uttekt: 'arsthjonusta', brunakerfi: 'brunakerfi', vatnsudakerfi: 'brunakerfi', slokkvikerfi: 'slokkvikerfi' };   // vidskiptategund → flokkur
+const SKYRSLA_TEGUND = { uttekt: 'uttektarskyrsla', brunakerfi: 'brunakerfi', vatnsudakerfi: 'brunakerfi', slokkvikerfi: 'slokkvikerfi' };
+const GLUGGI = { uttekt: [45, 3], brunakerfi: [150, 3], vatnsudakerfi: [150, 3], slokkvikerfi: [150, 3] };   // daga fyrir / eftir söludag
 const V_KLAR = new Set(['ready', 'collected']);          // tæki merkt done og sent í afgreiðslu
 const V_OKLAR = new Set(['received', 'inprogress']);     // í vinnslu: telst ekki enn
 const VSK = 1.24;

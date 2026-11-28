@@ -89,7 +89,7 @@ const SOLUR_DALKAR = 'id,num,customer_nafn,samtals,created_at,status,is_credit,h
 const OMAELT = Symbol('omaelt');
 const lesaEda = (qs) => lesa(qs).catch(() => OMAELT);
 // Sama regla og ÞjónustuVerkstæðið (190) og Ársskoðun (187): brunakerfi, búð og slökkvikerfi eru EKKI slökkvitækjaúttekt.
-const erUttektTeg = (teg) => { const t = String(teg || '').toLowerCase(); return t !== 'brunakerfi' && t !== 'bud' && t !== 'slokkvikerfi'; };
+const erUttektTeg = (teg) => { const t = String(teg || '').toLowerCase(); return t !== 'brunakerfi' && t !== 'bud' && t !== 'slokkvikerfi' && t !== 'vatnsudakerfi'; };   // 28.11.2026: + úðaslökkvikerfi (sama regla og 190)
 // Sama talning og skodudKort í 190 (prófið ber þær saman): úrelt tæki, nýskráning (skoðunardagur = skráningardagur) og
 // dagur fram í tímann teljast ekki skoðun.
 function taekjatalning(rows, ar, iDag) {

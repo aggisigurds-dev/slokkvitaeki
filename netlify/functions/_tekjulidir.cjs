@@ -87,7 +87,7 @@ function flokkaLinu(l, vt, vara) {
   const d = String((l && l.desc) || '').trim().toLowerCase();
   const vn = vara ? String(vara.nafn || '').toLowerCase() : '';
   const vf = vara ? String(vara.flokkur || '') : '';
-  if (vt === 'brunakerfi') return '05';
+  if (vt === 'brunakerfi' || vt === 'vatnsudakerfi') return '05';   // 28.11.2026: úðaslökkvikerfi á sama tekjulið og brunakerfi þar til annað er ákveðið
   if (d.startsWith('yfirferð ·') || (vf === 'Þjónusta' && vn.includes('yfirferð'))) return '01';
   if (d.startsWith('hleðsla ·') || (vf === 'Þjónusta' && vn.includes('hleðsla'))) return '02';
   if (vf === 'Slökkvitæki') return '03';

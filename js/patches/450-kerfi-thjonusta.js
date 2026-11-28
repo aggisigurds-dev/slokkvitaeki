@@ -115,6 +115,14 @@
       R + ' button.kt-tilst[aria-pressed="true"]{background:' + DARK_PLATE + '!important;border-color:#000!important;color:#eef1f4!important}',
       R + ' .kt-rod-fot{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:6px;min-height:18px}',
       R + ' .kt-sma{margin-top:10px;padding-top:10px;border-top:1px dashed rgba(20,24,34,.18)}',
+      R + ' details.kt-sma-d{margin-top:10px}',
+      R + ' details.kt-sma-d > summary{cursor:pointer;list-style:none;font:600 11px ' + MONO + ';letter-spacing:.14em;text-transform:uppercase;color:#525b6b;padding:6px 0;border-top:1px dashed rgba(20,24,34,.18)}',
+      R + ' details.kt-sma-d > summary::-webkit-details-marker{display:none}',
+      R + ' details.kt-sma-d > summary::before{content:"▸";display:inline-block;width:14px;transition:transform .12s}',
+      R + ' details.kt-sma-d[open] > summary::before{transform:rotate(90deg)}',
+      R + ' details.kt-sma-d .kt-sma-hint{font-weight:500;letter-spacing:.02em;text-transform:none;color:#7a8390}',
+      R + ' details.kt-sma-d[open] .kt-sma-hint{display:none}',
+      R + ' details.kt-sma-d .kt-sma{border-top:0;margin-top:0;padding-top:4px}',
       R + ' .kt-sma .ssp-reitir{grid-template-columns:repeat(3,minmax(0,1fr))}',
       R + ' .kt-sma .ssp-lina{grid-template-columns:118px minmax(0,1fr)}',
       R + ' .kt-vantar{color:#b42318!important;font-style:italic}',
@@ -329,7 +337,13 @@
       '</div>' +
       (x.k.k === BVK ? '' : '<div class="kt-okkar" data-kt-okkar>' + okkarHtml(x) + '</div>') +
       '<div class="kt-rod-fot" data-kt-fot>' + rodStadaHtml(fid, x.k.k) + '</div>' +
-      (x.k.k === 'brunavidvorunarkerfi' && r.smaatridi ? smaHtml(r.smaatridi) : '') +
+      // 28.11.2026 (Agnar: „collapse þessar auka upplýsingar, þau eru í þjónustu og búið að skoða"): brunakerfisskráin og
+      // teikningatalningin eru samanbrotnar þegar kerfið er í þjónustu hjá okkur — gögnin standa, smellur opnar.
+      (x.k.k === 'brunavidvorunarkerfi' && r.smaatridi
+        ? (F().erOkkar(r.thjonustuadili) && r.til_stadar === 'ja'
+          ? '<details class="kt-sma-d"><summary>Brunakerfisskrá og teikning <span class="kt-sma-hint">· samanbrotið — í þjónustu hjá okkur</span></summary>' + smaHtml(r.smaatridi) + '</details>'
+          : smaHtml(r.smaatridi))
+        : '') +
     '</div>';
   }
   function ritillHtml(fid, g) {

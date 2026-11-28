@@ -194,7 +194,7 @@
   // 05.10.2026: sama regla og 187 — slökkvikerfisreikningur (386) er ekki slökkvitækjaúttekt.
   function isUttektInvoiceTeg(teg) {
     const t = String(teg || '').toLowerCase();
-    return t !== 'brunakerfi' && t !== 'bud' && t !== 'slokkvikerfi';
+    return t !== 'brunakerfi' && t !== 'bud' && t !== 'slokkvikerfi' && t !== 'vatnsudakerfi';   // 28.11.2026: + úðaslökkvikerfi
   }
   async function loadReik2026() {
     try {

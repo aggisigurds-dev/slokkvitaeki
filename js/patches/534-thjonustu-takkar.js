@@ -45,12 +45,44 @@
     return a.subscribed === true || (!!a.equipment && typeof a.equipment === 'object');
   }
 
+  /* ── VATNSÚÐAKERFI (28.11.2026, Agnar: „hafa í samræmi … í þjónustu") ─────────────────────────────────────────
+   * Heimildin er stadur_kerfi (449a/450: til_stadar='ja' + þjónustuaðili 'okkar'), ekki AppSettings — sama röð og
+   * „+ Skrá í þjónustu hjá okkur" í Kerfi og þjónusta skrifar. Lesið um Flokkun.stadur (skyndiminni 60 s), skrifað um
+   * Flokkun.vistaKerfi. Breyting tilkynnt með 'ud539:uppfaert' svo prófíllinn (500) og vinnuformið (539) endurteiknist. */
+  const UD = 'vatnsudakerfi';
+  const _ud = new Map();   // fid → { okkar, t, bid }
+  function udStada(fid) {
+    const x = _ud.get(fid);
+    if (x && (x.bid || Date.now() - x.t < 60000)) return x;
+    const bid = { okkar: !!(x && x.okkar), t: x ? x.t : 0, bid: true };
+    _ud.set(fid, bid);
+    const F = window.Flokkun;
+    if (!F || !F.stadur) { bid.bid = false; return bid; }
+    F.stadur(fid).then((g) => {
+      const r = ((g && g.kerfi) || []).find((k) => k.kerfi === UD);
+      _ud.set(fid, { okkar: !!(r && r.til_stadar === 'ja' && F.erOkkar(r.thjonustuadili)), t: Date.now() });
+      const bar = document.getElementById(ID); if (bar && +bar.dataset.fid === fid) fylla(bar, fid);
+    }).catch(() => { _ud.set(fid, { okkar: !!(x && x.okkar), t: Date.now() }); });
+    return bid;
+  }
+  document.addEventListener('ud539:uppfaert', (e) => { const fid = e && e.detail && +e.detail.fid; if (fid) _ud.delete(fid); const bar = document.getElementById(ID); if (bar && bar.dataset.fid) fylla(bar, +bar.dataset.fid); });
+
   /* ── VISTUN — nákvæmlega eins og 158 toggleService ──────────────────────────────────────────────────────────
    * ars: AppSettings.arsskodun_customers (equipment-blobbið) OG per-röð skrif á fyrirtaeki.er_i_thjonustu — það er
    *      HIÐ raunverulega þjónustuflokks-merki (153:595), ónæmt fyrir stale settings-blobbi annarrar vélar.
    * bk:  AppSettings.brunakerfi_customers. null fjarlægir (deepMerge fjarlægir ekki lykil).
    * Þröngur patch: AÐEINS þetta félag fer í vistun. */
   async function toggle(fid, svc, add) {
+    if (svc === 'ud') {
+      const F = window.Flokkun;
+      if (!F || !F.vistaKerfi) { alert('Kerfaskráin (449a) er ekki tilbúin — endurhlaðið síðuna'); return false; }
+      try {
+        const rod = await F.vistaKerfi(fid, UD, add ? { til_stadar: 'ja', thjonustuadili: 'okkar' } : { thjonustuadili: null });
+        _ud.set(fid, { okkar: !!(rod && rod.til_stadar === 'ja' && F.erOkkar(rod.thjonustuadili)), t: Date.now() });
+        try { document.dispatchEvent(new CustomEvent('ud539:uppfaert', { detail: { fid } })); } catch (_) {}
+        return true;
+      } catch (e) { console.warn('[534] vatnsudakerfi', e); return false; }
+    }
     if (!AS() || !AS().save) { alert('AppSettings ekki tilbúið'); return false; }
     const KEY = svc === 'ars' ? 'arsskodun_customers' : 'brunakerfi_customers';
     const map = Object.assign({}, (AS().path && AS().path(KEY)) || {});
@@ -111,6 +143,9 @@
       // (BSTAL) svo parið haldist samstætt. Staðan stendur áfram í orðunum („✓ Í … þjónustu"), liturinn er aldrei eini burðarmaðurinn.
       '#' + ID + ' .svc-b.on[data-svc="ars"]{background:linear-gradient(145deg,#010d05 0%,#06331a 20%,#0e5a2e 43%,#16783f 53%,#073a1d 74%,#010f06 100%);border-color:rgba(52,168,98,.55);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 0 14px -5px rgba(22,140,72,.65),0 2px 5px rgba(0,0,0,.3);text-shadow:0 1px 1px rgba(0,0,0,.55)}',
       '#' + ID + ' .svc-b.on[data-svc="bk"]{background:linear-gradient(145deg,#0d0102 0%,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102 100%);border-color:rgba(190,32,28,.55);box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 0 14px -5px rgba(160,16,16,.55),0 2px 5px rgba(0,0,0,.3);text-shadow:0 1px 1px rgba(0,0,0,.55)}',
+      // 28.11.2026 (Agnar: „gera vatnsúðakerfið, td ljósblátt"): þriðji takkinn, ljósblár málmur — sami halli og hinir tveir
+      '#' + ID + ' .svc-b.off[data-svc="ud"]{background:#fff;color:#135a8a;border-color:#b9d9ee}',
+      '#' + ID + ' .svc-b.on[data-svc="ud"]{background:linear-gradient(145deg,#04101c 0%,#0b3350 20%,#176a9e 43%,#2d8ac6 53%,#0b3350 74%,#04101c 100%);border-color:rgba(80,170,230,.55);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 0 14px -5px rgba(45,138,198,.65),0 2px 5px rgba(0,0,0,.3);text-shadow:0 1px 1px rgba(0,0,0,.55)}',
       // Búnaðargreining flutt hingað af myndinni (Agnar, skjáskot með ör) — hlutlaus dökkur málmur: þetta er AÐGERÐ, ekki þjónustustaða.
       '#' + ID + ' .svc-b.bgr{background:linear-gradient(180deg,#3d4048,#1c1e23);color:#eef1f4;border-color:#000;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 2px 6px rgba(0,0,0,.35)}',
       '@media (max-width:560px){#' + ID + ' .svc-b{flex:1 1 100%;justify-content:center;padding:12px 15px}}',
@@ -120,12 +155,14 @@
 
   /* ── TEIKNING ───────────────────────────────────────────────────────────────────────────────────────────── */
   function btnHtml(fid) {
-    const a = inArs(fid), b = inBk(fid);
+    const a = inArs(fid), b = inBk(fid), u = udStada(fid).okkar;
     return '<span class="svc-lbl">Þjónusta</span>' +
       '<button type="button" class="svc-b ' + (a ? 'on' : 'off') + '" data-svc="ars" data-add="' + (a ? '0' : '1') + '">' +
         (a ? '✓ Í slökkvitækjaþjónustu' : '＋ Slökkvitækjaþjónusta') + '</button>' +
       '<button type="button" class="svc-b ' + (b ? 'on' : 'off') + '" data-svc="bk" data-add="' + (b ? '0' : '1') + '">' +
         (b ? '✓ Í brunakerfisþjónustu' : '＋ Brunakerfisþjónusta') + '</button>' +
+      '<button type="button" class="svc-b ' + (u ? 'on' : 'off') + '" data-svc="ud" data-add="' + (u ? '0' : '1') + '">' +
+        (u ? '✓ Í vatnsúðakerfisþjónustu' : '＋ Vatnsúðakerfisþjónusta') + '</button>' +
       // data-p2="bgr": 500 hlustar á smelli á #companies-main og opnar greininguna (umbod → #bgr-takki) — engin ný rök hér.
       '<button type="button" class="svc-b bgr" data-p2="bgr">Búnaðargreining</button>';
   }
@@ -141,7 +178,7 @@
       if (!b || !bar.contains(b) || b.disabled) return;
       const fid = opidFid(); if (!fid) return;
       const svc = b.dataset.svc, add = b.dataset.add === '1';
-      const label = svc === 'ars' ? 'slökkvitækjaþjónustu' : 'brunakerfisþjónustu';
+      const label = svc === 'ars' ? 'slökkvitækjaþjónustu' : svc === 'bk' ? 'brunakerfisþjónustu' : 'vatnsúðakerfisþjónustu';
       const name = (company(fid) || {}).nafn || ('fyrirtæki ' + fid);
       if (!window.confirm((add ? 'Skrá „' + name + '" í ' : 'Fjarlægja „' + name + '" úr ') + label + '?' +
         (add ? '' : '\n\n(Gögn um búnað haldast — bara þjónustumerkið fer.)'))) return;

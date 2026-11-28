@@ -740,7 +740,7 @@
         : '';
       // Reikninga-tegund (2026-08-22, Agnar): tákn + þrír hakreitir (ein í einu) → solur.vidskiptategund.
       const _vt = s.vidskiptategund || '';
-      const _vtIcon = { uttekt: '🧯', brunakerfi: '🔥', bud: '🏪' }[_vt] || '❓';
+      const _vtIcon = { uttekt: '🧯', brunakerfi: '🔥', vatnsudakerfi: '💦', bud: '🏪' }[_vt] || '❓';   // 28.11.2026: 💦 Úðaslökkvikerfi (vatnsudakerfi)
       const _vtBox = (val, ic, lbl) => '<label title="' + lbl + '" style="cursor:pointer;display:inline-flex;align-items:center;gap:1px"><input type="checkbox" class="by-vt-box" data-sale-id="' + esc(s.id) + '" value="' + val + '"' + (_vt === val ? ' checked' : '') + '>' + ic + '</label>';
       let h = '<tr class="by-sale-row' + (isOpen ? ' expanded' : '') + '" data-id="' + esc(s.id) + '"' + (s.isDraft ? ' style="background:#fffbeb"' : '') + '>'
         + '<td class="by-num-cell">' + esc(s.num) + draftBadge + '</td>'
@@ -761,7 +761,7 @@
         + '<td class="num-col">' + fmtNum(s.vsk) + '</td>'
         + '<td class="num-col" style="font-weight:700;">' + fmtNum(s.total) + '</td>'
         + '<td class="by-teg-cell" style="white-space:nowrap"><span class="by-teg-icon" style="margin-right:7px;font-size:15px">' + _vtIcon + '</span>'
-          + '<span style="display:inline-flex;gap:8px;align-items:center;font-size:13px">' + _vtBox('uttekt', '🧯', 'Slökkvitæki') + _vtBox('brunakerfi', '🔥', 'Brunakerfi') + _vtBox('bud', '🏪', 'Verslun (keypt eða afgreitt á staðnum)') + '</span></td>'
+          + '<span style="display:inline-flex;gap:8px;align-items:center;font-size:13px">' + _vtBox('uttekt', '🧯', 'Slökkvitæki') + _vtBox('brunakerfi', '🔥', 'Brunakerfi') + _vtBox('vatnsudakerfi', '💦', 'Úðaslökkvikerfi (vatnsúðakerfi)') + _vtBox('bud', '🏪', 'Verslun (keypt eða afgreitt á staðnum)') + '</span></td>'
         + '<td class="by-pay-cell"><span class="by-payment-pill ' + payClass(s.payment) + '">' + esc(s.payment || '—') + '</span>'
         + (
           // For unpaid greitt_sidar / reikningur, show a tiny pickup-status
@@ -1242,8 +1242,11 @@
             const { error } = await SB2.from('solur').update({ vidskiptategund: vval }).eq('id', vsid);
             if (error) throw error;
             if (vsale) vsale.vidskiptategund = vval;
+            // 28.11.2026: reikningsskjalið fylgir — Þjónustugáttin les tegund reiknings AF SKJALINU (gatt.cjs TEG_L), svo
+            // endurflokkun hér sæist annars aldrei þar. Aðeins skjöl með sama R-númeri; mistakist það stendur salan samt.
+            if (vsale && vsale.num) { try { await SB2.from('customer_documents').update({ vidskiptategund: vval }).eq('invoice_number', vsale.num).eq('doc_type', 'reikningur'); } catch (_) {} }
             const ic = tr.querySelector('.by-teg-icon');
-            if (ic) ic.textContent = { uttekt: '🧯', brunakerfi: '🔥', bud: '🏪' }[vval] || '❓';
+            if (ic) ic.textContent = { uttekt: '🧯', brunakerfi: '🔥', vatnsudakerfi: '💦', bud: '🏪' }[vval] || '❓';
             if (window.Toast && Toast.show) Toast.show('✓ Tegund uppfærð');
           } catch (err) { alert('Villa við að breyta tegund: ' + (err.message || err)); }
           return;

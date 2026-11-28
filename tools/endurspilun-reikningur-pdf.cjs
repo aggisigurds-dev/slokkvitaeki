@@ -73,7 +73,7 @@ async function get(slod) {
   for (const p of pairs) {
     const d = docById.get(String(p.invoice_doc_id)); if (!d || !km[d.invoice_number]) continue;
     const gild = new Set();
-    docs.forEach((x) => { if (String(x.fyrirtaeki_id) === String(p.fyrirtaeki_id) && !x.is_duplicate && x.invoice_number && !km[x.invoice_number] && !/\((CANCELLED|CREDIT|AFTURK|KREDIT)\)/i.test(String(x.notes || '')) && !['bud', 'brunakerfi', 'slokkvikerfi'].includes(String(x.vidskiptategund || '').toLowerCase())) gild.add(x.invoice_number); });
+    docs.forEach((x) => { if (String(x.fyrirtaeki_id) === String(p.fyrirtaeki_id) && !x.is_duplicate && x.invoice_number && !km[x.invoice_number] && !/\((CANCELLED|CREDIT|AFTURK|KREDIT)\)/i.test(String(x.notes || '')) && !['bud', 'brunakerfi', 'slokkvikerfi', 'vatnsudakerfi'].includes(String(x.vidskiptategund || '').toLowerCase())) gild.add(x.invoice_number); });
     (att[String(p.fyrirtaeki_id)] || []).forEach((a) => { const m = /R-\d{6}/.exec(String(a.name || '')); if (a.kind === 'reikningur' && !a.leyst_af && String(a.year) === String(AR) && m && !km[m[0]]) gild.add(m[0]); });
     parK.push({ par: p.id, stadur: p.fyrirtaeki_id, gamall: d.invoice_number, kredit: km[d.invoice_number], gildir: [...gild] });
   }
