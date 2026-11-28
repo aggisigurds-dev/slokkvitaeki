@@ -79,6 +79,7 @@
       var first = await q.range(0, PAGE - 1);
       if (first.error) {
         console.warn('[rekstrarfelog] fetchAllRows', table, first.error);
+        _frFail++;
         return [];
       }
       var rows = (first.data || []).slice();
@@ -90,12 +91,16 @@
         var q2 = SB.from(table).select(cols);
         if (tweak) q2 = tweak(q2);
         return q2.range(o, o + PAGE - 1).then(function(r){ return r.data || []; })
-                 .catch(function(){ return []; });
+                 .catch(function(){ _frFail++; return []; });
       }));
       rest.forEach(function(a){ rows = rows.concat(a); });
       return rows;
-    } catch (e) { console.warn('[rekstrarfelog] fetchAllRows', table, e); return []; }
+    } catch (e) { console.warn('[rekstrarfelog] fetchAllRows', table, e); _frFail++; return []; }
   }
+  // 28.11.2026 (Agnar: „tomt" — Bílabúð Benna sýndi 0 byggingar): sókn sem brást skilaði TÓMUM lista án villu og ensureLiveRF
+  // festi þá tómu niðurstöðu þar til síðan var hlaðin upp á nýtt. _frFail telur misheppnaðar sóknir svo ensureLiveRF sjái að
+  // eitthvað vantar, reyni aftur sjálfkrafa og sýni viðvörun ef það tekst ekki.
+  var _frFail = 0, _liveFail = false, _liveTries = 0;
   // PostgREST `.in()` fer í query-strenginn — of langur listi → 414 / tóm
   // niðurstaða og staðir detta út (Heimaleiga sást þá AÐEINS úr curated-blob).
   // 80 id per kall er öruggt; síður sóttar með fetchAllRows.
@@ -729,6 +734,7 @@
     if (_liveRFPromise) return _liveRFPromise;
     _liveRFPromise = (async function(){
       var out = {};
+      var f0 = _frFail;
       var SB = window.__vdaSB || (window.DB && DB.sb);
       if (!SB) { _liveRF = out; return out; }
       try {
@@ -842,8 +848,21 @@
             });
           });
         }
-      } catch(e){ console.warn('[rekstrarfelog] live load', e); }
-      _liveRF = out; return out;
+      } catch(e){ console.warn('[rekstrarfelog] live load', e); _frFail++; }
+      _liveRF = out;
+      _liveFail = (_frFail !== f0);
+      if (_liveFail && _liveTries < 3) {
+        // sókn brást: reyna aftur eftir 2,5 / 5 / 7,5 sek. og endurmála — ekki láta tóma niðurstöðu festast
+        _liveTries++;
+        setTimeout(function(){
+          _liveRF = null; _liveRFPromise = null;
+          try {
+            var el = viewEl();
+            if (el && (el.classList.contains('active') || el.style.display !== 'none')) renderView(); else ensureLiveRF();
+          } catch(e){}
+        }, 2500 * _liveTries);
+      } else if (!_liveFail) { _liveTries = 0; }
+      return out;
     })().catch(function(e){ console.warn('[rekstrarfelog] live load', e); _liveRFPromise=null; _liveRF={}; return _liveRF; });
     return _liveRFPromise;
   }
@@ -1609,7 +1628,7 @@
     html+='<div class="rf-phead">'+
           '<button id="_rf_back" class="rf-btn" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>Til baka</button>'+
           '<div style="min-width:0"><h1 class="rf-ptitle">Rekstrarfélög</h1>'+
-          '<p class="rf-psub">'+nFirms+' félög · smelltu til að opna</p></div>'+
+          '<p class="rf-psub">'+nFirms+' félög · smelltu til að opna'+(_liveFail && _liveTries>=3 ? ' · <b style="color:#c62828">⚠ ekki allar byggingar náðust — ýttu á ↻ Uppfæra</b>' : '')+'</p></div>'+
           '<div class="rf-search">'+
             '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#9aa3b5" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>'+
             '<input id="_rf_q" placeholder="Leita að félagi…" value="'+esc(_state.q)+'">'+
@@ -1650,7 +1669,7 @@
     if(refBtn) refBtn.addEventListener('click', async function(){
       refBtn.disabled=true; var old=refBtn.textContent; refBtn.textContent='↻ Sæki…';
       invalidateBru(); invalidateEquip();
-      _liveRF=null; _liveRFPromise=null;
+      _liveRF=null; _liveRFPromise=null; _liveTries=0;
       try{ await ensureLiveRF(); }catch(e){}
       await renderView();
       if(window.Toast&&Toast.show) Toast.show('✓ Uppfært úr gagnagrunni');
