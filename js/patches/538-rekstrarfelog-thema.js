@@ -28,7 +28,7 @@
   const APP = 'linear-gradient(180deg,#ff8a1f,#ff6702 55%,#ec5300)';
   const GLOD = '0 6px 16px rgba(255,103,2,.35)';
   const NAVY = 'linear-gradient(110deg,#02193c,#0b2d5f 62%,#12417f)';
-  const BANNER = 'linear-gradient(rgba(1,16,44,.34),rgba(1,16,44,.34)),url(/img/rekstrarfelog-bakgrunnur.webp) center 38%/cover no-repeat';   // bláteikning af húsi á dökkum navy (banner frá Agnari 28.11.2026) + dýpri litur („aðeins dýpri litir“)
+  const BANNER = 'radial-gradient(50% 130% at 72% -10%,rgba(70,150,235,.30),transparent 62%),radial-gradient(40% 120% at 100% 100%,rgba(255,120,30,.14),transparent 60%),linear-gradient(rgba(1,16,44,.34),rgba(1,16,44,.34)),url(/img/rekstrarfelog-bakgrunnur.webp) center 38%/cover no-repeat';   // bláteikning af húsi á dökkum navy (banner frá Agnari 28.11.2026) + dýpri litur („aðeins dýpri litir“)
   const FONT = 'Poppins,system-ui,-apple-system,"Segoe UI",sans-serif';
   // ── V4 tókenar (535) ──────────────────────────────────────────────────────────────────────────────────────────
   const GLER = 'linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,0) 36%),linear-gradient(180deg,#0f2b52,#081a36)';
@@ -52,6 +52,22 @@
       X + '.rf-build-empty strong{color:' + head + '!important}',
       X + '.rf-build-empty svg{stroke:' + mut + '!important}',
       X + '.rf-build-key,' + X + '.rf-build-key summary{color:' + mut + '!important}',
+    ];
+  }
+
+  // Ljómi úr mockupinu (28.11.2026, „settu líka glow effectin“): appelsínugul lína með ljóma undir hausnum, glóandi undirlína á virka
+  // flipanum, ljómi á merki og á lóðrétta skiltinu milli dálka, og útlína á „Opna gátt“. Aðeins box-shadow/filter — engin hreyfing.
+  function ljomi(X) {
+    return [
+      X + '._rf_profilhaus{box-shadow:inset 0 2px 0 #ff6702,inset 0 14px 22px -12px rgba(255,103,2,.65)!important}',
+      X + '._rfh_logo{box-shadow:inset 0 0 0 1px rgba(255,255,255,.24),inset 0 0 16px -4px rgba(255,138,31,.35),0 0 22px -6px rgba(255,138,31,.6)!important}',
+      X + '._rfh_logo svg{stroke:#ffb37a!important;filter:drop-shadow(0 0 6px rgba(255,138,31,.85))}',
+      X + '._rfh_samningur{position:relative}',
+      X + '._rfh_samningur::before{content:"";position:absolute;left:0;top:16%;bottom:16%;width:2px;border-radius:2px;background:linear-gradient(180deg,rgba(255,103,2,0),#ff6702 30%,#ff8a1f 70%,rgba(255,103,2,0));box-shadow:0 0 12px 1px rgba(255,103,2,.7);pointer-events:none}',
+      X + '._rfh_gbtn{box-shadow:inset 0 0 0 1px rgba(255,255,255,.4),0 0 16px -4px rgba(130,185,255,.55)!important}',
+      X + '._rf_tabs{box-shadow:inset 0 -1px 0 rgba(255,103,2,.4)!important}',
+      X + '._rf_tabs button.is-active{background:linear-gradient(180deg,rgba(255,103,2,0),rgba(255,103,2,.16))!important;box-shadow:inset 0 -3px 0 #ff6702,0 8px 16px -6px rgba(255,103,2,.85)!important}',
+      X + '._rf_tabs button.is-active svg{stroke:#ff8a1f!important;color:#ff8a1f!important;filter:drop-shadow(0 0 6px rgba(255,138,31,.8))}',
     ];
   }
 
@@ -193,6 +209,8 @@
       ...flipi(R, '#fff', '#e7ecf3', '#101e43', '#5a6882', '#fff'),
       R + '._rf_addb{background:' + APP + '!important;color:#fff!important;box-shadow:' + GLOD + '!important}',
       ...flipi(D, GLER, 'rgba(150,185,235,.16)', '#fff', '#a9b8d0', 'rgba(0,8,22,.35)'),
+      ...ljomi(R),
+      ...ljomi(D),
       D + '._rf_addb{background:' + APP4 + '!important;color:#fff!important;box-shadow:' + GLOD4 + '!important}',
     ].join('\n');
   }
