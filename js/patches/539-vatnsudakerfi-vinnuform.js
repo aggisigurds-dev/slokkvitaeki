@@ -71,9 +71,12 @@
     }
     return out;
   }
-  // Staða tímabils: 'skodad' (dags skráður) · 'nuna' (líðandi) · 'lidid' (liðið, óskoðað) · 'framundan'
-  function tbStada(tb, sk) {
+  // Staða tímabils: 'skodad' (dags skráður) · 'fyrir' (lauk áður en kerfið kom í þjónustu hjá okkur — telst hvorki né) ·
+  // 'nuna' (líðandi) · 'lidid' (liðið, óskoðað) · 'framundan'. Fiskislóð kom í þjónustu 28.11.2026: 1.–3. ársfjórðungur 2026
+  // eru „fyrir", fyrsta skoðunin er á dagskrá í 4. ársfjórðungi — ekki „komið fram yfir".
+  function tbStada(tb, sk, fra) {
     if (sk && sk.dags) return 'skodad';
+    if (fra && tb.til < fra) return 'fyrir';
     const n = idag();
     if (n > tb.til) return 'lidid';
     if (n >= tb.fra) return 'nuna';
@@ -85,7 +88,9 @@
   const vfAf = (rod) => {
     const s = rod && rod.smaatridi && typeof rod.smaatridi === 'object' ? rod.smaatridi : {};
     const v = s.vinnuform && typeof s.vinnuform === 'object' ? s.vinnuform : {};
-    return { tidni: [1, 2, 4, 12].includes(+v.tidni) ? +v.tidni : 4, einingar: v.einingar != null && v.einingar !== '' ? +v.einingar : null, skodanir: v.skodanir && typeof v.skodanir === 'object' ? v.skodanir : {} };
+    // fra = hvenær þjónustan hófst hjá okkur; fest einu sinni við fyrstu vistun (annars stadur_kerfi.uppfaert, sem færist við hverja vistun)
+    return { tidni: [1, 2, 4, 12].includes(+v.tidni) ? +v.tidni : 4, einingar: v.einingar != null && v.einingar !== '' ? +v.einingar : null, skodanir: v.skodanir && typeof v.skodanir === 'object' ? v.skodanir : {},
+      fra: /^\d{4}-\d{2}-\d{2}/.test(String(v.fra || '')) ? String(v.fra).slice(0, 10) : (rod && rod.uppfaert ? String(rod.uppfaert).slice(0, 10) : '') };
   };
   async function lesa(fid, ferskt) {
     const x = _m.get(fid);
@@ -110,7 +115,8 @@
     const n = tbs.filter((tb) => vf.skodanir[tb.k] && vf.skodanir[tb.k].dags).length;
     let st = 'g', naest = '';
     for (const tb of tbs) {
-      const s = tbStada(tb, vf.skodanir[tb.k]);
+      const s = tbStada(tb, vf.skodanir[tb.k], vf.fra);
+      if (s === 'fyrir') continue;
       if (s === 'lidid') { st = 'r'; if (!naest) naest = tb.stutt; }
       else if (s === 'nuna') { if (st !== 'r') st = 'y'; if (!naest) naest = tb.stutt; }
       else if (s === 'framundan' && !naest) naest = tb.stutt;
@@ -125,6 +131,7 @@
     if (!g || !g.rod) throw new Error('Kerfið er ekki skráð á staðinn (stadur_kerfi)');
     const sma = Object.assign({}, g.rod.smaatridi && typeof g.rod.smaatridi === 'object' ? g.rod.smaatridi : {});
     const vf = vfAf(g.rod);
+    if (!vf.fra) vf.fra = idag();   // fest einu sinni — sjá vfAf
     if (breyting.tidni != null) vf.tidni = +breyting.tidni;
     if ('einingar' in breyting) vf.einingar = breyting.einingar === '' || breyting.einingar == null ? null : +breyting.einingar;
     if (breyting.skodun) vf.skodanir = Object.assign({}, vf.skodanir, { [breyting.skodun.k]: Object.assign({}, vf.skodanir[breyting.skodun.k] || {}, breyting.skodun.g, { vistad: new Date().toISOString(), af: notandi() }) });
@@ -164,7 +171,8 @@
       R + ' .ud-tb .hd b{font:700 14px ' + SANS + '}',
       R + ' .ud-tb .hd small{font:500 11px ' + MONO + ';color:#525b6b}',
       R + ' .ud-tb .hd .st{margin-left:auto;font:700 10.5px ' + MONO + ';letter-spacing:.08em;text-transform:uppercase;border-radius:99px;padding:3px 9px;color:#fff;background:#8a93a3}',
-      R + ' .ud-tb .hd .st.skodad{background:#16783f}' + R + ' .ud-tb .hd .st.nuna{background:#c48a1f}' + R + ' .ud-tb .hd .st.lidid{background:#a01818}',
+      R + ' .ud-tb .hd .st.skodad{background:#16783f}' + R + ' .ud-tb .hd .st.nuna{background:#c48a1f}' + R + ' .ud-tb .hd .st.lidid{background:#a01818}' + R + ' .ud-tb .hd .st.fyrir{background:#c9d3df;color:#3a4250}',
+      R + ' .ud-tb:has(.st.fyrir){opacity:.72}',
       R + ' .ud-tb .bd{padding:10px 12px;display:flex;flex-direction:column;gap:8px}',
       R + ' .ud-tb .rod2{display:grid;grid-template-columns:1fr 1fr;gap:8px}',
       R + ' .ud-tb label{display:flex;flex-direction:column;gap:3px;font:600 10px ' + MONO + ';letter-spacing:.12em;text-transform:uppercase;color:#525b6b}',
@@ -197,7 +205,7 @@
     const st = stada(fid) || {};
     const n = tbs.filter((tb) => vf.skodanir[tb.k] && vf.skodanir[tb.k].dags).length;
     let h = '<div class="ud-haus"><h3>💦 Vatnsúðakerfi <small>Úðaslökkvikerfi</small></h3>' +
-      '<span class="ud-pill ok">✓ Í þjónustu hjá okkur</span>' +
+      '<span class="ud-pill ok">✓ Í þjónustu hjá okkur' + (vf.fra ? ' frá ' + esc(dmy(vf.fra)) : '') + '</span>' +
       (st.sidast ? '<span class="ud-pill">síðast ' + esc(st.sidast) + '</span>' : '<span class="ud-pill">engin skoðun skráð enn</span>') +
       (st.naest ? '<span class="ud-pill">næst ' + esc(st.naest) + '</span>' : '') +
       '<div class="ud-still">' +
@@ -209,8 +217,8 @@
       '<span class="ud-samt">' + n + ' af ' + tbs.length + ' skoðunum skráðar ' + Y + '</span></div>';
     h += '<div class="ud-grid">' + tbs.map((tb) => {
       const sk = vf.skodanir[tb.k] || {};
-      const s = tbStada(tb, sk);
-      const ST = { skodad: 'Skoðað', nuna: 'Á dagskrá', lidid: 'Liðið — óskoðað', framundan: 'Framundan' }[s];
+      const s = tbStada(tb, sk, vf.fra);
+      const ST = { skodad: 'Skoðað', nuna: 'Á dagskrá', lidid: 'Liðið — óskoðað', framundan: 'Framundan', fyrir: 'Fyrir þjónustu' }[s];
       return '<div class="ud-tb" data-k="' + esc(tb.k) + '"><div class="hd"><b>' + esc(tb.heiti) + '</b><small>' + esc(tb.man) + '</small><span class="st ' + s + '">' + ST + '</span></div><div class="bd">' +
         '<div class="rod2"><label>Skoðunardagur<input type="date" data-f="dags" value="' + esc(sk.dags || '') + '" min="' + tb.fra + '" max="' + Y + '-12-31"></label>' +
         '<label>Skoðunarmaður<input type="text" data-f="madur" value="' + esc(sk.madur || '') + '" placeholder="nafn" autocomplete="off"></label></div>' +
