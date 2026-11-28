@@ -106,8 +106,13 @@
       '#' + ID + ' .svc-b.off[data-svc="ars"]{background:#fff;color:#15733a;border-color:#bcd9c6}',
       '#' + ID + ' .svc-b.off[data-svc="bk"]{background:#fff;color:#9a1c1c;border-color:#e6c2c2}',
       '#' + ID + ' .svc-b.on{color:#fff;border-color:transparent;box-shadow:0 2px 5px rgba(10,14,22,.18)}',
-      '#' + ID + ' .svc-b.on[data-svc="ars"]{background:linear-gradient(180deg,#1f9850,#15783c)}',
-      '#' + ID + ' .svc-b.on[data-svc="bk"]{background:linear-gradient(180deg,#c0342e,#9a1818)}',
+      // 28.11.2026 (Agnar: „laga litinn í Slökkvitækjaþjónusta í svona dýpri dark metal lit"): flati græni liturinn varð dökkur
+      // grænn málmur — SAMI 145° halli og Sækja/Búnaðargreining annars staðar í appinu (SAEKJA). Brunakerfið fær dökkrauðan málm
+      // (BSTAL) svo parið haldist samstætt. Staðan stendur áfram í orðunum („✓ Í … þjónustu"), liturinn er aldrei eini burðarmaðurinn.
+      '#' + ID + ' .svc-b.on[data-svc="ars"]{background:linear-gradient(145deg,#010d05 0%,#06331a 20%,#0e5a2e 43%,#16783f 53%,#073a1d 74%,#010f06 100%);border-color:rgba(52,168,98,.55);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 0 14px -5px rgba(22,140,72,.65),0 2px 5px rgba(0,0,0,.3);text-shadow:0 1px 1px rgba(0,0,0,.55)}',
+      '#' + ID + ' .svc-b.on[data-svc="bk"]{background:linear-gradient(145deg,#0d0102 0%,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102 100%);border-color:rgba(190,32,28,.55);box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 0 14px -5px rgba(160,16,16,.55),0 2px 5px rgba(0,0,0,.3);text-shadow:0 1px 1px rgba(0,0,0,.55)}',
+      // Búnaðargreining flutt hingað af myndinni (Agnar, skjáskot með ör) — hlutlaus dökkur málmur: þetta er AÐGERÐ, ekki þjónustustaða.
+      '#' + ID + ' .svc-b.bgr{background:linear-gradient(180deg,#3d4048,#1c1e23);color:#eef1f4;border-color:#000;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 2px 6px rgba(0,0,0,.35)}',
       '@media (max-width:560px){#' + ID + ' .svc-b{flex:1 1 100%;justify-content:center;padding:12px 15px}}',
     ].join('\n');
     (document.head || document.documentElement).appendChild(st);
@@ -120,7 +125,9 @@
       '<button type="button" class="svc-b ' + (a ? 'on' : 'off') + '" data-svc="ars" data-add="' + (a ? '0' : '1') + '">' +
         (a ? '✓ Í slökkvitækjaþjónustu' : '＋ Slökkvitækjaþjónusta') + '</button>' +
       '<button type="button" class="svc-b ' + (b ? 'on' : 'off') + '" data-svc="bk" data-add="' + (b ? '0' : '1') + '">' +
-        (b ? '✓ Í brunakerfisþjónustu' : '＋ Brunakerfisþjónusta') + '</button>';
+        (b ? '✓ Í brunakerfisþjónustu' : '＋ Brunakerfisþjónusta') + '</button>' +
+      // data-p2="bgr": 500 hlustar á smelli á #companies-main og opnar greininguna (umbod → #bgr-takki) — engin ný rök hér.
+      '<button type="button" class="svc-b bgr" data-p2="bgr">Búnaðargreining</button>';
   }
   function fylla(bar, fid) {
     const h = btnHtml(fid);

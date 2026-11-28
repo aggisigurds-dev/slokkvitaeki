@@ -337,6 +337,11 @@
     '#companies-main .p2-merkid b{font:800 16px/1.1 ' + SERIF + ';display:block}' +
     '#companies-main .p2-merkid small{font:11px ' + MONO + ';color:#d9dee6;display:block}' +
     '#companies-main .p2-mynd .ram .lbl{position:absolute;left:8px;top:8px;font:10.5px ' + MONO + ';background:rgba(0,0,0,.62);color:#fff;border-radius:5px;padding:2px 7px}' +
+    '#companies-main .p2-mynd .ram .top{position:absolute;left:8px;right:8px;top:8px;display:flex;align-items:flex-start;justify-content:space-between;gap:6px;pointer-events:none}' +
+    '#companies-main .p2-mynd .ram .tl{display:flex;align-items:flex-start;gap:6px;min-width:0;flex:1 1 auto}' +
+    '#companies-main .p2-mynd .ram .top .lbl{position:static;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
+    '#companies-main .p2-mynd .ram .chp{pointer-events:auto;flex:none;display:inline-flex;align-items:center;justify-content:center;min-height:23px;padding:0 8px;border:0;border-radius:5px;background:rgba(0,0,0,.62);color:#fff;font:700 10.5px ' + MONO + ';letter-spacing:.06em;text-decoration:none;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}' +
+    '#companies-main .p2-mynd .ram .chp:hover{background:rgba(0,0,0,.82)}' +
     '#companies-main .p2-mynd .ram .chips{position:absolute;left:8px;bottom:8px;display:flex;gap:6px;flex-wrap:wrap}' +
     '#companies-main .p2-mynd .ram .chips span{font:700 10.5px ' + MONO + ';letter-spacing:.06em;background:rgba(0,0,0,.66);color:#fff;border-radius:4px;padding:3px 7px}' +
     '#companies-main .p2-til.p2-rd{color:#fff;background:linear-gradient(145deg,#0d0102 0%,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102 100%);outline:1px solid #2a0304}' +
@@ -352,12 +357,25 @@
     '#companies-main .p2-tomt{color:#525b6b;font-size:13.5px;padding:8px 0}' +
     /* flipar */
     '#companies-main .p2-flipar{display:flex;gap:6px;padding:10px 10px 0;flex-wrap:wrap;margin-top:10px;border-radius:14px 14px 0 0;background:' + METAL + '}' +
-    '#companies-main .p2-flipar button{height:42px;padding:0 16px;border-radius:9px 9px 0 0;border:0;display:flex;align-items:center;gap:8px;font:600 14px "IBM Plex Sans",system-ui,sans-serif;color:#d5dbe6;cursor:pointer;background:rgba(255,255,255,.07)}' +
+    '#companies-main .p2-flipar button{min-height:42px;padding:3px 16px;border-radius:9px 9px 0 0;border:0;display:flex;align-items:center;gap:8px;font:600 14px "IBM Plex Sans",system-ui,sans-serif;color:#d5dbe6;cursor:pointer;background:rgba(255,255,255,.07)}' +
     '#companies-main .p2-flipar button:hover{color:#fff;background:rgba(255,255,255,.14)}' +
     '#companies-main .p2-flipar button[aria-selected="true"]{color:#11141c;background:#fff}' +
     '#companies-main .p2-flipar button:focus-visible{outline:2px solid #c92a2a;outline-offset:2px}' +
     '#companies-main .p2-flipar .c{font:11.5px ' + MONO + ';background:rgba(255,255,255,.14);border-radius:99px;padding:0 7px}' +
     '#companies-main .p2-flipar button[aria-selected="true"] .c{background:#eceff4;color:#11141c}' +
+    /* 28.11.2026 (Agnar: „taka boxið út … færa litina og upplýsingarnar inn í boxin að ofan"): þjónustuboxið „Þjónusta á staðnum" (#_sks-tabs, 274)
+       er falið — hnútarnir standa (500 les úr þeim og flipasmellir fara um þá), en sýnilegi flipinn er nú í fliparöðinni hér:
+       Slökkvitækjaþjónusta = BLÁR, Brunakerfisþjónusta = RAUÐUR (sömu litir og boxið hafði), með upplýsingalínu undir heitinu. */
+    M + ' #_sks-tabs{display:none!important}' +
+    '#companies-main .p2-flipar .tt{display:flex;flex-direction:column;align-items:flex-start;line-height:1.2;min-width:0}' +
+    '#companies-main .p2-flipar .u{font:500 10.5px ' + MONO + ';letter-spacing:.02em;color:rgba(255,255,255,.78);white-space:nowrap}' +
+    '#companies-main .p2-flipar .u[hidden]{display:none}' +
+    '#companies-main .p2-flipar button[aria-selected="true"] .u{color:#3f4856}' +
+    M + ' .p2-flipar button[data-t="slt"]:not([aria-selected="true"]){background:linear-gradient(180deg,#1b4278,#0d2244);color:#e8f1ff;box-shadow:inset 0 2px 0 #4f8fe8}' +
+    M + ' .p2-flipar button[data-t="bk"]:not([aria-selected="true"]){background:linear-gradient(180deg,#661818,#2c0808);color:#ffe9e6;box-shadow:inset 0 2px 0 #e25555}' +
+    M + ' .p2-flipar button[data-t="slt"]:not([aria-selected="true"]):hover,' + M + ' .p2-flipar button[data-t="bk"]:not([aria-selected="true"]):hover{filter:brightness(1.18)}' +
+    M + ' .p2-flipar button[data-t="slt"][aria-selected="true"]{box-shadow:inset 0 3px 0 #2f7fd4}' +
+    M + ' .p2-flipar button[data-t="bk"][aria-selected="true"]{box-shadow:inset 0 3px 0 #c92a2a}' +
     M + '[data-p2tab] > .p2-flipar ~ [data-p2t]{border-radius:0 0 14px 14px}' +
     /* Teikningar-flipinn */
     '#companies-main .p2-teikn{background:#fff;border-radius:0 0 14px 14px;padding:16px 18px;color:#11141c;box-shadow:inset 0 1px 0 rgba(20,24,34,.08)}' +
@@ -376,11 +394,14 @@
     '#companies-main .p2-samsk .kass b{font-family:' + MONO + '}' +
     '#companies-main .p2-samsk .c1 .p2-til{justify-content:center;outline:1px solid rgba(255,255,255,.2)}' +
     '#companies-main .p2-samsk .c1 .p2-til.p2-gr{outline:1px solid rgba(52,168,98,.55)}' +
-    '#companies-main .p2-samsk .c2{display:flex;flex-direction:column;gap:8px;min-width:0;background:linear-gradient(180deg,#f4f6f9,#e8ebf0);color:#11141c;border-radius:12px;padding:8px 12px 12px;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 0 0 1px rgba(20,24,34,.12)}' +
-    '#companies-main .p2-samsk .flip{display:flex;gap:18px;border-bottom:1px solid #c3cad5}' +
-    '#companies-main .p2-samsk .flip button{border:0;background:none;color:#525b6b;padding:6px 0;font:600 13.5px "IBM Plex Sans",system-ui,sans-serif;cursor:pointer;border-bottom:3px solid transparent}' +
+    /* 28.11.2026 (Agnar: „textaboxið sker sig svo rosalega mikið úr … dekkja einhverja parta af honum aðeins, samt hafa hann frekar ljósan að
+       mestu"): reiturinn var nánast hvítur (#f4f6f9→#e8ebf0) á svörtu spjaldi. Nú ljósgrár stál-litur (#d4d9e1→#c1c8d3) með ljósari
+       skilaboðaspjöldum (#eceff4) og dekkri línu/flipum — enn ljós, en ekki lengur ljósapera. Texti heldur ≥ 4,5:1. */
+    '#companies-main .p2-samsk .c2{display:flex;flex-direction:column;gap:8px;min-width:0;background:linear-gradient(180deg,#d4d9e1,#c1c8d3);color:#11141c;border-radius:12px;padding:8px 12px 12px;box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 0 0 1px rgba(20,24,34,.22)}' +
+    '#companies-main .p2-samsk .flip{display:flex;gap:18px;border-bottom:1px solid #9aa3b1}' +
+    '#companies-main .p2-samsk .flip button{border:0;background:none;color:#3a4250;padding:6px 0;font:600 13.5px "IBM Plex Sans",system-ui,sans-serif;cursor:pointer;border-bottom:3px solid transparent}' +
     '#companies-main .p2-samsk .flip button[aria-selected="true"]{color:#11141c;font-weight:700;border-bottom-color:#c92a2a}' +
-    '#companies-main .p2-samsk .msg{display:flex;gap:10px;align-items:center;padding:9px 12px;border-radius:10px;background:#fff;box-shadow:inset 0 0 0 1px rgba(20,24,34,.1),0 1px 2px rgba(20,24,34,.08)}' +
+    '#companies-main .p2-samsk .msg{display:flex;gap:10px;align-items:center;padding:9px 12px;border-radius:10px;background:#eceff4;box-shadow:inset 0 0 0 1px rgba(20,24,34,.16),0 1px 2px rgba(20,24,34,.14)}' +
     '#companies-main .p2-samsk .av{width:32px;height:32px;border-radius:50%;background:#971515;color:#fff;display:flex;align-items:center;justify-content:center;font:700 12px "IBM Plex Sans",sans-serif;flex:none}' +
     '#companies-main .p2-samsk .av.ok{background:#3a3a41}' +
     '#companies-main .p2-samsk .tx{flex:1;min-width:0;font-size:13.5px}' +
@@ -389,7 +410,7 @@
     '#companies-main .p2-samsk .p2-pl{font-size:12px;font-weight:700;color:#fff;border-radius:99px;padding:2px 10px;flex:none;background:linear-gradient(150deg,#1f9d57,#0a4a26)}' +
     '#companies-main .p2-samsk .p2-pl.am{background:linear-gradient(150deg,#e0a93e,#9a6a14)}' +
     '#companies-main .p2-samsk .svar{display:flex;gap:8px;margin-top:auto}' +
-    '#companies-main .p2-samsk .svar .inn{flex:1;min-width:0;height:34px;border:0;border-radius:8px;background:#eef1f6;box-shadow:inset 0 2px 4px rgba(0,0,0,.18);padding:0 10px;font:13.5px "IBM Plex Sans",system-ui,sans-serif;color:#525b6b;text-align:left;cursor:pointer}' +
+    '#companies-main .p2-samsk .svar .inn{flex:1;min-width:0;height:34px;border:0;border-radius:8px;background:#dde2ea;box-shadow:inset 0 2px 4px rgba(0,0,0,.22);padding:0 10px;font:13.5px "IBM Plex Sans",system-ui,sans-serif;color:#3f4856;text-align:left;cursor:pointer}' +
     '#companies-main .p2-samsk .yf{background:rgba(255,255,255,.07);border-radius:10px;padding:10px 14px}' +
     '#companies-main .p2-samsk .yf .t{font:10.5px ' + MONO + ';letter-spacing:.16em;color:#b9c1cf;padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,.15);margin-bottom:4px}' +
     '#companies-main .p2-samsk .yf .r{display:flex;justify-content:space-between;gap:8px;font-size:13.5px;padding:5px 0}' +
@@ -439,12 +460,13 @@
     '#companies-main .p2-samsk .c1 .kass{flex:1 0 100%}' +
     '#companies-main .p2-samsk .c1 .p2-til{flex:1 1 140px}' +
     '#companies-main .p2-flipar{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin}' +
-    '#companies-main .p2-flipar button{flex:none;height:44px;white-space:nowrap}' +
+    '#companies-main .p2-flipar button{flex:none;min-height:44px;white-space:nowrap}' +
     '#companies-main .p2-tbl .rad{grid-template-columns:1fr 1fr}' +
     '#companies-main .p2-tbl .rad.hd{display:none}' +
     '#companies-main .p2-teikn .hl{flex-direction:column;gap:2px}' +
     '#companies-main ._afsl-box ._ahop-sel{max-width:100%;min-width:0;box-sizing:border-box}' +
     '#companies-main .p2-til{min-height:44px}' +
+    '#companies-main .p2-mynd .ram .chp{min-height:40px;padding:0 12px;font-size:12px}' +
     /* síminn: myndin efst, undir hausnum (Agnar 19.11.2026) */
     '#companies-main .p2-msimi{display:block;padding:12px 12px 4px;background:linear-gradient(180deg,#e8ebf0,#d6dbe3);border-top:1px solid #000}' +
     '#companies-main .p2-msimi .p2-mynd{padding:0}' +
@@ -605,6 +627,9 @@
     d.bkc = (_fid && _bkAll[_fid] && typeof _bkAll[_fid] === 'object') ? _bkAll[_fid] : null;
     d.bkSk = _fid ? bkSkyrsla(_fid) : null;
     if (bkT) { var bt = txt(bkT); var be = /(\d+)\s*eining/.exec(bt); d.bk = { undir: bt, ein: be ? be[1] : '' }; } else d.bk = null;
+    /* upplýsingalínan sem þjónustuboxið (274) bar — fer nú undir heitið á flipunum (sksU er í sig, svo flipinn endurteiknast þegar 274 uppfærir hana) */
+    var sltTu = sel(m, '#_sks-tabs ._sks-tab[data-flipi="ars"] ._sks-tu');
+    d.sksU = { slt: sltTu ? txt(sltTu) : '', bk: bkT ? txt(bkT) : '' };
     /* tæki eftir tegund OG stærð: hver lína tækjalistans (404 .ut-t, t.d. „Léttvatn 6 L") */
     d.gerdir = {};
     allt(m, '.ut-row .ut-t').forEach(function (e) { var k = txt(e); if (k) d.gerdir[k] = (d.gerdir[k] || 0) + 1; });
@@ -865,13 +890,14 @@
       kv('Kóði', esc(d.kodi), ' n');
     var dalkur3 = '<div class="p2-sec">Á staðnum</div>' + stad;
     var chips = (d.teiknN ? '<span>' + d.teiknN + ' HÆÐIR</span>' : '') + (d.bgm ? '<span>' + esc(d.bgm.split(' · ').slice(1).join(' · ').toUpperCase()) + '</span>' : '');
-    var mynd = '<div class="p2-mynd"><div class="ram" ' + (d.mynd ? 'style="background-image:url(\'' + esc(d.mynd) + '\')"' : '') + '><span class="lbl">' + esc(d.heimilisfang || 'Mynd') + '</span>' + (chips ? '<span class="chips">' + chips + '</span>' : '') + '</div>' +
-      '<div class="tak"><button type="button" class="p2-til p2-gr" data-p2="bgr">Búnaðargreining</button><button type="button" class="p2-til p2-rd" data-p2="opna-teikn">Teikningar</button>' +
-      (d.hreyf_til ? '<button type="button" class="p2-til p2-silf" data-p2="hrey" title="Hreyfingaryfirlit — reikningar og greiðslur">Hreyfingar</button>' : '') +
-      (d.myndGoogle ? '<a class="p2-til p2-silf" href="' + esc(d.myndGoogle) + '" target="_blank" rel="noopener" title="Götusýn í Google Maps">Götusýn</a>' : '') +
-      (d.myndJa ? '<a class="p2-til p2-silf" href="' + esc(d.myndJa) + '" target="_blank" rel="noopener" title="Mynd af húsinu á Já-korti">Já-kort</a>' : '') +
-      (d.mynd_upp ? '<button type="button" class="p2-til p2-silf" data-p2="mynd-upp" title="Setja inn mynd — taka mynd eða velja úr safni">📷</button>' : '') +
-      '</div></div>';
+    /* 28.11.2026 (Agnar, skjáskot með örvum): Búnaðargreining fór upp í þjónusturöndina (534); Já-kort fór upp í vinstra hornið á myndinni
+       (við hlið heimilisfangsins) og 📷 upp í hægra hornið; Hreyfingar og Götusýn eru farnar úr röðinni. Eftir stendur Teikningar. */
+    var mynd = '<div class="p2-mynd"><div class="ram" ' + (d.mynd ? 'style="background-image:url(\'' + esc(d.mynd) + '\')"' : '') + '>' +
+      '<div class="top"><div class="tl"><span class="lbl">' + esc(d.heimilisfang || 'Mynd') + '</span>' +
+      (d.myndJa ? '<a class="chp" href="' + esc(d.myndJa) + '" target="_blank" rel="noopener" title="Mynd af húsinu á Já-korti">Já-kort</a>' : '') + '</div>' +
+      (d.mynd_upp ? '<button type="button" class="chp" data-p2="mynd-upp" aria-label="Setja inn mynd" title="Setja inn mynd — taka mynd eða velja úr safni">📷</button>' : '') + '</div>' +
+      (chips ? '<span class="chips">' + chips + '</span>' : '') + '</div>' +
+      '<div class="tak"><button type="button" class="p2-til p2-rd" data-p2="opna-teikn">Teikningar</button></div></div>';
     return '<div class="p2-dalk p2-d1">' + dalkur1 + '</div><div class="p2-dalk p2-d2">' + dalkur2 + '</div><div class="p2-dalk p2-d3">' + dalkur3 + '</div>' + mynd;
   }
 
@@ -955,7 +981,7 @@
       g.appendChild(at);
       var host = sel(m, '._samskipti-host');
       var f = document.createElement('div'); f.id = 'p2-flipar'; f.className = 'p2-flipar p2-nytt'; f.setAttribute('role', 'tablist');
-      f.innerHTML = TABS.map(function (t) { return '<button type="button" role="tab" data-t="' + t[0] + '" aria-selected="false"><span>' + t[1] + '</span><span class="c" hidden></span></button>'; }).join('');
+      f.innerHTML = TABS.map(function (t) { return '<button type="button" role="tab" data-t="' + t[0] + '" aria-selected="false"><span class="tt"><span class="th">' + t[1] + '</span><span class="u" hidden></span></span><span class="c" hidden></span></button>'; }).join('');
       (host || g).insertAdjacentElement('afterend', f);
       var tp = document.createElement('div'); tp.id = 'p2-teikn'; tp.className = 'p2-teikn p2-nytt'; tp.setAttribute('data-p2t', 'teikn');
       f.insertAdjacentElement('afterend', tp);
@@ -1016,6 +1042,10 @@
     var ar = document.getElementById('p2-adrar'); if (ar) ar.innerHTML = adrar(d);
     var sb = document.getElementById('p2-samsk'); if (sb) sb.innerHTML = samskiptiMarkup(d);
     if (sb && m.classList.contains('p2-gam')) { var tt = sb.querySelectorAll('.flip button'); if (tt[1]) { tt[0].setAttribute('aria-selected', 'false'); tt[1].setAttribute('aria-selected', 'true'); } }
+    [['slt', d.sksU && d.sksU.slt], ['bk', d.sksU && d.sksU.bk]].forEach(function (p) {
+      var u = sel(m, '#p2-flipar button[data-t="' + p[0] + '"] .u'); if (!u) return;
+      var s = p[1] || ''; if (u.textContent !== s) u.textContent = s; u.hidden = !s;
+    });
     var c = sel(m, '#p2-flipar button[data-t="slt"] .c');
     if (c) { c.textContent = d.nSlt ? d.nSlt : ''; c.hidden = !d.nSlt; }
     var ca = sel(m, '#p2-flipar button[data-t="adrar"] .c');
