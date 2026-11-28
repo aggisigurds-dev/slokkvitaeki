@@ -736,8 +736,12 @@
       var out = {};
       var f0 = _frFail;
       var SB = window.__vdaSB || (window.DB && DB.sb);
-      if (!SB) { _liveRF = out; return out; }
+      // 28.11.2026 (Agnar: „tómt" — félögin sýndu 0 byggingar eftir endurhleðslu beint á Rekstrarfélög): tengingin við gagnagrunninn
+      // er ekki alltaf tilbúin í fyrstu teikningu. Áður festist þá TÓMUR listi (_liveRF = {}) út lotuna. Nú er beðið eftir tengingunni
+      // (allt að 20 sek.) og brást hún samt telst það misheppnuð sókn: reynt aftur og viðvörun sýnd.
+      for (var w = 0; !SB && w < 80; w++) { await new Promise(function(r){ setTimeout(r, 250); }); SB = window.__vdaSB || (window.DB && DB.sb); }
       try {
+        if (!SB) throw new Error('gagnagrunnstenging ekki tilbúin');
         // base rows carrying a rekstrarfelag
         var bases = {}; // base_id -> rekstrarfelag
         // báðar töflur sóttar með samhliða blaðsíðum (var 2+2 raðbundnar sóknir)
@@ -862,6 +866,7 @@
           } catch(e){}
         }, 2500 * _liveTries);
       } else if (!_liveFail) { _liveTries = 0; }
+      else { try { if (window.logProblem) window.logProblem('rekstrarfelog-tomt', 'lifandi sókn brást eftir 3 tilraunir (félög án bygginga)'); } catch(e){} }
       return out;
     })().catch(function(e){ console.warn('[rekstrarfelog] live load', e); _liveRFPromise=null; _liveRF={}; return _liveRF; });
     return _liveRFPromise;
