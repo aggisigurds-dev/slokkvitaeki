@@ -1904,7 +1904,11 @@
         sum.innerHTML=html||'<span class="_rfh_dim">Engin gátt skráð</span>';
         return true;
       }catch(e){ return false; } }
-      function openGattMirror(){ rfGattFylla(); var n=0; var t=setInterval(function(){ n++; if(!card.classList.contains('is-open')||n>12){ clearInterval(t); return; } if(rfHausGatt()) clearInterval(t); }, 350); }
+      function openGattMirror(){ rfGattFylla(); var n=0; var t=setInterval(function(){ n++;
+        if(!card.classList.contains('is-open')){ clearInterval(t); return; }
+        if(rfHausGatt()){ clearInterval(t); return; }
+        if(n>12){ clearInterval(t); var s=card.querySelector('._rfh_gatt_sum'); if(s && /Hleð/.test(s.textContent||'')) s.innerHTML='<span class="_rfh_dim">Engin opin gátt skráð</span>'; }
+      }, 350); }
       card.querySelector('._rf_head').addEventListener('click',flip);
       var noteInp=card.querySelector('._rf_note');
       noteInp.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); noteInp.blur(); } });
