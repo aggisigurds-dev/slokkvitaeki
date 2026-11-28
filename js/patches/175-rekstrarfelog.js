@@ -137,6 +137,7 @@
     ['_rf-styles','_rf-styles-v3','_rf-styles-v4','_rf-styles-v5','_rf-styles-v6','_rf-styles-v7'].forEach(function(id){ var o=document.getElementById(id); if(o) o.remove(); });
     var s=document.createElement('style'); s.id='_rf-styles-v8';
     var P='#view-rekstrarfelog ';
+    var B=P+'.rf-buildings ';
     var METB='linear-gradient(180deg,#2f333b,#1b1e24 60%,#111318)';
     var HERO='linear-gradient(110deg,#0c1018 0%,#13203f 45%,#274a9e 100%)';
     s.textContent=[
@@ -558,6 +559,50 @@
       P+'.rf-tblfoot{display:flex;align-items:center;gap:12px;padding:10px 15px;background:linear-gradient(180deg,#f1f4f9,#e7ebf2);border-top:1px solid rgba(20,24,34,.09);font-size:12px;color:#6b7686;flex-wrap:wrap}',
       P+'.rf-tblfoot b{color:#3a4250}',
       P+'.rf-nores{padding:16px;text-align:center;color:#9098a6;font-size:13px}',
+      // Byggingar-flipinn: ljós vinnuflötur með navy aðgerðum og litum fyrir stöðu.
+      B+'.rf-build-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 14px}',
+      B+'.rf-build-title{margin:0;color:#142c4b;font-size:22px;font-weight:750;line-height:1.25}',
+      B+'.rf-build-add{display:inline-flex;align-items:center;gap:7px;min-height:34px;padding:6px 12px;border:1px solid #1b3c64;border-radius:8px;background:#173659;color:#fff;font:inherit;font-size:13px;font-weight:600;line-height:1.25;cursor:pointer}',
+      B+'.rf-build-add:hover{background:#234971}',
+      B+'.rf-chiprow{gap:7px;margin-bottom:12px}',
+      B+'.rf-pill{padding:3px 9px;border-radius:6px;box-shadow:none;text-shadow:none}',
+      B+'.rf-pill--done{background:#ebf6ef;color:#16643d;border-color:#cee7d8}',
+      B+'.rf-pill--pending{background:#fff6e8;color:#795215;border-color:#efe0c3}',
+      B+'.rf-pill--overdue{background:#fceff1;color:#9d2737;border-color:#f1d5da}',
+      B+'.rf-gold{background:#fbf6eb;border-color:#eadcbd;box-shadow:none;color:#533b18}',
+      B+'.rf-gold__l,'+B+'.rf-gold__s{color:#725825}',
+      B+'.rf-gold__v{color:#493215}',
+      B+'.rf-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}',
+      B+'.rf-stat{min-width:0;padding:10px 13px;background:#f7f9fc;border:1px solid #dfe7f0;border-radius:9px;box-shadow:none}',
+      B+'.rf-stat__l{color:#526983;letter-spacing:.045em;line-height:1.3}',
+      B+'.rf-stat__v{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;font:750 21px/1.2 "IBM Plex Sans",system-ui,sans-serif;font-variant-numeric:tabular-nums;color:#193659}',
+      B+'.rf-stat__s{margin:0;color:#526680}',
+      B+'.rf-stat--sl{background:#f1f6fc;border-color:#dce7f4}',
+      B+'.rf-stat--br{background:#f6f3fa;border-color:#e8dff0}',
+      B+'.rf-stat--od{background:#fbf4f3;border-color:#f1dfdc}',
+      B+'.rf-stat--od .rf-stat__v{color:#962c3c}',
+      B+'.rf-svcbar{padding:8px 10px;background:#edf3fa;border-color:#dce6f2;border-radius:9px;box-shadow:none}',
+      B+'.rf-svcrow{gap:7px}',
+      B+'.rf-svcbtn{padding-inline:11px;border-radius:7px;border-color:#d4dfec;background:#fff;color:#2a4564}',
+      B+'.rf-svcbtn.is-on{background:#193b62;border-color:#193b62;color:#fff}',
+      B+'.rf-bsearch{min-width:0;flex:0 1 225px;border-color:#d4dfec;border-radius:7px}',
+      B+'.rf-bsearch:focus-within{outline:2px solid #517eaf;outline-offset:1px}',
+      B+'.rf-tblwrap{border-color:#dce5ef;border-radius:9px}',
+      B+'.rf-tbl thead tr{background:#edf3fa}',
+      B+'.rf-tbl th{color:#203d60;background:#edf3fa;padding-block:9px;border-bottom:1px solid #dce5ef;letter-spacing:.045em}',
+      B+'.rf-tbl th .rf-yh__k i.sl{color:#3e6290}',
+      B+'.rf-tbl th .rf-yh__k i.br{color:#94515a}',
+      B+'.rf-tbl tbody tr+tr td{border-top:1px solid #edf1f6}',
+      B+'.rf-tblfoot{background:#f7f9fc;border-top-color:#e4ebf3;color:#4e627a}',
+      B+'.rf-tblwrap--empty .rf-tblscroll,'+B+'.rf-tblwrap--empty .rf-tblfoot{display:none}',
+      B+'.rf-build-empty{text-align:center;background:#f8fafd;padding:25px 14px;color:#526983}',
+      B+'.rf-build-empty svg{display:block;width:23px;height:23px;margin:0 auto 8px;stroke:#6382a7;fill:none;stroke-width:1.6;stroke-linejoin:round}',
+      B+'.rf-build-empty strong{display:block;color:#253f5d;font-size:14px}',
+      B+'.rf-build-empty p{margin:4px 0 0;font-size:12.5px}',
+      B+'.rf-build-key{margin-top:9px;color:#526983;font-size:12px}',
+      B+'.rf-build-key summary{cursor:pointer;font-weight:600;width:fit-content}',
+      B+'.rf-build-key ul{margin:6px 0 0;padding-inline-start:19px;line-height:1.55}',
+      '@media(max-width:760px){'+B+'.rf-stats{grid-template-columns:repeat(2,minmax(0,1fr))}'+B+'.rf-bsearch{flex-basis:100%;margin-left:0}'+B+'.rf-gold{margin-left:0}}',
       // mobile
       '@media(max-width:640px){'+
         P+'.rf-search{width:100%;margin-left:0}'+
@@ -2503,15 +2548,12 @@
       '<span class="rf-svclab">SÝNA</span>'+
       svcBtn('both','Bæði')+svcBtn('sl','🧯 Slökkvitæki')+svcBtn('br','🚨 Brunakerfi')+
       '<span class="rf-svcsep"></span>'+
-      '<span class="rf-leg"><i style="background:linear-gradient(145deg,#2f9d63,#0f6e3a 60%,#062815)"></i>skýrsla á skrá</span>'+
-      '<span class="rf-leg"><i style="background:linear-gradient(145deg,#3a6ae8,#1c3d8c 60%,#0a1a3a)"></i>aðeins í búnaðarsögu</span>'+
-      '<span class="rf-leg"><i style="background:linear-gradient(145deg,#e2555f,#a01820 60%,#5a0c10)"></i>skoðun liðin</span>'+
       '<button type="button" class="rf-svcbtn _rf_expandall" title="Sýna/fela smáatriði allra bygginga í einu">▸ Fela allar</button>'+
       '<button type="button" class="rf-svcbtn _rf_printco" title="Prenta skýrslu fyrir þetta rekstrarfélag">🖨 Prenta</button>'+
       '<button type="button" class="rf-svcbtn _rf_myndir'+(_state.myndir?' is-on':'')+'" aria-pressed="'+(_state.myndir?'true':'false')+'" title="Sýna húsmynd hverrar byggingar lengst til vinstri (eins og í Þjónustugátt)">Með myndum</button>'+
       '<span class="rf-bsearch">'+
         '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#9aa3b5" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>'+
-        '<input class="_rf_bq" placeholder="Leita að byggingu…">'+
+        '<input class="_rf_bq" aria-label="Leita að byggingu" placeholder="Leita að byggingu…">'+
       '</span>'+
       '</div></div>';
     function statCard(cls,label,val,sub){
@@ -2611,10 +2653,13 @@
       infoPanel+
       '<div class="_rf_samskipti_slot"></div>'+
       '<div class="_rf_colwrap" style="display:flex;gap:18px;flex-wrap:wrap">'+
-        '<div class="_rf_tab_bygg" style="flex:1 1 100%;min-width:280px">'+
-          '<div style="font-weight:600;font-size:13px;color:var(--ink2);margin-bottom:6px">Byggingar / húsfélög — úttektir</div>'+
-          summary+ svcBar + statsHtml +
-          '<div class="rf-tblwrap"><div class="rf-tblscroll"><table class="rf-tbl">'+
+        '<div class="_rf_tab_bygg rf-buildings" style="flex:1 1 100%;min-width:0">'+
+          '<div class="rf-build-head"><h2 class="rf-build-title">Byggingar og úttektir</h2>'+
+          '<button type="button" class="_rf_addb rf-build-add">+ Bæta við byggingu</button></div>'+
+          summary + statsHtml + svcBar +
+          '<div class="rf-tblwrap'+(blds.length?'':' rf-tblwrap--empty')+'">'+
+          (blds.length?'':'<div class="rf-build-empty" role="status"><span aria-hidden="true">'+SVG.building+'</span><strong>Engar byggingar á skrá</strong><p>Bættu við byggingu til að halda utan um tæki og skoðanir.</p></div>')+
+          '<div class="rf-tblscroll"><table class="rf-tbl">'+
           // fastar súlubreiddir (table-layout:fixed) — jafnar raðir, nöfn styttast
           // með „…" í stað þess að vefjast. Summa = 1210px (sbr. min-width).
           '<colgroup>'+
@@ -2643,8 +2688,11 @@
             (showBr?' · <b style="color:#c0241f">'+brDoneCur+'</b> brunakerfisskýrslur '+CURY:'')+
             (showBr?' · <b>'+nBruSvc+'</b> í brunakerfisþjónustu':'')+
           '</span></div></div>'+
-          '<button class="_rf_addb" style="margin-top:8px;padding:6px 12px;background:var(--surface);border:1px dashed var(--brd2);border-radius:8px;color:var(--brand);font-weight:600;font-size:12.5px;cursor:pointer">+ Bæta við byggingu / fyrirtæki</button>'+
-          '<div style="font-size:11px;color:var(--ink4);margin-top:6px">Efri strimill = <b>🧯 slökkvitæki</b>, neðri = <b>🚨 brunakerfi</b> (skiptu með rofanum að ofan). Ártölu-strimillinn sýnir skoðunarárin <b>‘23–‘26</b> — smelltu á ár til að opna skýrsluna; fjöldi tækja sést í «Tæki» og þegar bent er á árið. <span style="color:#15803d">Grænt</span> = skýrsla á skrá; <span style="color:var(--brand)">blátt</span> = aðeins búnaðarsaga / í vinnslu; <span style="color:#a97514">gull</span> = þetta ár á áætlun (ókomið); <span style="color:#c0241f">rautt</span> = liðið án skýrslu. «Næsta skoðun» = fyrsti gjalddagi, ⚠ = liðinn. Brunakerfis-gögnin koma úr sömu heimild og «🔥 Brunakerfi yfirlit».</div>'+
+          (blds.length?'<details class="rf-build-key"><summary>Skýringar á skoðunartáknum</summary><ul>'+
+            '<li>Tæki efst, brunakerfi neðst. Smelltu á virkt merki til að opna skýrslu.</li>'+
+            '<li>Grænn punktur merkir skýrslu á skrá. Blár punktur merkir paraðan reikning.</li>'+
+            '<li>Blátt hak merkir búnaðarsögu eða vinnslu. Appelsínugult upphrópunarmerki merkir skoðun á áætlun og rautt merkir liðna skoðun.</li>'+
+          '</ul></details>':'')+
         '</div>'+
         '<div class="_rf_tab_skjol" style="flex:1;min-width:260px">'+
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'+
@@ -2749,7 +2797,7 @@
         tr.style.display = ok ? '' : 'none';
         if(ok) hits++;
       });
-      if(none) none.style.display = hits ? 'none' : '';
+      if(none) none.style.display = hits || !blds.length ? 'none' : '';
     });
 
     // wire building -> company record
