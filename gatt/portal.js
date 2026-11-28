@@ -77,7 +77,7 @@
       { k: 'Brunakerfi', v: '9', s: 'hús' }, { k: 'Skoðun á tíma', v: '1', s: 'hús', dark: true },
     ],
     buildings: [
-      { nafn: 'Arnarhvoll', heimilisfang: 'Ingólfsstræti 1, 101 Reykjavík', sl: 13, slo: 8, br: true, y: [['no', 'no'], ['ok', 'ok'], ['ok', 'ok'], ['no', 'ok']], nt: 'Tæki: janúar 2026|Kerfi: maí 2027' },
+      { nafn: 'Arnarhvoll', heimilisfang: 'Ingólfsstræti 1, 101 Reykjavík', sl: 13, slo: 8, br: true, reikningsar: { uttekt: [2025], brunakerfi: [2026] }, y: [['no', 'no'], ['ok', 'ok'], ['ok', 'ok'], ['no', 'ok']], nt: 'Tæki: janúar 2026|Kerfi: maí 2027' },
       { nafn: 'Grandi', heimilisfang: 'Seljavegur 2, 101 Reykjavík', sl: 14, slo: 11, br: true, y: [['ok', 'ok'], ['ok', 'ok'], ['ok', 'ok'], ['ok', 'ok']], nt: 'Tæki: janúar 2027|Kerfi: mars 2027' },
       { nafn: 'Hlaðvarpinn', heimilisfang: 'Aðalstræti 4, 101 Reykjavík', sl: null, slo: null, br: false, y: [['no', 'no'], ['no', 'no'], ['no', 'no'], ['no', 'no']], nt: 'Tæki: —' },
       { nafn: 'Klöpp', heimilisfang: 'Klapparstígur 26, 101 Reykjavík', sl: 18, slo: 10, br: true, y: [['no', 'ok'], ['ok', 'ok'], ['ok', 'ok'], ['ok', 'no']], nt: 'Tæki: júlí 2027|Kerfi: nóvember 2026' },
@@ -283,7 +283,7 @@
       buildings: (d.buildings || []).map(function (b) {
         return { nafn: b.nafn, heimilisfang: b.heimilisfang, eigandi: b.eigandi || null, sl: b.taeki, slo: b.slo, br: !!b.bru_i_thjonustu,
           base_id: b.base_id != null ? Number(b.base_id) : null, greidandi: b.greidandi || '', greidandi_kt: b.greidandi_kt || '',   // 06.11.2026: reikningar eftir greiðanda
-          y: yearsFromStatus(b), nt: nextInspText(b), docId: null, stada: b.stada,
+          y: yearsFromStatus(b), reikningsar: b.reikningsar || {}, nt: nextInspText(b), docId: null, stada: b.stada,
           id: b.id, equipment: Array.isArray(b.equipment) ? b.equipment : null,
           teikning: Array.isArray(b.teikning) ? b.teikning : null, bgr: b.bgr && typeof b.bgr === 'object' ? b.bgr : null,
           eign: b.eign || null, beidni: !!b.beidni,
@@ -773,21 +773,36 @@
     }).join('');
   }
 
-  // 22.10.2026 (Agnar, Heimaleiga: „hafa bara eitt checkmark … þau eru bara með slökkvitæki"): bygging án brunakerfis fær EITT merki á ár (slökkvitæki) í stað tveggja
-  function markCell(pair, solo) {
-    function m(v) { return v === 'ok' ? '<span class="ok">✓</span>' : v === 'due' ? '<span class="due">!</span>' : '<span class="no">—</span>'; }
-    return '<div class="mk">' + m(pair[0]) + (solo ? '' : ' ' + m(pair[1])) + '</div>';
-  }
-  // eingöngu slökkvitæki: ekkert brunakerfi í þjónustu og ekkert skráð á brunakerfi neitt árið
+  // Eignir sem eru eingöngu með slökkvitæki fá eina stöðulínu.
   function bareSlokkvitaeki(b) { return !b.br && (b.y || []).every(function (p) { return !p || (p[1] !== 'ok' && p[1] !== 'due'); }); }
+
+  function inspectionYears(b) {
+    var solo = bareSlokkvitaeki(b);
+    var invoices = b.reikningsar || {};
+    function mark(value, year, service, label) {
+      var report = value === 'ok';
+      var invoice = report && (invoices[service] || []).includes(year);
+      var status = report ? 'Skýrsla á skrá' : value === 'due' ? 'Skoðun á dagskrá' : 'Engin skýrsla skráð';
+      var title = label + ' ' + year + ': ' + status + (invoice ? ' · Reikningur paraður' : '');
+      return '<span class="ymark" role="img" aria-label="' + esc(title) + '" title="' + esc(title) + '">' +
+        '<span aria-hidden="true" class="' + (report ? 'ok">✓' : value === 'due' ? 'due">!' : 'no">—') + '</span>' +
+        '<span class="ydots" aria-hidden="true"><i' + (report ? ' class="yreport"' : '') + '></i><i' +
+        (invoice ? ' class="yinvoice"' : '') + '></i></span></span>';
+    }
+    var boxes = (b.y || []).map(function (pair, index) {
+      var year = 2023 + index;
+      return '<div class="yb"><div class="yy">’' + String(year).slice(-2) + '</div><div class="mk">' +
+        mark(pair[0], year, 'uttekt', 'Slökkvitæki') +
+        (solo ? '' : mark(pair[1], year, 'brunakerfi', 'Brunakerfi')) + '</div></div>';
+    }).join('');
+    if (!boxes) return '';
+    return '<div class="yrs yrs-stacked"><div class="yr-labels" aria-hidden="true"><span>Tæki</span>' +
+      (solo ? '' : '<span>Kerfi</span>') + '</div>' + boxes + '</div>';
+  }
+
   function renderYfirlit(bldgs) {
-    var yrs = ["'23", "'24", "'25", "'26"];
     var det = !!(state.data && state.data.account && state.data.account.details);
     $('#yf-body').innerHTML = (bldgs || []).map(function (b, bi) {
-      var solo = bareSlokkvitaeki(b);
-      var boxes = (b.y || []).map(function (p, i) {
-        return '<div class="yb"><div class="yy">' + yrs[i] + '</div>' + markCell(p, solo) + '</div>';
-      }).join('');
       var next = '';
       if (b.nt) {
         var parts = b.nt.split('|');
@@ -804,7 +819,7 @@
         '<td class="num">' + (b.sl != null ? b.sl : '—') + '</td>' +
         '<td class="num">' + (b.slo != null ? b.slo : '—') + '</td>' +
         // 27.10.2026 (Agnar): Kerfi-dálkurinn tekinn úr eignasafninu til að þjappa listanum — kerfin sjást áfram á eignasíðunni
-        '<td><div class="yrs">' + boxes + '</div></td>' +
+        '<td>' + inspectionYears(b) + '</td>' +
         '<td><div class="next">' + (sidastaSkodunHtml(b) || '<span class="dim">—</span>') + '</div></td>' +
         '<td><div class="next">' + (next || '<span class="dim">—</span>') + '</div></td>' +
         // 09.10.2026: byggingin á engin eitt skjal (docId alltaf null) — „Skjöl" opnar Skýrslur síaðar á bygginguna.
@@ -1526,9 +1541,6 @@
       }
       return '<div><span class="lbl">' + esc(lbl) + ':</span> skoðað síðast <b>' + esc(sidast[lbl] || '—') + '</b> <span class="dim">·</span> skoðað næst <b>' + esc(val) + '</b></div>';
     }).join('');
-    var yrs = ["'23", "'24", "'25", "'26"];
-    var soloE = bareSlokkvitaeki(b);
-    var boxes = (b.y || []).map(function (p, k) { return '<div class="yb"><div class="yy">' + yrs[k] + '</div>' + markCell(p, soloE) + '</div>'; }).join('');
     html += '<section class="dsec"><h4>Yfirlit</h4><div class="dkpis">' +
       '<div class="dk"><div class="k">Slökkvitæki</div><div class="v">' + (b.sl != null ? b.sl : '—') + '</div></div>' +
       '<div class="dk"><div class="k">Brunaslöngur</div><div class="v">' + (b.slo != null ? b.slo : '—') + '</div></div>' +
@@ -1537,7 +1549,7 @@
         (b.br && b.bru_ein ? '<div class="k" style="margin-top:6px">einingar í kerfinu · ' + (b.bru_ein_heimild === 'skyrsla' ? 'skoðun' : 'áskrift') + '</div>' : (b.br && b.bru_lysing ? '<div class="k" style="margin-top:6px">' + esc(b.bru_lysing) + '</div>' : '')) + '</div>' +
       // 23.10.2026 (Agnar: „hafa fjölda eininga líka ef það eru til tölur"): eignarhlutar úr fasteignaskrá HMS
       '<div class="dk" id="dk-ein"' + (b.eign && b.eign.einingar ? '' : ' hidden') + '><div class="k">Einingar</div><div class="v">' + esc(b.eign && b.eign.einingar ? b.eign.einingar : '—') + '</div><div class="k" style="margin-top:6px">eignarhlutar · fasteignaskrá</div></div></div>' +
-      '<div class="dnext"><div class="next">' + (nextHtml || '<span class="dim">Næsta skoðun ekki skráð</span>') + '</div><div class="yrs">' + boxes + '</div></div></section>';
+      '<div class="dnext"><div class="next">' + (nextHtml || '<span class="dim">Næsta skoðun ekki skráð</span>') + '</div>' + inspectionYears(b) + '</div></section>';
     // Hlutarnir eru merktir (seg) og raðast í lokin: TEIKNINGAR efst, allar GREININGAR neðst (Agnar 22.10.2026)
     function seg(n) { html += '\u0001' + n + '\u0001'; }
     seg('um'); html += umEignina(b);

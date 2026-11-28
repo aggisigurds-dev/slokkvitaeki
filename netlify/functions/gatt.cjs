@@ -40,6 +40,30 @@ function kreditSia(invoices, rows, kn) {
   return invoices;
 }   // Akstur/Skýrslugerð í Sérkjör — listaverðið úr verðskránni (09.11.2026)
 
+// Reikningspunktur sýnir aðeins pörun við reikning sem má þegar sjást í gáttinni.
+function pairedInvoiceYears(pairs, docs, sales, invoices) {
+  const visibleByNr = new Map(invoices.filter((i) => normNr(i.nr)).map((i) => [normNr(i.nr), i]));
+  const visibleByDoc = new Map(invoices.filter((i) => i.docId != null).map((i) => [Number(i.docId), i]));
+  const docById = new Map(docs.filter((d) => d.doc_type === 'reikningur').map((d) => [Number(d.id), d]));
+  const saleById = new Map(sales.map((s) => [Number(s.id), s]));
+  const result = new Map();
+  for (const pair of pairs) {
+    const { service_type: service, fyrirtaeki_id: site, year } = pair;
+    if (site == null || !['uttekt', 'brunakerfi'].includes(service)) continue;
+    const doc = pair.invoice_doc_id != null ? docById.get(Number(pair.invoice_doc_id)) : null;
+    const sale = pair.solur_id != null ? saleById.get(Number(pair.solur_id)) : null;
+    const invoice = (doc && (visibleByDoc.get(Number(doc.id)) || visibleByNr.get(normNr(doc.invoice_number)))) ||
+      (sale && visibleByNr.get(normNr(sale.num)));
+    if (!invoice || (invoice.fid != null && Number(invoice.fid) !== Number(site))) continue;
+    const type = (doc && doc.vidskiptategund) || invoice.tegund;
+    if (type && ['bud', 'uttekt', 'brunakerfi'].includes(type) && type !== service) continue;
+    if (!result.has(Number(site))) result.set(Number(site), { uttekt: [], brunakerfi: [] });
+    const years = result.get(Number(site))[service];
+    if (!years.includes(Number(year))) years.push(Number(year));
+  }
+  return result;
+}
+
 const REPORT_TYPES = ['uttektarskyrsla', 'brunakerfi'];
 
 // ── Afmörkun skjala ─────────────────────────────────────────────────────────
@@ -899,6 +923,8 @@ exports.handler = async (event) => {
         stada: g(`v_stadir_skyrslu_stada?${BF('base_id')}&select=site_id,report_year,inspect_month,stada,total_devices`),
         naest: g(`v_next_inspection?${BF('base_id')}&select=site_id,inspect_month`),
         docs: g(`customer_documents?${filtQ}&select=id,doc_type,year,doc_date,amount,invoice_number,fyrirtaeki_id,customer_base_id,is_duplicate,storage_path,drive_file_id,vidskiptategund,skodun_ar_man,skyrsla_taeki_alls,skyrsla_texti,skyrsla_vidbot,notes`),
+        pairs: !leigutaki && syn.skjol && siteIds.length
+          ? g(`document_pairs?fyrirtaeki_id=in.(${idsQ})&year=in.(2023,2024,2025,2026)&service_type=in.(uttekt,brunakerfi)&select=fyrirtaeki_id,year,service_type,invoice_doc_id,solur_id`) : null,
         app: g('app_settings?id=eq.1&select=settings'),
         bru: siteIds.length ? g(`brunakerfi_skyrslur?fyrirtaeki_id=in.(${siteIds.join(',')})&select=fyrirtaeki_id,year,status,bunadur:data->bunadur&order=year.desc`) : null,
         facts: siteIds.length ? g(`arsskodun_report_facts?fyrirtaeki_id=in.(${idsQ})&select=fyrirtaeki_id,report_year,equipment,total_devices&order=report_year.desc`) : null,
@@ -1433,6 +1459,7 @@ exports.handler = async (event) => {
       return P.sbGet(`solur?num=in.(${quoted})&select=id,num,status,is_credit,credit_of,kredit_a,samtals`).catch(() => ({ ok: false }));
     };
     let voidP = null;
+    let salesForPairs = [];
     try {
       const sr2 = await Q.solur;
       if (sr2.ok) {
@@ -1544,6 +1571,7 @@ exports.handler = async (event) => {
             if (kr && kr.ok) kn = await kr.json();
           }
           kreditSia(invoices, rows, kn);
+          salesForPairs = rows;
         }
       }
     } catch (_) {}
@@ -1558,6 +1586,15 @@ exports.handler = async (event) => {
       const falin = new Set(((acct && acct.stillingar && Array.isArray(acct.stillingar.falin_reikningar)) ? acct.stillingar.falin_reikningar : []).map((x) => normNr(x)).filter(Boolean));
       falinNr.forEach((x) => { if (x) falin.add(x); });
       if (falin.size || faldarEignir.size) for (let i = invoices.length - 1; i >= 0; i--) { if (falin.has(normNr(invoices[i].nr)) || (invoices[i].fid != null && faldarEignir.has(Number(invoices[i].fid)))) invoices.splice(i, 1); }
+    } catch (_) {}
+    try {
+      const pr = await Q.pairs;
+      if (pr && pr.ok) {
+        const paired = pairedInvoiceYears(await pr.json(), docs, salesForPairs, invoices);
+        onBoard.forEach((b) => {
+          if (paired.has(Number(b.id))) b.reikningsar = paired.get(Number(b.id));
+        });
+      }
     } catch (_) {}
     // Eignasafn: eignir félagsins UTAN þjónustu sem bera eign-upplýsingar (skráðar viljandi sem
     // fasteignir, t.d. Reitir 11.10.2026) — kúnninn getur skráð þær í þjónustu í gáttinni.
