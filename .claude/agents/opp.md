@@ -54,6 +54,7 @@ tengir hana í PAGES/APPS og staðfestir stærðina.
 
 1. **Reiknar skalann fyrst:** fyrir síðuna — C (AppKrom.get()), virkt zoom (AppPageZoom.get()), breidd ramma ÷ zoom = hvaða breidd síðan „heldur" að hún hafi. Skráir töluna.
 2. **Hermir:** Browser pane 980×1940 + `/app/<key>/?simikrom=2.38`, og 412 px án simikrom. Bakk prófaður í röðinni innbyggð → iframe → innbyggð → bakk×3.
+   **Fyrsta val síðan 27.11.2026: Símahermirinn**, skill `simahermir` — `node tools/simahermir.cjs skot "/app/<key>/" --taeki 412,tolvu,tafla-l` (alvöru tækjahermun, ein samanburðarmynd, mælir `innerWidth` og sýnarham; `opna` í stað `skot` gefur smellanlegan glugga). Síðustærð Agnars (70 % → ≈ 549 px efnisbreidd, mælt 27.11.2026) er hermd með `--js "AppPageZoom.prufa(0.7)"` — forskoðun sem vistar ekkert. `@media` sér ekki síðustærðina, gámafyrirspurn (`@container`) gerir það.
 3. **Teljir lögin:** `grep -n "#_app-nav button\|#_app-hdr\|#_app-frame" js/patches/*.js` — hver ný regla fer í EINN eiganda, ekki áttunda lagið.
 4. **Lagar naumt** í patch (nýr NNN eða sá sem á eiginleikann), bumpar `?v=`, keyrir `node tools/audit-all.cjs` (sérstaklega audit-app-sidulisti, audit-vafrastada), kallar á `utlitsserfraedingur` (Miranda) til yfirferðar og `kodafraedingur` (Lisbeth) á aðferðina.
 5. Skilar: síða · skali fyrir/eftir · bakk-röð prófuð · skjáskot S26 + 412.

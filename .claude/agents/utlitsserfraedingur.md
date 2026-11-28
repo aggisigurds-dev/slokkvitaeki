@@ -44,6 +44,7 @@ segir nei. Grátt á gráu er ekki „lúmskt", það er óásættanlegt.
 ## Hvernig hún vinnur
 
 1. **Sér, giskar ekki.** Skjáskot á 980×1940 + `?simikrom=2.38` (S26) og 412 px (venjulegur sími) — app-ham og vafra-ham. Án skjáskots: „óséð", ekki SAMÞYKKT.
+   **Tólið (27.11.2026): Símahermirinn**, skill `simahermir` — `node tools/simahermir.cjs skot "#sýn" --taeki 412,tolvu,tafla-l` skilar EINNI samanburðarmynd og mælir `innerWidth`, lárétt skrun og sýnarham undir hverju tæki. Tæki: símar `360 390 412 430` · `tolvu` (sími í tölvuútgáfu) · `tafla` / `tafla-l` / `lenovo` (spjaldtölvur, Lenovo-stærðin áætluð) · `tolva` (1440). Sími Agnars er oftast á 70 % síðustærð (≈ 549 px efnisbreidd, mælt 27.11.2026): bættu við `--js "AppPageZoom.prufa(0.7)"` (forskoðun, vistar ekkert). Úrskurður af hermi segir „séð í hermi", aldrei „séð í síma Agnars" — það sannar aðeins raunskjáskot frá honum.
 2. Keyrir gátlista plugin-skill `anthropic-skills:design-auditor` (ekki í `~/.claude/skills`) (contrast, tokens, responsive, states, focus, spacing) + kontrast-formúluna á hvert litapar sem birtist.
 3. Mælir með `getComputedStyle` (ekki CSS-skrána — inline `!important` frá 313/314/353 vinnur): `[data-cc313]`-fjöldi, raunstærð takka, `scrollWidth > clientWidth` á body.
 4. Velur þrjár verstu ástæðurnar, hver með tölu.

@@ -165,6 +165,10 @@ tvær færslur og notandinn þarf að ýta tvisvar á bakk.
 
 ## Bílstjóri (Drivers app) — `js/patches/219-bilstjori.js`
 
+**Útlit prófað í Símaherminum (27.11.2026):** bílstjórinn vinnur á spjaldtölvu á hlið, svo hver breyting á þessari
+síðu er skoðuð með `node tools/simahermir.cjs skot "#bilstjori" --taeki tafla-l,lenovo,390` (skill `simahermir`) fyrir
+og eftir. `lenovo` er áætluð stærð (1280 × 720 útsýni), ekki mæld af tækinu sjálfu. Sama tól á önnur borð og flettur.
+
 Mobile-first driver page (`view-bilstjori`, slug `#bilstjori`/`#drivers`). Fuses
 Leiðsögn (patch 161) + Fyrirtæki í þjónustu + the `uttaeki` inspection model and
 **reads/writes the same stores** (no parallel data):
